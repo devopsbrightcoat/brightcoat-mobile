@@ -1,4 +1,5 @@
 import React from 'react'
+import { DrawerActions, useNavigation } from '@react-navigation/native'
 import { Building2, ClipboardList, TrendingDown, TrendingUp } from 'lucide-react-native'
 import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { LineChart } from 'react-native-chart-kit'
@@ -20,6 +21,7 @@ import { colors } from '../theme/colors'
 const screenWidth = Dimensions.get('window').width
 
 export const DashboardScreen = () => {
+  const navigation = useNavigation()
   const activeProperties = properties.filter((p) => p.status === 'active').length
   const pendingServices = services.filter((s) => s.status !== 'completed').length
   const lastMonth = monthlyFinancials[monthlyFinancials.length - 1]
@@ -44,7 +46,12 @@ export const DashboardScreen = () => {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="Dashboard" subtitle="Resumen general del negocio" showLogo />
+      <ScreenHeader
+        title="Dashboard"
+        subtitle="Resumen general del negocio"
+        showLogo
+        onMenuPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+      />
       <ScrollView contentContainerStyle={styles.scroll}>
         <MockBanner />
 

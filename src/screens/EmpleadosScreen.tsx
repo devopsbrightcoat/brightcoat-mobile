@@ -1,16 +1,23 @@
 import React from 'react'
+import { DrawerActions, useNavigation } from '@react-navigation/native'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { MockBanner } from '../components/MockBanner'
 import { Panel } from '../components/Panel'
+import { ScreenHeader } from '../components/ScreenHeader'
 import { StatusPill } from '../components/StatusPill'
 import { employees, services } from '../mocks/data'
 import { colors } from '../theme/colors'
 
 export const EmpleadosScreen = () => {
+  const navigation = useNavigation()
   const jobCount = (employeeId: string) => services.filter((s) => s.employeeId === employeeId).length
 
   return (
     <View style={styles.container}>
+      <ScreenHeader
+        title="Empleados"
+        onMenuPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+      />
       <ScrollView contentContainerStyle={styles.scroll}>
         <MockBanner />
         <Text style={styles.count}>{employees.length} empleados registrados</Text>

@@ -1,12 +1,20 @@
 import React from 'react'
+import { DrawerActions, useNavigation } from '@react-navigation/native'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Panel } from '../components/Panel'
+import { ScreenHeader } from '../components/ScreenHeader'
 import { serviceCategoryLabels, serviceTypes } from '../mocks/data'
 import { colors } from '../theme/colors'
 
 export const ConfiguracionScreen = () => {
+  const navigation = useNavigation()
+
   return (
     <View style={styles.container}>
+      <ScreenHeader
+        title="Configuración"
+        onMenuPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+      />
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.sectionTitle}>Catálogo de tipos de servicio</Text>
         <Panel style={styles.panel}>

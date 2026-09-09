@@ -1,0 +1,487 @@
+// ---------------------------------------------------------------------------
+// Queries reales a Supabase. Cada fetch* mapea las filas (snake_case) a los
+// tipos de la app (src/types.ts, camelCase). Idéntico a ops-web/src/lib/api.ts
+// — se porta literal, la única diferencia entre las dos apps está en
+// src/lib/supabase.ts (AsyncStorage en vez de localStorage). Todavía no
+// todas las pantallas de esta app usan todas estas funciones, pero se
+// portan completas de una vez para no repetir este trabajo en cada fase.
+// ---------------------------------------------------------------------------
+
+import type { Charge, Employee, Expense, PayrollEntry, Property, Schedule, ServiceType } from '../types'
+import { supabase } from './supabase'
+import type {
+  ChargeRow,
+  EmployeeRow,
+  ExpenseRow,
+  PayrollEntryRow,
+  PropertyRow,
+  ScheduleRow,
+  ServiceTypeRow,
+} from './dbTypes'
+
+const mapProperty = (row: PropertyRow): Property => ({
+  id: row.id,
+  name: row.name,
+  address: row.address ?? '',
+  clientType: row.client_type,
+  managerContact: row.manager_contact ?? undefined,
+  status: row.status,
+})
+
+export const fetchProperties = async (): Promise<Property[]> => {
+  const { data, error } = await supabase.from('properties').select('*').order('name')
+  if (error) throw error
+  return ((data ?? []) as PropertyRow[]).map(mapProperty)
+}
+
+const mapServiceType = (row: ServiceTypeRow): ServiceType => ({
+  id: row.id,
+  name: row.name,
+  category: row.category,
+})
+
+export const fetchServiceTypes = async (): Promise<ServiceType[]> => {
+  const { data, error } = await supabase.from('service_types').select('*').order('name')
+  if (error) throw error
+  return ((data ?? []) as ServiceTypeRow[]).map(mapServiceType)
+}
+
+export const createServiceType = async (data: { name: string; category: ServiceType['category'] }): Promise<void> => {
+  const { error } = await supabase.from('service_types').insert({ name: data.name, category: data.category })
+  if (error) throw error
+}
+
+export const updateServiceType = async (
+  id: string,
+  patch: { name: string; category: ServiceType['category'] },
+): Promise<void> => {
+  const { error } = await supabase
+    .from('service_types')
+    .update({ name: patch.name, category: patch.category })
+    .eq('id', id)
+  if (error) throw error
+}
+
+const mapEmployee = (row: EmployeeRow): Employee => ({
+  id: row.id,
+  name: row.name,
+  role: row.role ?? '—',
+  contactNumber: row.contact_number ?? undefined,
+  address: row.address ?? undefined,
+  status: row.status,
+  w2Status: row.w2_status,
+  hourlyRate: row.hourly_rate != null ? Number(row.hourly_rate) : undefined,
+})
+
+export const fetchEmployees = async (): Promise<Employee[]> => {
+  const { data, error } = await supabase.from('employees').select('*').order('name')
+  if (error) throw error
+  return ((data ?? []) as EmployeeRow[]).map(mapEmployee)
+}
+
+const mapExpense = (row: ExpenseRow): Expense => ({
+  id: row.id,
+  invoiceNumber: row.invoice_number ?? undefined,
+  amount: Number(row.amount),
+  date: row.date,
+  description: row.description ?? undefined,
+})
+
+export const fetchExpenses = async (): Promise<Expense[]> => {
+  const { data, error } = await supabase.from('expenses').select('*').order('date', { ascending: false })
+  if (error) throw error
+  return ((data ?? []) as ExpenseRow[]).map(mapExpense)
+}
+
+export const createExpense = async (data: {
+  invoiceNumber: string
+  amount: number
+  date: string
+  description: string
+}): Promise<void> => {
+  const { error } = await supabase.from('expenses').insert({
+    invoice_number: data.invoiceNumber.trim() || null,
+    amount: data.amount,
+    date: data.date,
+    description: data.description.trim() || null,
+  })
+  if (error) throw error
+}
+
+export const updateExpense = async (
+  id: string,
+  patch: { invoiceNumber: string; amount: number; date: string; description: string },
+): Promise<void> => {
+  const { error } = await supabase
+    .from('expenses')
+    .update({
+      invoice_number: patch.invoiceNumber.trim() || null,
+      amount: patch.amount,
+      date: patch.date,
+      description: patch.description.trim() || null,
+    })
+    .eq('id', id)
+  if (error) throw error
+}
+
+// ---------------------------------------------------------------------------
+// Planillas — pago de mano de obra por trabajo completo (propiedad + unidad
+// + empleado + servicio, todos obligatorios). Tabla propia (payroll_entries)
+// desde 20260917000000_split_expenses_payroll.sql, separada de expenses (que
+// ahora es un módulo independiente de facturas/gastos). El desglose del
+// servicio vive en payroll_entry_items — ver
+// 20260918000000_payroll_service_breakdown.sql. "Ventas" y "Ganancia" se
+// calculan en la UI a partir del desglose, no se guardan.
+// ---------------------------------------------------------------------------
+
+const mapPayrollEntry = (row: PayrollEntryRow): PayrollEntry => ({
+  id: row.id,
+  propertyId: row.property_id,
+  unitLabel: row.unit_label,
+  employeeId: row.employee_id,
+  serviceName: row.service_name,
+  amount: row.amount == null ? null : Number(row.amount),
+  date: row.date,
+  items: (row.payroll_entry_items ?? []).map((item) => ({
+    id: item.id,
+    description: item.description,
+    amount: Number(item.amount),
+  })),
+})
+
+export const fetchPayrollEntries = async (): Promise<PayrollEntry[]> => {
+  const { data, error } = await supabase
+    .from('payroll_entries')
+    .select('*, payroll_entry_items(*)')
+    .order('date', { ascending: false })
+    .order('position', { foreignTable: 'payroll_entry_items', ascending: true })
+  if (error) throw error
+  return ((data ?? []) as PayrollEntryRow[]).map(mapPayrollEntry)
+}
+
+type PayrollEntryInput = {
+  propertyId: string
+  unitLabel: string
+  employeeId: string
+  serviceName: string
+  amount: number | null
+  date: string
+  items: { description: string; amount: number }[]
+}
+
+const insertPayrollEntryItems = async (payrollEntryId: string, items: PayrollEntryInput['items']): Promise<void> => {
+  if (items.length === 0) return
+  const { error } = await supabase.from('payroll_entry_items').insert(
+    items.map((item, index) => ({
+      payroll_entry_id: payrollEntryId,
+      description: item.description,
+      amount: item.amount,
+      position: index,
+    })),
+  )
+  if (error) throw error
+}
+
+export const createPayrollEntry = async (data: PayrollEntryInput): Promise<void> => {
+  const { data: entry, error } = await supabase
+    .from('payroll_entries')
+    .insert({
+      property_id: data.propertyId,
+      unit_label: data.unitLabel,
+      employee_id: data.employeeId,
+      service_name: data.serviceName,
+      amount: data.amount,
+      date: data.date,
+    })
+    .select('id')
+    .single()
+  if (error) throw error
+
+  await insertPayrollEntryItems(entry.id as string, data.items)
+}
+
+// El desglose se reemplaza completo en cada edición — más simple que
+// diffear filas individuales, y en la práctica siempre se edita como un
+// conjunto (se agregan/quitan líneas junto con el resto del formulario).
+export const updatePayrollEntry = async (id: string, data: PayrollEntryInput): Promise<void> => {
+  const { error } = await supabase
+    .from('payroll_entries')
+    .update({
+      property_id: data.propertyId,
+      unit_label: data.unitLabel,
+      employee_id: data.employeeId,
+      service_name: data.serviceName,
+      amount: data.amount,
+      date: data.date,
+    })
+    .eq('id', id)
+  if (error) throw error
+
+  const { error: deleteError } = await supabase.from('payroll_entry_items').delete().eq('payroll_entry_id', id)
+  if (deleteError) throw deleteError
+
+  await insertPayrollEntryItems(id, data.items)
+}
+
+const mapCharge = (row: ChargeRow): Charge => ({
+  id: row.id,
+  propertyId: row.property_id,
+  unitLabel: row.unit_label ?? undefined,
+  serviceTypeId: row.service_type_id ?? undefined,
+  description: row.description ?? undefined,
+  amount: Number(row.amount),
+  status: row.status,
+  generatedDate: row.generated_date ?? undefined,
+  payrollPeriod: row.payroll_period ?? undefined,
+  responsible: row.responsible ?? undefined,
+  notes: row.notes ?? undefined,
+  extras: row.extras ?? [],
+  invoiceNumber: row.invoice_number ?? undefined,
+})
+
+export const fetchCharges = async (): Promise<Charge[]> => {
+  const { data, error } = await supabase.from('charges').select('*').order('created_at', { ascending: false })
+  if (error) throw error
+  return ((data ?? []) as ChargeRow[]).map(mapCharge)
+}
+
+// Marca un cobro como pagado/subido a OPS junto con su invoice number — ver
+// ChargeInvoiceModal.tsx en ops-web. El invoice number se captura en el
+// mismo paso que el cambio de estatus para no dejar un cobro "pagado" sin
+// invoice number asociado; también permite corregir el invoice number de un
+// cobro que ya está pagado (el estatus se reenvía sin cambios en ese caso).
+export const updateChargeStatus = async (
+  id: string,
+  data: { status: Charge['status']; invoiceNumber?: string },
+): Promise<void> => {
+  const { error } = await supabase
+    .from('charges')
+    .update({ status: data.status, invoice_number: data.invoiceNumber?.trim() || null })
+    .eq('id', id)
+  if (error) throw error
+}
+
+// ---------------------------------------------------------------------------
+// Updates — usados por los formularios de edición (Propiedades, Empleados).
+// Cada uno mapea el patch en camelCase de la app a las columnas snake_case
+// reales de Supabase.
+// ---------------------------------------------------------------------------
+
+export const updateProperty = async (
+  id: string,
+  patch: {
+    name: string
+    address: string
+    clientType: Property['clientType']
+    managerContact: string
+    status: Property['status']
+  },
+): Promise<void> => {
+  const { error } = await supabase
+    .from('properties')
+    .update({
+      name: patch.name,
+      address: patch.address || null,
+      client_type: patch.clientType,
+      manager_contact: patch.managerContact || null,
+      status: patch.status,
+    })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export const updateEmployee = async (
+  id: string,
+  patch: {
+    name: string
+    role: string
+    contactNumber: string
+    address: string
+    status: Employee['status']
+    w2Status: Employee['w2Status']
+    hourlyRate: number | null
+  },
+): Promise<void> => {
+  const { error } = await supabase
+    .from('employees')
+    .update({
+      name: patch.name,
+      role: patch.role || null,
+      contact_number: patch.contactNumber || null,
+      address: patch.address || null,
+      status: patch.status,
+      w2_status: patch.w2Status,
+      hourly_rate: patch.hourlyRate,
+    })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export const createEmployee = async (data: {
+  name: string
+  role: string
+  contactNumber: string
+  address: string
+  status: Employee['status']
+  w2Status: Employee['w2Status']
+  hourlyRate: number | null
+}): Promise<void> => {
+  const { error } = await supabase.from('employees').insert({
+    name: data.name,
+    role: data.role || null,
+    contact_number: data.contactNumber || null,
+    address: data.address || null,
+    status: data.status,
+    w2_status: data.w2Status,
+    hourly_rate: data.hourlyRate,
+  })
+  if (error) throw error
+}
+
+export const createProperty = async (data: {
+  name: string
+  address: string
+  clientType: Property['clientType']
+  managerContact: string
+  status: Property['status']
+}): Promise<void> => {
+  const { error } = await supabase.from('properties').insert({
+    name: data.name,
+    address: data.address || null,
+    client_type: data.clientType,
+    manager_contact: data.managerContact || null,
+    status: data.status,
+  })
+  if (error) throw error
+}
+
+// ---------------------------------------------------------------------------
+// Horarios — scheduler semanal de servicios (ver ops-web/src/pages/Horarios.tsx).
+// El cobro de un horario finalizado se guarda directamente en `charges` (ver
+// createScheduleCharge más abajo y 20260912000000_unify_charges.sql).
+// ---------------------------------------------------------------------------
+
+const mapSchedule = (row: ScheduleRow): Schedule => ({
+  id: row.id,
+  propertyId: row.property_id,
+  unitLabel: row.unit_label ?? undefined,
+  serviceTypeId: row.service_type_id,
+  employeeId: row.employee_id,
+  scheduledDate: row.scheduled_date,
+  scheduledTime: row.scheduled_time,
+  status: row.status,
+})
+
+export const fetchSchedules = async (): Promise<Schedule[]> => {
+  const { data, error } = await supabase
+    .from('schedules')
+    .select('*')
+    .order('scheduled_date', { ascending: true })
+    .order('scheduled_time', { ascending: true })
+  if (error) throw error
+  return ((data ?? []) as ScheduleRow[]).map(mapSchedule)
+}
+
+export const createSchedules = async (
+  rows: {
+    propertyId: string
+    employeeId: string
+    scheduledDate: string
+    unitLabel: string
+    serviceTypeId: string
+    scheduledTime: string
+  }[],
+): Promise<void> => {
+  const { error } = await supabase.from('schedules').insert(
+    rows.map((r) => ({
+      property_id: r.propertyId,
+      employee_id: r.employeeId,
+      scheduled_date: r.scheduledDate,
+      unit_label: r.unitLabel || null,
+      service_type_id: r.serviceTypeId,
+      scheduled_time: r.scheduledTime,
+    })),
+  )
+  if (error) throw error
+}
+
+// Un horario ya entregado (delivered) siempre tiene un cobro asociado en
+// `charges` — permitir editarlo después dejaría el cobro ya generado
+// desincronizado de la propiedad/unidad/servicio/fecha real del horario. El
+// filtro `.neq('status', 'delivered')` bloquea el update a nivel de base de
+// datos (no solo en la UI).
+export const updateSchedule = async (
+  id: string,
+  patch: {
+    propertyId: string
+    employeeId: string
+    scheduledDate: string
+    unitLabel: string
+    serviceTypeId: string
+    scheduledTime: string
+  },
+): Promise<void> => {
+  const { error } = await supabase
+    .from('schedules')
+    .update({
+      property_id: patch.propertyId,
+      employee_id: patch.employeeId,
+      scheduled_date: patch.scheduledDate,
+      unit_label: patch.unitLabel || null,
+      service_type_id: patch.serviceTypeId,
+      scheduled_time: patch.scheduledTime,
+    })
+    .eq('id', id)
+    .neq('status', 'delivered')
+    .select('id')
+    .single()
+  if (error) {
+    if (error.code === 'PGRST116') {
+      throw new Error('Este horario ya fue entregado y cobrado — no se puede editar.')
+    }
+    throw error
+  }
+}
+
+export const updateScheduleStatus = async (id: string, status: Schedule['status']): Promise<void> => {
+  const { error } = await supabase.from('schedules').update({ status }).eq('id', id)
+  if (error) throw error
+}
+
+// Crea (o reutiliza) el cobro de un horario finalizado directamente en
+// `charges` — ver 20260912000000_unify_charges.sql. Un cobro queda
+// identificado de forma única por propiedad + unidad + tipo de servicio +
+// fecha (constraint `charges_unique_identity`).
+export const createScheduleCharge = async (
+  scheduleId: string,
+  data: { totalCost: number; notes: string; extras: { description: string; amount: number }[] },
+): Promise<void> => {
+  const { data: schedule, error: scheduleError } = await supabase
+    .from('schedules')
+    .select('property_id, unit_label, service_type_id, scheduled_date')
+    .eq('id', scheduleId)
+    .single()
+  if (scheduleError) throw scheduleError
+
+  const amount = data.totalCost + data.extras.reduce((sum, e) => sum + e.amount, 0)
+
+  const { error } = await supabase.from('charges').insert({
+    property_id: schedule.property_id,
+    unit_label: schedule.unit_label,
+    service_type_id: schedule.service_type_id,
+    amount,
+    status: 'pending',
+    generated_date: schedule.scheduled_date,
+    notes: data.notes.trim() || null,
+    extras: data.extras,
+  })
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('Ya existe un cobro para este mismo servicio, unidad, propiedad y fecha.')
+    }
+    throw error
+  }
+
+  const { error: statusError } = await supabase.from('schedules').update({ status: 'delivered' }).eq('id', scheduleId)
+  if (statusError) throw statusError
+}

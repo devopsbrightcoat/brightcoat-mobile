@@ -1,5 +1,5 @@
 import React from 'react'
-import { useNavigation } from '@react-navigation/native'
+import { DrawerActions, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
   AlertTriangle,
@@ -69,7 +69,12 @@ export const ReportesScreen = () => {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="Reportes" subtitle="Elige el reporte que necesitas" showLogo />
+      <ScreenHeader
+        title="Reportes"
+        subtitle="Elige el reporte que necesitas"
+        showLogo
+        onMenuPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+      />
       <ScrollView contentContainerStyle={styles.scroll}>
         <MockBanner />
 

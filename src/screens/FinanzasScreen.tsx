@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { DrawerActions, useNavigation } from '@react-navigation/native'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { MockBanner } from '../components/MockBanner'
 import { Panel } from '../components/Panel'
@@ -10,13 +11,19 @@ import { colors } from '../theme/colors'
 type TabKey = 'expenses' | 'income'
 
 export const FinanzasScreen = () => {
+  const navigation = useNavigation()
   const [tab, setTab] = useState<TabKey>('expenses')
 
   const propertyName = (id?: string) => (id ? properties.find((p) => p.id === id)?.name : 'Gasto general') ?? '—'
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="Finanzas" subtitle="Gastos e ingresos por propiedad" showLogo />
+      <ScreenHeader
+        title="Finanzas"
+        subtitle="Gastos e ingresos por propiedad"
+        showLogo
+        onMenuPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+      />
       <ScrollView contentContainerStyle={styles.scroll}>
         <MockBanner />
 
