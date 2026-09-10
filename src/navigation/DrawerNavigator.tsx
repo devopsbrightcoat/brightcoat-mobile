@@ -4,14 +4,14 @@ import { ConfiguracionScreen } from '../screens/ConfiguracionScreen'
 import { DashboardScreen } from '../screens/DashboardScreen'
 import { EmpleadosScreen } from '../screens/EmpleadosScreen'
 import { FinanzasScreen } from '../screens/FinanzasScreen'
+import { HorariosScreen } from '../screens/HorariosScreen'
 import { PropiedadesScreen } from '../screens/PropiedadesScreen'
 import { ReportesScreen } from '../screens/ReportesScreen'
-import { TrabajosScreen } from '../screens/TrabajosScreen'
 import { DrawerContent } from './DrawerContent'
 
 export type DrawerParamList = {
   Dashboard: undefined
-  Trabajos: undefined
+  Horarios: undefined
   Finanzas: undefined
   Reportes: undefined
   Propiedades: undefined
@@ -37,7 +37,7 @@ export const DrawerNavigator = () => {
       drawerContent={(props) => <DrawerContent {...props} />}
     >
       <Drawer.Screen name="Dashboard" component={DashboardScreen} />
-      <Drawer.Screen name="Trabajos" component={TrabajosScreen} />
+      <Drawer.Screen name="Horarios" component={HorariosScreen} />
       <Drawer.Screen name="Finanzas" component={FinanzasScreen} />
       <Drawer.Screen name="Reportes" component={ReportesScreen} />
       <Drawer.Screen name="Propiedades" component={PropiedadesScreen} />

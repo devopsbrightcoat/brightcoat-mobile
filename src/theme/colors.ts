@@ -49,7 +49,10 @@ export const statusColors: Record<string, { bg: string; text: string }> = {
   pending: { bg: 'rgba(251, 191, 36, 0.1)', text: colors.amber },
   in_progress: { bg: 'rgba(56, 189, 248, 0.1)', text: colors.sky },
   completed: { bg: 'rgba(52, 211, 153, 0.1)', text: colors.emerald },
+  delivered: { bg: 'rgba(52, 211, 153, 0.1)', text: colors.emerald },
+  cancelled: { bg: 'rgba(248, 113, 113, 0.1)', text: colors.rose },
   paid: { bg: 'rgba(52, 211, 153, 0.1)', text: colors.emerald },
+  approved: { bg: 'rgba(52, 211, 153, 0.1)', text: colors.emerald },
   active: { bg: 'rgba(52, 211, 153, 0.1)', text: colors.emerald },
   inactive: { bg: 'rgba(255, 255, 255, 0.05)', text: colors.ink400 },
 }
@@ -58,7 +61,10 @@ export const statusLabels: Record<string, string> = {
   pending: 'Pendiente',
   in_progress: 'En proceso',
   completed: 'Completado',
+  delivered: 'Entregado',
+  cancelled: 'Cancelado',
   paid: 'Pagado',
+  approved: 'Aprobado',
   active: 'Activo',
   inactive: 'Inactivo',
 }

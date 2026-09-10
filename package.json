@@ -11,6 +11,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@quidone/react-native-wheel-picker": "^1.7.1",
     "@react-native-async-storage/async-storage": "^3.1.1",
     "@react-navigation/bottom-tabs": "^7.18.18",
     "@react-navigation/drawer": "^7.13.10",
@@ -22,6 +23,7 @@
     "react-native": "0.87.1",
     "react-native-chart-kit": "^7.0.2",
     "react-native-config": "^1.7.2",
+    "react-native-element-dropdown": "^2.12.4",
     "react-native-gesture-handler": "^2.32.0",
     "react-native-reanimated": "^4.6.0",
     "react-native-safe-area-context": "^5.5.2",

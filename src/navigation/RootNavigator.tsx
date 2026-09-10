@@ -4,9 +4,11 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { ActivityIndicator, StyleSheet, View } from 'react-native'
 import { useAuth } from '../auth/AuthProvider'
 import { colors } from '../theme/colors'
-import type { Property } from '../types'
+import type { Property, Schedule } from '../types'
 import { AddPropertyScreen } from '../screens/AddPropertyScreen'
+import { AddScheduleScreen } from '../screens/AddScheduleScreen'
 import { EditPropertyScreen } from '../screens/EditPropertyScreen'
+import { EditScheduleScreen } from '../screens/EditScheduleScreen'
 import { LoginScreen } from '../screens/LoginScreen'
 import { CobrosPendientesScreen } from '../screens/reports/CobrosPendientesScreen'
 import { FinancieroPropiedadScreen } from '../screens/reports/FinancieroPropiedadScreen'
@@ -22,6 +24,8 @@ export type RootStackParamList = {
   Tabs: undefined
   AddProperty: undefined
   EditProperty: { property: Property }
+  AddSchedule: { defaultDate: string }
+  EditSchedule: { schedule: Schedule }
   FinancieroPropiedad: undefined
   GastosCategoria: undefined
   CobrosPendientes: undefined
@@ -74,6 +78,8 @@ export const RootNavigator = () => {
           <Stack.Screen name="Tabs" component={DrawerNavigator} options={{ headerShown: false }} />
           <Stack.Screen name="AddProperty" component={AddPropertyScreen} options={{ title: 'Agregar propiedad' }} />
           <Stack.Screen name="EditProperty" component={EditPropertyScreen} options={{ title: 'Editar propiedad' }} />
+          <Stack.Screen name="AddSchedule" component={AddScheduleScreen} options={{ title: 'Agregar horario' }} />
+          <Stack.Screen name="EditSchedule" component={EditScheduleScreen} options={{ title: 'Editar horario' }} />
           <Stack.Screen
             name="FinancieroPropiedad"
             component={FinancieroPropiedadScreen}

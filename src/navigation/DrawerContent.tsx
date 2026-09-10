@@ -3,7 +3,7 @@ import type { DrawerContentComponentProps } from '@react-navigation/drawer'
 import {
   Banknote,
   Building2,
-  ClipboardList,
+  Calendar,
   LayoutDashboard,
   LineChart,
   LogOut,
@@ -25,7 +25,7 @@ const roleLabel: Record<ProfileRole, string> = {
 
 const items: { key: keyof DrawerParamList; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { key: 'Trabajos', label: 'Trabajos', icon: ClipboardList },
+  { key: 'Horarios', label: 'Horarios', icon: Calendar },
   { key: 'Finanzas', label: 'Finanzas', icon: Banknote },
   { key: 'Reportes', label: 'Reportes', icon: LineChart },
   { key: 'Propiedades', label: 'Propiedades', icon: Building2 },

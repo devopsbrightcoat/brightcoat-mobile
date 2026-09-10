@@ -21,7 +21,12 @@ type SearchableSelectProps = {
   options: Option[]
   value: string
   onChange: (id: string) => void
-  allLabel: string
+  // Con allLabel: funciona como filtro, con un renglón "Todas/Todos" que
+  // representa value === 'all' (Reportes, filtros de listas). Sin allLabel:
+  // funciona como select obligatorio de una entidad real — sin renglón
+  // "todas" — para formularios como Agregar/Editar horario.
+  allLabel?: string
+  placeholder?: string
   searchPlaceholder?: string
 }
 
@@ -31,16 +36,19 @@ export const SearchableSelect = ({
   value,
   onChange,
   allLabel,
+  placeholder = 'Selecciona…',
   searchPlaceholder = 'Buscar...',
 }: SearchableSelectProps) => {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
 
-  const selectedLabel = value === 'all' ? allLabel : options.find((o) => o.id === value)?.label ?? allLabel
+  const selectedLabel =
+    allLabel && value === 'all' ? allLabel : options.find((o) => o.id === value)?.label ?? allLabel ?? placeholder
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
-    if (!query) return [{ id: 'all', label: allLabel }, ...options]
+    const base = allLabel ? [{ id: 'all', label: allLabel }, ...options] : options
+    if (!query) return base
     return options.filter((o) => o.label.toLowerCase().includes(query))
   }, [options, search, allLabel])
 
