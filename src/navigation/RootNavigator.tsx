@@ -4,17 +4,19 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { ActivityIndicator, StyleSheet, View } from 'react-native'
 import { useAuth } from '../auth/AuthProvider'
 import { colors } from '../theme/colors'
-import type { Employee, Expense, PayrollEntry, Property, Schedule } from '../types'
+import type { Employee, Expense, PayrollEntry, Property, Schedule, ServiceType } from '../types'
 import { AddEmployeeScreen } from '../screens/AddEmployeeScreen'
 import { AddExpenseScreen } from '../screens/AddExpenseScreen'
 import { AddPayrollEntryScreen } from '../screens/AddPayrollEntryScreen'
 import { AddPropertyScreen } from '../screens/AddPropertyScreen'
 import { AddScheduleScreen } from '../screens/AddScheduleScreen'
+import { AddServiceTypeScreen } from '../screens/AddServiceTypeScreen'
 import { EditEmployeeScreen } from '../screens/EditEmployeeScreen'
 import { EditExpenseScreen } from '../screens/EditExpenseScreen'
 import { EditPayrollEntryScreen } from '../screens/EditPayrollEntryScreen'
 import { EditPropertyScreen } from '../screens/EditPropertyScreen'
 import { EditScheduleScreen } from '../screens/EditScheduleScreen'
+import { EditServiceTypeScreen } from '../screens/EditServiceTypeScreen'
 import { LoginScreen } from '../screens/LoginScreen'
 import { CobrosPendientesScreen } from '../screens/reports/CobrosPendientesScreen'
 import { FinancieroPropiedadScreen } from '../screens/reports/FinancieroPropiedadScreen'
@@ -38,6 +40,8 @@ export type RootStackParamList = {
   EditPayrollEntry: { entry: PayrollEntry }
   AddEmployee: undefined
   EditEmployee: { employee: Employee }
+  AddServiceType: undefined
+  EditServiceType: { serviceType: ServiceType }
   FinancieroPropiedad: undefined
   GastosCategoria: undefined
   CobrosPendientes: undefined
@@ -106,6 +110,16 @@ export const RootNavigator = () => {
           />
           <Stack.Screen name="AddEmployee" component={AddEmployeeScreen} options={{ title: 'Agregar empleado' }} />
           <Stack.Screen name="EditEmployee" component={EditEmployeeScreen} options={{ title: 'Editar empleado' }} />
+          <Stack.Screen
+            name="AddServiceType"
+            component={AddServiceTypeScreen}
+            options={{ title: 'Agregar servicio' }}
+          />
+          <Stack.Screen
+            name="EditServiceType"
+            component={EditServiceTypeScreen}
+            options={{ title: 'Editar servicio' }}
+          />
           <Stack.Screen
             name="FinancieroPropiedad"
             component={FinancieroPropiedadScreen}

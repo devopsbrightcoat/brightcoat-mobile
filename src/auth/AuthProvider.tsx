@@ -18,6 +18,11 @@ type AuthContextValue = {
   loading: boolean
   signIn: (username: string, password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
+  // Vuelve a cargar el profile actual desde la base — usado por la pantalla
+  // "Mi perfil" (Configuración) tras guardar cambios, para que el nombre
+  // mostrado en el resto de la app (ej. el drawer) quede al día sin tener
+  // que cerrar sesión.
+  refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -110,8 +115,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await supabase.auth.signOut()
   }
 
+  const refreshProfile = async () => {
+    if (!session) return
+    setProfile(await loadProfile(session.user.id))
+  }
+
   return (
-    <AuthContext.Provider value={{ session, profile, loading, signIn, signOut }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ session, profile, loading, signIn, signOut, refreshProfile }}>
+      {children}
+    </AuthContext.Provider>
   )
 }
 
