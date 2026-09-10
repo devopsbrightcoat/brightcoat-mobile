@@ -4,11 +4,13 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { ActivityIndicator, StyleSheet, View } from 'react-native'
 import { useAuth } from '../auth/AuthProvider'
 import { colors } from '../theme/colors'
-import type { Expense, PayrollEntry, Property, Schedule } from '../types'
+import type { Employee, Expense, PayrollEntry, Property, Schedule } from '../types'
+import { AddEmployeeScreen } from '../screens/AddEmployeeScreen'
 import { AddExpenseScreen } from '../screens/AddExpenseScreen'
 import { AddPayrollEntryScreen } from '../screens/AddPayrollEntryScreen'
 import { AddPropertyScreen } from '../screens/AddPropertyScreen'
 import { AddScheduleScreen } from '../screens/AddScheduleScreen'
+import { EditEmployeeScreen } from '../screens/EditEmployeeScreen'
 import { EditExpenseScreen } from '../screens/EditExpenseScreen'
 import { EditPayrollEntryScreen } from '../screens/EditPayrollEntryScreen'
 import { EditPropertyScreen } from '../screens/EditPropertyScreen'
@@ -34,6 +36,8 @@ export type RootStackParamList = {
   EditExpense: { expense: Expense }
   AddPayrollEntry: undefined
   EditPayrollEntry: { entry: PayrollEntry }
+  AddEmployee: undefined
+  EditEmployee: { employee: Employee }
   FinancieroPropiedad: undefined
   GastosCategoria: undefined
   CobrosPendientes: undefined
@@ -100,6 +104,8 @@ export const RootNavigator = () => {
             component={EditPayrollEntryScreen}
             options={{ title: 'Editar planilla' }}
           />
+          <Stack.Screen name="AddEmployee" component={AddEmployeeScreen} options={{ title: 'Agregar empleado' }} />
+          <Stack.Screen name="EditEmployee" component={EditEmployeeScreen} options={{ title: 'Editar empleado' }} />
           <Stack.Screen
             name="FinancieroPropiedad"
             component={FinancieroPropiedadScreen}
