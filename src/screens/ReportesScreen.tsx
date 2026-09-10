@@ -12,8 +12,8 @@ import {
   Wallet,
 } from 'lucide-react-native'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { MockBanner } from '../components/MockBanner'
-import { ScreenHeader } from '../components/ScreenHeader'
+import { MockBanner } from '../components/common/MockBanner'
+import { ScreenHeader } from '../components/common/ScreenHeader'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import { colors } from '../theme/colors'
 

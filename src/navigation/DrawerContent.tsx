@@ -13,8 +13,15 @@ import {
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../auth/AuthProvider'
+import type { ProfileRole } from '../auth/AuthProvider'
 import { colors } from '../theme/colors'
 import type { DrawerParamList } from './DrawerNavigator'
+
+const roleLabel: Record<ProfileRole, string> = {
+  owner: 'Dueño',
+  admin: 'Administrador',
+  staff: 'Staff',
+}
 
 const items: { key: keyof DrawerParamList; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -30,7 +37,7 @@ const items: { key: keyof DrawerParamList; label: string; icon: typeof LayoutDas
 // tanto la barra de tabs de abajo como la pantalla "Más" — junta todas las
 // secciones en un solo menú, más el botón de cerrar sesión al final.
 export const DrawerContent = (props: DrawerContentComponentProps) => {
-  const { signOut } = useAuth()
+  const { profile, signOut } = useAuth()
   const activeRoute = props.state.routeNames[props.state.index]
 
   return (
@@ -61,10 +68,19 @@ export const DrawerContent = (props: DrawerContentComponentProps) => {
       </View>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.signOutRow} activeOpacity={0.7} onPress={() => signOut()}>
-          <LogOut size={18} color={colors.rose} />
-          <Text style={styles.signOutLabel}>Cerrar sesión</Text>
-        </TouchableOpacity>
+        <View style={styles.userRow}>
+          <View style={styles.userTextGroup}>
+            <Text style={styles.userName} numberOfLines={1}>
+              {profile?.fullName || profile?.username || 'Usuario'}
+            </Text>
+            <Text style={styles.userRole} numberOfLines={1}>
+              {profile ? roleLabel[profile.role] ?? profile.role : ''}
+            </Text>
+          </View>
+          <TouchableOpacity onPress={() => signOut()} hitSlop={8} style={styles.signOutButton}>
+            <LogOut size={18} color={colors.rose} />
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   )
@@ -130,17 +146,30 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.08)',
   },
-  signOutRow: {
+  userRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
     borderRadius: 10,
-    paddingVertical: 12,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingVertical: 10,
     paddingHorizontal: 12,
   },
-  signOutLabel: {
-    fontSize: 14,
+  userTextGroup: {
+    flex: 1,
+    minWidth: 0,
+  },
+  userName: {
+    fontSize: 13,
     fontWeight: '600',
-    color: colors.rose,
+    color: colors.white,
+  },
+  userRole: {
+    marginTop: 1,
+    fontSize: 11,
+    color: colors.ink400,
+  },
+  signOutButton: {
+    padding: 6,
   },
 })

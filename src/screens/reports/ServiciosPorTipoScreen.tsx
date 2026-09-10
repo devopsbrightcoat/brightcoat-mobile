@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { BarChart } from 'react-native-chart-kit'
-import { Panel } from '../../components/Panel'
+import { Panel } from '../../components/common/Panel'
 import { currency, serviceTypes, services } from '../../mocks/data'
 import { colors } from '../../theme/colors'
 

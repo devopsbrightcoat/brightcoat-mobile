@@ -1,11 +1,23 @@
-// ---------------------------------------------------------------------------
-// Mismas credenciales públicas del proyecto de Supabase que usa ops-web
-// (Dashboard -> Settings -> API, o ops-web/.env.local). La publishable/anon
-// key es segura para el cliente — el acceso real lo controla RLS, no este
-// valor. No hay tooling de variables de entorno en este proyecto todavía
-// (no usamos react-native-config para no meter otra dependencia nativa de
-// entrada) — si más adelante hace falta separar dev/prod, se agrega ahí.
-// ---------------------------------------------------------------------------
+import Config from 'react-native-config'
 
-export const SUPABASE_URL = 'https://spubixsplkekfhqcygbx.supabase.co'
-export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Q_261BtDUTuPS1Nnhsqj0A_AtPh0QTL'
+// URL y anon/publishable key salen de Settings -> API en el Dashboard de
+// Supabase — mismas que usa ops-web (ops-web/.env.local, como
+// VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY). Acá llegan vía
+// react-native-config desde el .env de la raíz del proyecto (no se sube a
+// git — ver .env.example para la plantilla).
+//
+// Importante: react-native-config incrusta estos valores en el binario en
+// tiempo de compilación. Después de crear o editar el .env hay que
+// reconstruir la app nativa (npx react-native run-android / run-ios) — un
+// reload de Metro no alcanza.
+const supabaseUrl = Config.SUPABASE_URL
+const supabasePublishableKey = Config.SUPABASE_PUBLISHABLE_KEY
+
+if (!supabaseUrl || !supabasePublishableKey) {
+  throw new Error(
+    'Faltan SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY. Copia .env.example a .env en la raíz de ops-mobile y pon los valores reales del proyecto (Dashboard -> Settings -> API), después reconstruí la app nativa.',
+  )
+}
+
+export const SUPABASE_URL = supabaseUrl
+export const SUPABASE_PUBLISHABLE_KEY = supabasePublishableKey

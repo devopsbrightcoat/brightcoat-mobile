@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react'
 import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { BarChart } from 'react-native-chart-kit'
-import { Panel } from '../../components/Panel'
-import { SearchableSelect } from '../../components/SearchableSelect'
+import { Panel } from '../../components/common/Panel'
+import { SearchableSelect } from '../../components/common/SearchableSelect'
 import { categoryLabels, currency, expenses, properties } from '../../mocks/data'
 import { colors } from '../../theme/colors'
 

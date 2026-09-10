@@ -1,8 +1,8 @@
 import React from 'react'
 import { DrawerActions, useNavigation } from '@react-navigation/native'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
-import { Panel } from '../components/Panel'
-import { ScreenHeader } from '../components/ScreenHeader'
+import { Panel } from '../components/common/Panel'
+import { ScreenHeader } from '../components/common/ScreenHeader'
 import { serviceCategoryLabels, serviceTypes } from '../mocks/data'
 import { colors } from '../theme/colors'
 

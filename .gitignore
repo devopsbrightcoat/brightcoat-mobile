@@ -1,3 +1,8 @@
+# react-native-config — credenciales reales, no se suben. .env.example sí
+# queda versionado como plantilla.
+.env
+.env.*.local
+
 # OSX
 #
 .DS_Store

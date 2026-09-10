@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
-import { Panel } from '../../components/Panel'
+import { Panel } from '../../components/common/Panel'
 import { currency, employees, services } from '../../mocks/data'
 import { colors } from '../../theme/colors'
 

@@ -3,11 +3,11 @@ import { DrawerActions, useNavigation } from '@react-navigation/native'
 import { Building2, ClipboardList, TrendingDown, TrendingUp } from 'lucide-react-native'
 import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { LineChart } from 'react-native-chart-kit'
-import { MockBanner } from '../components/MockBanner'
-import { Panel } from '../components/Panel'
-import { ScreenHeader } from '../components/ScreenHeader'
-import { StatCard } from '../components/StatCard'
-import { StatusPill } from '../components/StatusPill'
+import { MockBanner } from '../components/common/MockBanner'
+import { Panel } from '../components/common/Panel'
+import { ScreenHeader } from '../components/common/ScreenHeader'
+import { StatCard } from '../components/common/StatCard'
+import { StatusPill } from '../components/common/StatusPill'
 import {
   currency,
   employees,
