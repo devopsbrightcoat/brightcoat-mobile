@@ -4,9 +4,13 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { ActivityIndicator, StyleSheet, View } from 'react-native'
 import { useAuth } from '../auth/AuthProvider'
 import { colors } from '../theme/colors'
-import type { Property, Schedule } from '../types'
+import type { Expense, PayrollEntry, Property, Schedule } from '../types'
+import { AddExpenseScreen } from '../screens/AddExpenseScreen'
+import { AddPayrollEntryScreen } from '../screens/AddPayrollEntryScreen'
 import { AddPropertyScreen } from '../screens/AddPropertyScreen'
 import { AddScheduleScreen } from '../screens/AddScheduleScreen'
+import { EditExpenseScreen } from '../screens/EditExpenseScreen'
+import { EditPayrollEntryScreen } from '../screens/EditPayrollEntryScreen'
 import { EditPropertyScreen } from '../screens/EditPropertyScreen'
 import { EditScheduleScreen } from '../screens/EditScheduleScreen'
 import { LoginScreen } from '../screens/LoginScreen'
@@ -26,6 +30,10 @@ export type RootStackParamList = {
   EditProperty: { property: Property }
   AddSchedule: { defaultDate: string }
   EditSchedule: { schedule: Schedule }
+  AddExpense: undefined
+  EditExpense: { expense: Expense }
+  AddPayrollEntry: undefined
+  EditPayrollEntry: { entry: PayrollEntry }
   FinancieroPropiedad: undefined
   GastosCategoria: undefined
   CobrosPendientes: undefined
@@ -80,6 +88,18 @@ export const RootNavigator = () => {
           <Stack.Screen name="EditProperty" component={EditPropertyScreen} options={{ title: 'Editar propiedad' }} />
           <Stack.Screen name="AddSchedule" component={AddScheduleScreen} options={{ title: 'Agregar horario' }} />
           <Stack.Screen name="EditSchedule" component={EditScheduleScreen} options={{ title: 'Editar horario' }} />
+          <Stack.Screen name="AddExpense" component={AddExpenseScreen} options={{ title: 'Agregar gasto' }} />
+          <Stack.Screen name="EditExpense" component={EditExpenseScreen} options={{ title: 'Editar gasto' }} />
+          <Stack.Screen
+            name="AddPayrollEntry"
+            component={AddPayrollEntryScreen}
+            options={{ title: 'Agregar planilla' }}
+          />
+          <Stack.Screen
+            name="EditPayrollEntry"
+            component={EditPayrollEntryScreen}
+            options={{ title: 'Editar planilla' }}
+          />
           <Stack.Screen
             name="FinancieroPropiedad"
             component={FinancieroPropiedadScreen}

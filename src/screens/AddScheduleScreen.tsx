@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import { DatePicker } from '../components/common/DatePicker'
 import { FormField } from '../components/common/FormField'
 import { InlineSelect } from '../components/common/InlineSelect'
 import { TimePicker } from '../components/common/TimePicker'
@@ -152,14 +153,7 @@ export const AddScheduleScreen = () => {
               />
             </View>
 
-            <FormField
-              label="Fecha (AAAA-MM-DD)"
-              value={date}
-              onChangeText={setDate}
-              placeholder="2026-08-28"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <DatePicker label="Fecha" value={date} onChange={setDate} />
 
             <View style={styles.linesSection}>
               <View style={styles.linesHeader}>

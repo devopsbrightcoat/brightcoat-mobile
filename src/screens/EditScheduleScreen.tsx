@@ -3,6 +3,7 @@ import { useNavigation, useRoute } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { RouteProp } from '@react-navigation/native'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { DatePicker } from '../components/common/DatePicker'
 import { FormField } from '../components/common/FormField'
 import { InlineSelect } from '../components/common/InlineSelect'
 import { TimePicker } from '../components/common/TimePicker'
@@ -123,14 +124,7 @@ export const EditScheduleScreen = () => {
               />
             </View>
 
-            <FormField
-              label="Fecha (AAAA-MM-DD)"
-              value={date}
-              onChangeText={setDate}
-              placeholder="2026-08-28"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <DatePicker label="Fecha" value={date} onChange={setDate} />
 
             <FormField label="Unidad (ej. L303)" value={unitLabel} onChangeText={setUnitLabel} placeholder="L303" />
 
