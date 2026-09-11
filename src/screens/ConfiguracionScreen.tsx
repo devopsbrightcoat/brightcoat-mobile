@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Plus, Trash2 } from 'lucide-react-native'
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { ConfirmModal } from '../components/common/ConfirmModal'
 import { FormField } from '../components/common/FormField'
 import { Panel } from '../components/common/Panel'
@@ -47,10 +47,13 @@ export const ConfiguracionScreen = () => {
   const [refreshKey, setRefreshKey] = useState(0)
   const [deletingServiceType, setDeletingServiceType] = useState<ServiceType | null>(null)
 
-  const { data: serviceTypes, loading: loadingServiceTypes, error: errorServiceTypes } = useSupabaseQuery(
-    fetchServiceTypes,
-    [refreshKey],
-  )
+  const {
+    data: serviceTypes,
+    loading: loadingServiceTypes,
+    error: errorServiceTypes,
+    refreshing: refreshingServiceTypes,
+    refetch: refetchServiceTypes,
+  } = useSupabaseQuery(fetchServiceTypes, [refreshKey])
 
   useFocusEffect(
     useCallback(() => {
@@ -364,7 +367,17 @@ export const ConfiguracionScreen = () => {
           </View>
         </ScrollView>
       ) : (
-        <ScrollView contentContainerStyle={styles.scroll}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshingServiceTypes}
+              onRefresh={refetchServiceTypes}
+              tintColor={colors.gold400}
+              colors={[colors.gold400]}
+            />
+          }
+        >
           <Text style={styles.sectionTitle}>Catálogo de tipos de servicio</Text>
 
           {loadingServiceTypes ? (

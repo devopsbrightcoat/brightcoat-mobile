@@ -17,6 +17,7 @@ type ScheduleDetailModalProps = {
   propertyMap: Map<string, string>
   serviceTypeMap: Map<string, string>
   employeeMap: Map<string, string>
+  allSchedules: Schedule[]
   onClose: () => void
 }
 
@@ -31,8 +32,14 @@ export const ScheduleDetailModal = ({
   propertyMap,
   serviceTypeMap,
   employeeMap,
+  allSchedules,
   onClose,
 }: ScheduleDetailModalProps) => {
+  const rescheduledTo = schedule?.rescheduledToId
+    ? allSchedules.find((s) => s.id === schedule.rescheduledToId)
+    : undefined
+  const rescheduledFrom = schedule ? allSchedules.find((s) => s.rescheduledToId === schedule.id) : undefined
+
   return (
     <Modal open={schedule !== null} onClose={onClose} title="Detalle del horario">
       {schedule ? (
@@ -55,6 +62,16 @@ export const ScheduleDetailModal = ({
           <Field label="Estatus">
             <StatusPill status={schedule.status} />
           </Field>
+          {rescheduledTo ? (
+            <Field label="Reagendado para">
+              <Text style={styles.fieldValueText}>{rescheduledTo.scheduledDate}</Text>
+            </Field>
+          ) : null}
+          {rescheduledFrom ? (
+            <Field label="Reagendado desde">
+              <Text style={styles.fieldValueText}>{rescheduledFrom.scheduledDate}</Text>
+            </Field>
+          ) : null}
         </>
       ) : null}
     </Modal>

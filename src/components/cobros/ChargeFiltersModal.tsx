@@ -70,7 +70,6 @@ export const ChargeFiltersModal = ({
         searchPlaceholder="Buscar propiedad..."
         open={openField === 'property'}
         onOpenChange={(next) => setOpenField(next ? 'property' : null)}
-        insideModal
       />
 
       <InlineSelect
@@ -81,7 +80,6 @@ export const ChargeFiltersModal = ({
         searchPlaceholder="Buscar servicio..."
         open={openField === 'serviceType'}
         onOpenChange={(next) => setOpenField(next ? 'serviceType' : null)}
-        insideModal
       />
 
       <TouchableOpacity

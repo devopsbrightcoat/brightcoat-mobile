@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react'
 import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Plus, Search, Trash2 } from 'lucide-react-native'
-import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { ConfirmModal } from '../components/common/ConfirmModal'
 import { Panel } from '../components/common/Panel'
 import { ScreenHeader } from '../components/common/ScreenHeader'
@@ -26,7 +26,7 @@ export const PropiedadesScreen = () => {
   const [searchText, setSearchText] = useState('')
   const [deletingProperty, setDeletingProperty] = useState<Property | null>(null)
 
-  const { data: properties, loading, error } = useSupabaseQuery(fetchProperties, [refreshKey])
+  const { data: properties, loading, error, refreshing, refetch } = useSupabaseQuery(fetchProperties, [refreshKey])
 
   // Al volver de Agregar/Editar propiedad, refresca la lista — mismo efecto
   // que el `onSaved={() => setRefreshKey((k) => k + 1)}` de la web, pero
@@ -110,6 +110,9 @@ export const PropiedadesScreen = () => {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={refetch} tintColor={colors.gold400} colors={[colors.gold400]} />
+          }
           ListHeaderComponent={
             <Text style={styles.count}>
               {properties?.length ?? 0} propiedades registradas

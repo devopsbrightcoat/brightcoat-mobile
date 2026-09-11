@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { Clock, DollarSign, Filter, Search } from 'lucide-react-native'
-import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { ChargeDetailModal } from '../../components/cobros/ChargeDetailModal'
 import { ChargeFiltersModal } from '../../components/cobros/ChargeFiltersModal'
 import { ChargeInvoiceModal } from '../../components/cobros/ChargeInvoiceModal'
@@ -36,9 +36,25 @@ export const CobrosScreen = () => {
   const [detailCharge, setDetailCharge] = useState<Charge | null>(null)
   const [invoiceCharge, setInvoiceCharge] = useState<Charge | null>(null)
 
-  const { data: charges, loading: loadingCharges, error } = useSupabaseQuery(fetchCharges, [refreshKey])
-  const { data: properties, loading: loadingProperties } = useSupabaseQuery(fetchProperties, [refreshKey])
-  const { data: serviceTypes, loading: loadingServiceTypes } = useSupabaseQuery(fetchServiceTypes, [refreshKey])
+  const {
+    data: charges,
+    loading: loadingCharges,
+    error,
+    refreshing: refreshingCharges,
+    refetch: refetchCharges,
+  } = useSupabaseQuery(fetchCharges, [refreshKey])
+  const {
+    data: properties,
+    loading: loadingProperties,
+    refreshing: refreshingProperties,
+    refetch: refetchProperties,
+  } = useSupabaseQuery(fetchProperties, [refreshKey])
+  const {
+    data: serviceTypes,
+    loading: loadingServiceTypes,
+    refreshing: refreshingServiceTypes,
+    refetch: refetchServiceTypes,
+  } = useSupabaseQuery(fetchServiceTypes, [refreshKey])
 
   const propertyMap = useMemo(() => new Map((properties ?? []).map((p) => [p.id, p.name])), [properties])
   const serviceTypeMap = useMemo(() => new Map((serviceTypes ?? []).map((t) => [t.id, t.name])), [serviceTypes])
@@ -67,6 +83,12 @@ export const CobrosScreen = () => {
   const totalPending = (charges ?? []).filter((c) => c.status === 'pending').reduce((sum, c) => sum + c.amount, 0)
 
   const loading = loadingCharges || loadingProperties || loadingServiceTypes
+  const refreshing = refreshingCharges || refreshingProperties || refreshingServiceTypes
+  const handleRefresh = () => {
+    refetchCharges()
+    refetchProperties()
+    refetchServiceTypes()
+  }
 
   const renderItem = ({ item }: { item: Charge }) => (
     <TouchableOpacity activeOpacity={0.75} onPress={() => setDetailCharge(item)}>
@@ -138,6 +160,9 @@ export const CobrosScreen = () => {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.gold400} colors={[colors.gold400]} />
+          }
           ListEmptyComponent={
             <Text style={styles.emptyText}>
               {activeFilterCount > 0 || searchText

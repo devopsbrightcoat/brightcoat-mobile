@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { Plus, X } from 'lucide-react-native'
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { DatePicker } from '../common/DatePicker'
 import { Modal } from '../common/Modal'
-import { createScheduleCharge, updateScheduleStatus } from '../../lib/api'
+import { createScheduleCharge, rescheduleSchedule, updateScheduleStatus } from '../../lib/api'
 import { getErrorMessage } from '../../lib/errors'
 import { colors, statusColors, statusLabels } from '../../theme/colors'
 import type { Schedule, ScheduleStatus } from '../../types'
 
-const STATUS_OPTIONS: ScheduleStatus[] = ['pending', 'in_progress', 'delivered', 'cancelled']
+const STATUS_OPTIONS: ScheduleStatus[] = ['pending', 'in_progress', 'delivered', 'cancelled', 'rescheduled']
 
 type ExtraLine = { key: number; description: string; amount: string }
 
@@ -24,10 +25,11 @@ type ScheduleActionModalProps = {
 // + notas + extras), igual que ops-web ScheduleActionModal.tsx: un horario
 // entregado siempre necesita su cobro asociado en `charges`.
 export const ScheduleActionModal = ({ schedule, onClose, onSaved }: ScheduleActionModalProps) => {
-  const [step, setStep] = useState<'status' | 'charge'>('status')
+  const [step, setStep] = useState<'status' | 'charge' | 'reschedule'>('status')
   const [totalCost, setTotalCost] = useState('')
   const [notes, setNotes] = useState('')
   const [extras, setExtras] = useState<ExtraLine[]>([])
+  const [newDate, setNewDate] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -36,6 +38,7 @@ export const ScheduleActionModal = ({ schedule, onClose, onSaved }: ScheduleActi
     setTotalCost('')
     setNotes('')
     setExtras([])
+    setNewDate('')
     setError(null)
   }, [schedule])
 
@@ -43,6 +46,10 @@ export const ScheduleActionModal = ({ schedule, onClose, onSaved }: ScheduleActi
     if (!schedule) return
     if (status === 'delivered') {
       setStep('charge')
+      return
+    }
+    if (status === 'rescheduled') {
+      setStep('reschedule')
       return
     }
     setSaving(true)
@@ -98,6 +105,53 @@ export const ScheduleActionModal = ({ schedule, onClose, onSaved }: ScheduleActi
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleReschedule = async () => {
+    if (!schedule) return
+    if (!newDate) {
+      setError('Selecciona la nueva fecha.')
+      return
+    }
+    setSaving(true)
+    setError(null)
+    try {
+      await rescheduleSchedule(schedule.id, newDate)
+      onSaved()
+      onClose()
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo reagendar el horario.'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (step === 'reschedule') {
+    return (
+      <Modal open={schedule !== null} onClose={onClose} title="Reagendar horario">
+        <DatePicker label="Nueva fecha" value={newDate} onChange={setNewDate} />
+
+        <Text style={styles.rescheduleNote}>
+          El horario actual queda marcado como "Reagendado" y bloqueado (no se puede editar, eliminar ni volver a cambiar de estatus); se crea un horario nuevo con la fecha elegida.
+        </Text>
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        <View style={styles.actionsRow}>
+          <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.7} onPress={() => setStep('status')}>
+            <Text style={styles.secondaryButtonText}>Atrás</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.primaryButton, saving && styles.buttonDisabled]}
+            activeOpacity={0.85}
+            disabled={saving}
+            onPress={handleReschedule}
+          >
+            <Text style={styles.primaryButtonText}>{saving ? 'Guardando…' : 'Confirmar reagendo'}</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+    )
   }
 
   if (step === 'charge') {
@@ -261,6 +315,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 12,
     color: colors.ink500,
+  },
+  rescheduleNote: {
+    fontSize: 12,
+    color: colors.ink500,
+    lineHeight: 17,
   },
   extrasList: {
     marginTop: 10,

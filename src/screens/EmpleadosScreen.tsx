@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react'
 import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Plus, Search, Trash2 } from 'lucide-react-native'
-import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { ConfirmModal } from '../components/common/ConfirmModal'
 import { Panel } from '../components/common/Panel'
 import { ScreenHeader } from '../components/common/ScreenHeader'
@@ -25,7 +25,7 @@ export const EmpleadosScreen = () => {
   const [searchText, setSearchText] = useState('')
   const [deletingEmployee, setDeletingEmployee] = useState<Employee | null>(null)
 
-  const { data: employees, loading, error } = useSupabaseQuery(fetchEmployees, [refreshKey])
+  const { data: employees, loading, error, refreshing, refetch } = useSupabaseQuery(fetchEmployees, [refreshKey])
 
   useFocusEffect(
     useCallback(() => {
@@ -127,6 +127,9 @@ export const EmpleadosScreen = () => {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={refetch} tintColor={colors.gold400} colors={[colors.gold400]} />
+          }
           ListHeaderComponent={
             <Text style={styles.count}>{employees?.length ?? 0} empleados registrados</Text>
           }

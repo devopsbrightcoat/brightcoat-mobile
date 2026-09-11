@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { DollarSign, Filter, Search } from 'lucide-react-native'
-import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { ExpenseDetailModal } from '../../components/gastos/ExpenseDetailModal'
 import { ExpenseFiltersModal } from '../../components/gastos/ExpenseFiltersModal'
 import { Panel } from '../../components/common/Panel'
@@ -38,7 +38,7 @@ export const GastosScreen = () => {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [detailExpense, setDetailExpense] = useState<Expense | null>(null)
 
-  const { data: expenses, loading, error } = useSupabaseQuery(fetchExpenses, [refreshKey])
+  const { data: expenses, loading, error, refreshing, refetch } = useSupabaseQuery(fetchExpenses, [refreshKey])
 
   // Al volver de Agregar/Editar gasto, refresca la lista — mismo efecto que
   // PropiedadesScreen.
@@ -131,6 +131,9 @@ export const GastosScreen = () => {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={refetch} tintColor={colors.gold400} colors={[colors.gold400]} />
+          }
           ListEmptyComponent={
             <Text style={styles.emptyText}>
               {activeFilterCount > 0 || searchText

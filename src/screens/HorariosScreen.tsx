@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Dimensions,
   FlatList,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -70,10 +71,39 @@ export const HorariosScreen = () => {
     }, []),
   )
 
-  const { data: schedules, loading, error } = useSupabaseQuery(fetchSchedules, [refreshKey])
-  const { data: properties } = useSupabaseQuery(fetchProperties, [refreshKey])
-  const { data: serviceTypes } = useSupabaseQuery(fetchServiceTypes, [refreshKey])
-  const { data: employees } = useSupabaseQuery(fetchEmployees, [refreshKey])
+  const {
+    data: schedules,
+    loading,
+    error,
+    refreshing: refreshingSchedules,
+    refetch: refetchSchedules,
+  } = useSupabaseQuery(fetchSchedules, [refreshKey])
+  const {
+    data: properties,
+    refreshing: refreshingProperties,
+    refetch: refetchProperties,
+  } = useSupabaseQuery(fetchProperties, [refreshKey])
+  const {
+    data: serviceTypes,
+    refreshing: refreshingServiceTypes,
+    refetch: refetchServiceTypes,
+  } = useSupabaseQuery(fetchServiceTypes, [refreshKey])
+  const {
+    data: employees,
+    refreshing: refreshingEmployees,
+    refetch: refetchEmployees,
+  } = useSupabaseQuery(fetchEmployees, [refreshKey])
+
+  // Arrastrar hacia abajo en cualquier parte de la agenda recarga los 4
+  // fetches a la vez (horarios + propiedades/servicios/empleados usados
+  // para los nombres) — mismo criterio que Cobros/Planillas.
+  const refreshing = refreshingSchedules || refreshingProperties || refreshingServiceTypes || refreshingEmployees
+  const handleRefresh = () => {
+    refetchSchedules()
+    refetchProperties()
+    refetchServiceTypes()
+    refetchEmployees()
+  }
 
   const [viewYear, setViewYear] = useState(today.getFullYear())
   const [viewMonth, setViewMonth] = useState(today.getMonth())
@@ -171,7 +201,12 @@ export const HorariosScreen = () => {
         }
       />
 
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.gold400} colors={[colors.gold400]} />
+        }
+      >
         <View style={styles.monthNav}>
           <TouchableOpacity style={styles.monthButton} activeOpacity={0.7} onPress={() => changeMonth(-1)}>
             <ChevronLeft size={16} color={colors.ink300} />
@@ -263,7 +298,7 @@ export const HorariosScreen = () => {
           ) : (
             <View style={styles.list}>
               {dayRows.map((row) => {
-                const delivered = row.status === 'delivered'
+                const locked = row.status === 'delivered' || row.status === 'rescheduled'
                 return (
                   <TouchableOpacity key={row.id} activeOpacity={0.8} onPress={() => setDetailSchedule(row)}>
                     <Panel style={styles.card}>
@@ -273,10 +308,10 @@ export const HorariosScreen = () => {
                           {row.unitLabel ? ` · ${row.unitLabel}` : ''}
                         </Text>
                         <TouchableOpacity
-                          disabled={delivered}
+                          disabled={locked}
                           activeOpacity={0.7}
                           onPress={() => setActionSchedule(row)}
-                          style={delivered ? styles.statusButtonDisabled : undefined}
+                          style={locked ? styles.statusButtonDisabled : undefined}
                         >
                           <StatusPill status={row.status} />
                         </TouchableOpacity>
@@ -288,18 +323,18 @@ export const HorariosScreen = () => {
                         </Text>
                         <View style={styles.footerActions}>
                           <TouchableOpacity
-                            disabled={delivered}
+                            disabled={locked}
                             activeOpacity={0.7}
-                            style={[styles.editButton, delivered && styles.editButtonDisabled]}
+                            style={[styles.editButton, locked && styles.editButtonDisabled]}
                             onPress={() => navigation.navigate('EditSchedule', { schedule: row })}
                           >
                             <Pencil size={12} color={colors.ink300} />
                             <Text style={styles.editButtonText}>Editar</Text>
                           </TouchableOpacity>
                           <TouchableOpacity
-                            disabled={delivered}
+                            disabled={locked}
                             activeOpacity={0.7}
-                            style={[styles.deleteButton, delivered && styles.editButtonDisabled]}
+                            style={[styles.deleteButton, locked && styles.editButtonDisabled]}
                             onPress={() => setDeletingSchedule(row)}
                           >
                             <Trash2 size={12} color={colors.rose} />
@@ -327,6 +362,7 @@ export const HorariosScreen = () => {
         propertyMap={propertyMap}
         serviceTypeMap={serviceTypeMap}
         employeeMap={employeeMap}
+        allSchedules={schedules ?? []}
         onClose={() => setDetailSchedule(null)}
       />
 

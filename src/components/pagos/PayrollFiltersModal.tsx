@@ -60,7 +60,6 @@ export const PayrollFiltersModal = ({
         searchPlaceholder="Buscar propiedad..."
         open={openField === 'property'}
         onOpenChange={(next) => setOpenField(next ? 'property' : null)}
-        insideModal
       />
 
       <InlineSelect
@@ -71,7 +70,6 @@ export const PayrollFiltersModal = ({
         searchPlaceholder="Buscar empleado..."
         open={openField === 'employee'}
         onOpenChange={(next) => setOpenField(next ? 'employee' : null)}
-        insideModal
       />
 
       <View style={styles.row}>

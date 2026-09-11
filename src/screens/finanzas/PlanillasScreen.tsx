@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Filter, Search, TrendingUp, Wallet } from 'lucide-react-native'
-import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { PayrollEntryDetailModal } from '../../components/pagos/PayrollEntryDetailModal'
 import { PayrollFiltersModal } from '../../components/pagos/PayrollFiltersModal'
 import { Panel } from '../../components/common/Panel'
@@ -39,9 +39,25 @@ export const PlanillasScreen = () => {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [detailEntry, setDetailEntry] = useState<PayrollEntry | null>(null)
 
-  const { data: entries, loading: loadingEntries, error } = useSupabaseQuery(fetchPayrollEntries, [refreshKey])
-  const { data: properties, loading: loadingProperties } = useSupabaseQuery(fetchProperties, [refreshKey])
-  const { data: employees, loading: loadingEmployees } = useSupabaseQuery(fetchEmployees, [refreshKey])
+  const {
+    data: entries,
+    loading: loadingEntries,
+    error,
+    refreshing: refreshingEntries,
+    refetch: refetchEntries,
+  } = useSupabaseQuery(fetchPayrollEntries, [refreshKey])
+  const {
+    data: properties,
+    loading: loadingProperties,
+    refreshing: refreshingProperties,
+    refetch: refetchProperties,
+  } = useSupabaseQuery(fetchProperties, [refreshKey])
+  const {
+    data: employees,
+    loading: loadingEmployees,
+    refreshing: refreshingEmployees,
+    refetch: refetchEmployees,
+  } = useSupabaseQuery(fetchEmployees, [refreshKey])
 
   const propertyMap = useMemo(() => new Map((properties ?? []).map((p) => [p.id, p.name])), [properties])
   const employeeMap = useMemo(() => new Map((employees ?? []).map((e) => [e.id, e.name])), [employees])
@@ -84,6 +100,12 @@ export const PlanillasScreen = () => {
   }, [filtered])
 
   const loading = loadingEntries || loadingProperties || loadingEmployees
+  const refreshing = refreshingEntries || refreshingProperties || refreshingEmployees
+  const handleRefresh = () => {
+    refetchEntries()
+    refetchProperties()
+    refetchEmployees()
+  }
 
   const renderItem = ({ item }: { item: PayrollEntry }) => {
     const sales = item.items.reduce((sum, i) => sum + i.amount, 0)
@@ -160,6 +182,9 @@ export const PlanillasScreen = () => {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.gold400} colors={[colors.gold400]} />
+          }
           ListEmptyComponent={
             <Text style={styles.emptyText}>
               {activeFilterCount > 0 || searchText

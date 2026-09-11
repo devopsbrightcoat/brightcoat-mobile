@@ -10,10 +10,11 @@ type Option = {
   label: string
 }
 
-// Alto por defecto de la lista (modo "default", flotando pegado al campo —
-// en modo "modal" la librería ignora este prop y usa el alto disponible de
-// pantalla, ver `insideModal`): 40% del alto de pantalla, para que se vea
-// como una lista de verdad y no una ranurita con 1-2 opciones visibles.
+// Alto de la lista de opciones: la librería ignora este prop en mode="modal"
+// (arma el panel con otro layout que no lo toma en cuenta) pero igual lo
+// forzamos a mano vía containerStyle más abajo — 40% del alto de pantalla,
+// para que se vea como una lista de verdad y no una ranurita con 1-2
+// opciones visibles.
 const DEFAULT_MAX_LIST_HEIGHT = Math.round(Dimensions.get('window').height * 0.4)
 
 type InlineSelectProps = {
@@ -33,14 +34,6 @@ type InlineSelectProps = {
   // el select se maneja solo, como cualquier Dropdown normal.
   open?: boolean
   onOpenChange?: (open: boolean) => void
-  // Cuando este select vive DENTRO de otro modal (ej. ScheduleFiltersModal,
-  // que ya es su propio <Modal>), el panel de opciones se muestra centrado
-  // en pantalla (mode="modal" de la librería) en vez de flotar pegado al
-  // campo — evita un bug conocido de react-native-element-dropdown donde
-  // la posición del panel queda desalineada cuando el dropdown está
-  // anidado dentro de otro Modal (ver comentario más abajo). Fuera de un
-  // modal (formularios de Agregar/Editar) no hace falta.
-  insideModal?: boolean
 }
 
 // Select con buscador y panel flotante, usando react-native-element-dropdown
@@ -54,6 +47,13 @@ type InlineSelectProps = {
 // adentro de un ScrollView) con una lista virtualizada (FlatList) que vive
 // en su propio Modal — sin depender de trucos de zIndex ni de cálculos de
 // alto a mano.
+//
+// El panel de opciones siempre se abre en mode="modal" de la librería: fijo
+// y centrado en pantalla, en vez de flotar pegado al campo que lo abrió.
+// Antes ese modo solo se usaba cuando el select vivía dentro de otro Modal
+// (prop `insideModal`, ya no existe) para evitar un bug de posición del
+// dropdown anidado — David pidió que todos los selects de la app se
+// comporten así siempre.
 //
 // SearchableSelect.tsx sigue siendo el picker de pantalla completa que se
 // usaba antes de InlineSelect — ya no se usa en Horarios pero se deja por si
@@ -74,7 +74,6 @@ export const InlineSelect = ({
   maxListHeight = DEFAULT_MAX_LIST_HEIGHT,
   open: openProp,
   onOpenChange,
-  insideModal = false,
 }: InlineSelectProps) => {
   const dropdownRef = useRef<IDropdownRef>(null)
   const [searchValue, setSearchValue] = useState('')
@@ -111,17 +110,16 @@ export const InlineSelect = ({
       // opciones (ej. 2 empleados de prueba) se achicaba al tamaño de su
       // contenido y perdía el buscador visualmente (quedaba muy apretado).
       minHeight={maxListHeight}
-      mode={insideModal ? 'modal' : 'default'}
+      mode="modal"
       onFocus={() => onOpenChange?.(true)}
       onBlur={() => {
         setSearchValue('')
         onOpenChange?.(false)
       }}
       style={styles.field}
-      // En mode="modal" (insideModal) la librería IGNORA maxHeight/minHeight
-      // — ese modo arma el panel con otro layout interno que no los toma en
-      // cuenta — así que además forzamos el alto acá, en containerStyle
-      // (que sí se aplica siempre, en los dos modos).
+      // mode="modal" IGNORA maxHeight/minHeight — arma el panel con otro
+      // layout interno que no los toma en cuenta — así que además forzamos
+      // el alto acá, en containerStyle.
       containerStyle={[styles.container, { height: maxListHeight }]}
       placeholderStyle={styles.placeholderText}
       selectedTextStyle={styles.fieldText}
