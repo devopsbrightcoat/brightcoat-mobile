@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { ChevronLeft, ChevronRight, Filter, Pencil, Plus } from 'lucide-react-native'
+import { ChevronLeft, ChevronRight, Filter, Pencil, Plus, Trash2 } from 'lucide-react-native'
 import {
   ActivityIndicator,
   Dimensions,
@@ -12,18 +12,18 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import { ConfirmModal } from '../components/common/ConfirmModal'
 import { Panel } from '../components/common/Panel'
 import { ScreenHeader } from '../components/common/ScreenHeader'
 import { StatusPill } from '../components/common/StatusPill'
 import { ScheduleActionModal } from '../components/horarios/ScheduleActionModal'
 import { ScheduleDetailModal } from '../components/horarios/ScheduleDetailModal'
 import { ScheduleFiltersModal } from '../components/horarios/ScheduleFiltersModal'
-import { fetchEmployees, fetchProperties, fetchSchedules, fetchServiceTypes } from '../lib/api'
+import { deleteSchedule, fetchEmployees, fetchProperties, fetchSchedules, fetchServiceTypes } from '../lib/api'
 import {
   DAY_LABELS,
   addDays,
   formatMonthLabel,
-  formatTime,
   formatWeekLabel,
   getWeeksInMonth,
   parseISODate,
@@ -84,6 +84,7 @@ export const HorariosScreen = () => {
 
   const [actionSchedule, setActionSchedule] = useState<Schedule | null>(null)
   const [detailSchedule, setDetailSchedule] = useState<Schedule | null>(null)
+  const [deletingSchedule, setDeletingSchedule] = useState<Schedule | null>(null)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [filterPropertyId, setFilterPropertyId] = useState('all')
   const [filterEmployeeId, setFilterEmployeeId] = useState('all')
@@ -144,8 +145,7 @@ export const HorariosScreen = () => {
       (schedules ?? [])
         .filter((s) => s.scheduledDate === selectedDateIso)
         .filter((s) => filterPropertyId === 'all' || s.propertyId === filterPropertyId)
-        .filter((s) => filterEmployeeId === 'all' || s.employeeId === filterEmployeeId)
-        .sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime)),
+        .filter((s) => filterEmployeeId === 'all' || s.employeeId === filterEmployeeId),
     [schedules, selectedDateIso, filterPropertyId, filterEmployeeId],
   )
 
@@ -284,17 +284,28 @@ export const HorariosScreen = () => {
                       <Text style={styles.cardSubtitle}>{serviceTypeMap.get(row.serviceTypeId) ?? '—'}</Text>
                       <View style={styles.cardFooter}>
                         <Text style={styles.cardMeta}>
-                          {employeeMap.get(row.employeeId) ?? '—'} · {formatTime(row.scheduledTime)}
+                          {employeeMap.get(row.employeeId) ?? '—'}
                         </Text>
-                        <TouchableOpacity
-                          disabled={delivered}
-                          activeOpacity={0.7}
-                          style={[styles.editButton, delivered && styles.editButtonDisabled]}
-                          onPress={() => navigation.navigate('EditSchedule', { schedule: row })}
-                        >
-                          <Pencil size={12} color={colors.ink300} />
-                          <Text style={styles.editButtonText}>Editar</Text>
-                        </TouchableOpacity>
+                        <View style={styles.footerActions}>
+                          <TouchableOpacity
+                            disabled={delivered}
+                            activeOpacity={0.7}
+                            style={[styles.editButton, delivered && styles.editButtonDisabled]}
+                            onPress={() => navigation.navigate('EditSchedule', { schedule: row })}
+                          >
+                            <Pencil size={12} color={colors.ink300} />
+                            <Text style={styles.editButtonText}>Editar</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            disabled={delivered}
+                            activeOpacity={0.7}
+                            style={[styles.deleteButton, delivered && styles.editButtonDisabled]}
+                            onPress={() => setDeletingSchedule(row)}
+                          >
+                            <Trash2 size={12} color={colors.rose} />
+                            <Text style={styles.deleteButtonText}>Eliminar</Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     </Panel>
                   </TouchableOpacity>
@@ -328,6 +339,24 @@ export const HorariosScreen = () => {
         employeeId={filterEmployeeId}
         onPropertyChange={setFilterPropertyId}
         onEmployeeChange={setFilterEmployeeId}
+      />
+
+      <ConfirmModal
+        open={deletingSchedule !== null}
+        onClose={() => setDeletingSchedule(null)}
+        title="Eliminar horario"
+        message={
+          deletingSchedule
+            ? `¿Eliminar el horario de "${propertyMap.get(deletingSchedule.propertyId) ?? '—'}"${
+                deletingSchedule.unitLabel ? ` (${deletingSchedule.unitLabel})` : ''
+              } del ${deletingSchedule.scheduledDate}? Esta acción no se puede deshacer.`
+            : ''
+        }
+        onConfirm={async () => {
+          if (!deletingSchedule) return
+          await deleteSchedule(deletingSchedule.id)
+          setRefreshKey((k) => k + 1)
+        }}
       />
     </View>
   )
@@ -532,6 +561,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.ink500,
   },
+  footerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   editButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -549,5 +583,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     color: colors.ink300,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  deleteButtonText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: colors.rose,
   },
 })

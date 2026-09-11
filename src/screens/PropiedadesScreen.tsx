@@ -1,12 +1,13 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Plus, Search } from 'lucide-react-native'
+import { Plus, Search, Trash2 } from 'lucide-react-native'
 import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { ConfirmModal } from '../components/common/ConfirmModal'
 import { Panel } from '../components/common/Panel'
 import { ScreenHeader } from '../components/common/ScreenHeader'
 import { StatusPill } from '../components/common/StatusPill'
-import { fetchProperties } from '../lib/api'
+import { deleteProperty, fetchProperties } from '../lib/api'
 import { clientTypeLabels } from '../lib/propertyOptions'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
@@ -23,6 +24,7 @@ export const PropiedadesScreen = () => {
   const navigation = useNavigation<Nav>()
   const [refreshKey, setRefreshKey] = useState(0)
   const [searchText, setSearchText] = useState('')
+  const [deletingProperty, setDeletingProperty] = useState<Property | null>(null)
 
   const { data: properties, loading, error } = useSupabaseQuery(fetchProperties, [refreshKey])
 
@@ -48,7 +50,15 @@ export const PropiedadesScreen = () => {
           <Text style={styles.cardTitle} numberOfLines={1}>
             {item.name}
           </Text>
-          <StatusPill status={item.status} />
+          <View style={styles.headerActions}>
+            <StatusPill status={item.status} />
+            <TouchableOpacity
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              onPress={() => setDeletingProperty(item)}
+            >
+              <Trash2 size={15} color={colors.rose} />
+            </TouchableOpacity>
+          </View>
         </View>
         {item.address ? <Text style={styles.cardSubtitle}>{item.address}</Text> : null}
         <View style={styles.cardFooter}>
@@ -112,6 +122,18 @@ export const PropiedadesScreen = () => {
           }
         />
       )}
+
+      <ConfirmModal
+        open={deletingProperty !== null}
+        onClose={() => setDeletingProperty(null)}
+        title="Eliminar propiedad"
+        message={`¿Eliminar "${deletingProperty?.name}"? Esta acción no se puede deshacer.`}
+        onConfirm={async () => {
+          if (!deletingProperty) return
+          await deleteProperty(deletingProperty.id)
+          setRefreshKey((k) => k + 1)
+        }}
+      />
     </View>
   )
 }
@@ -175,6 +197,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   cardTitle: {
     flex: 1,

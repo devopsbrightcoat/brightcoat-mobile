@@ -1741,7 +1741,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - RNGestureHandler (2.32.0):
+  - RNGestureHandler (3.2.1):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1762,6 +1762,7 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
+    - RNWorklets (>= 0.8.0)
     - Yoga
   - RNReanimated (4.6.0):
     - hermes-engine
@@ -2406,7 +2407,7 @@ SPEC CHECKSUMS:
   ReactCommon: 7d2d036b7250e66dce71d19f47160d4b31fbb92a
   ReactNativeDependencies: 94c922c39e0e6150ee9ad05e2ca1946e0ef55783
   RNDateTimePicker: ca05dd678bcb88fcf43fdda4398f2e0939f01e11
-  RNGestureHandler: f81b53c4931a0843df3ba61387b8132357a23e2c
+  RNGestureHandler: da48be88e9cc63a20f25d6b715e6acc93992c2dd
   RNReanimated: 7dde9b7b1c4eea6dc8edade25db1942593feb0ba
   RNScreens: 2b9596ab195e431f33241a94b71cfed0fcd63073
   RNSVG: df7b2c0679ac7b9a668af6c6b40e2c6cb4df88f5

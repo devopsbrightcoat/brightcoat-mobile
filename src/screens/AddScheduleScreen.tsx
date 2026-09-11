@@ -16,7 +16,6 @@ import {
 import { DatePicker } from '../components/common/DatePicker'
 import { FormField } from '../components/common/FormField'
 import { InlineSelect } from '../components/common/InlineSelect'
-import { TimePicker } from '../components/common/TimePicker'
 import { createSchedules, fetchEmployees, fetchProperties, fetchServiceTypes } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
@@ -30,18 +29,18 @@ type Line = {
   key: number
   unitLabel: string
   serviceTypeId: string
-  scheduledTime: string
 }
 
-const emptyLine = (key: number): Line => ({ key, unitLabel: '', serviceTypeId: '', scheduledTime: '' })
+const emptyLine = (key: number): Line => ({ key, unitLabel: '', serviceTypeId: '' })
 
 // Mismos campos y misma validación que ops-web AddScheduleModal.tsx, como
-// pantalla completa (no modal) — igual que AddPropertyScreen. Fecha y hora
-// son campos de texto simples (AAAA-MM-DD / HH:MM) en vez de un date/time
-// picker nativo: decisión explícita para el MVP de campo, evita sumar
+// pantalla completa (no modal) — igual que AddPropertyScreen. Fecha es un
+// campo de texto simple (AAAA-MM-DD) en vez de un date picker nativo:
+// decisión explícita para el MVP de campo, evita sumar
 // @react-native-community/datetimepicker (otra dependencia nativa y otro
-// rebuild) — ops-web usa <input type="date"/"time"> porque el navegador ya
-// trae ese picker gratis, acá no hay equivalente sin instalar algo nuevo.
+// rebuild) — ops-web usa <input type="date"> porque el navegador ya trae
+// ese picker gratis, acá no hay equivalente sin instalar algo nuevo. Ya no
+// se captura hora — David pidió quitarla, se agenda solo por día.
 //
 // Los selects de Propiedad/Empleado/Servicio usan InlineSelect
 // (react-native-element-dropdown por debajo) en vez de SearchableSelect
@@ -93,10 +92,6 @@ export const AddScheduleScreen = () => {
         setError('Cada unidad necesita un tipo de servicio.')
         return
       }
-      if (!line.scheduledTime.trim()) {
-        setError('Cada unidad necesita una hora (HH:MM).')
-        return
-      }
     }
 
     setSaving(true)
@@ -109,7 +104,6 @@ export const AddScheduleScreen = () => {
           scheduledDate: date.trim(),
           unitLabel: line.unitLabel,
           serviceTypeId: line.serviceTypeId,
-          scheduledTime: line.scheduledTime.trim(),
         })),
       )
       navigation.goBack()
@@ -194,11 +188,6 @@ export const AddScheduleScreen = () => {
                     />
                   </View>
 
-                  <TimePicker
-                    label="Hora"
-                    value={line.scheduledTime}
-                    onChange={(text) => updateLine(line.key, { scheduledTime: text })}
-                  />
                 </View>
               ))}
             </View>

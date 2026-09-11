@@ -1,12 +1,13 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Plus, Search } from 'lucide-react-native'
+import { Plus, Search, Trash2 } from 'lucide-react-native'
 import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { ConfirmModal } from '../components/common/ConfirmModal'
 import { Panel } from '../components/common/Panel'
 import { ScreenHeader } from '../components/common/ScreenHeader'
 import { StatusPill } from '../components/common/StatusPill'
-import { fetchEmployees } from '../lib/api'
+import { deleteEmployee, fetchEmployees } from '../lib/api'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import { colors } from '../theme/colors'
@@ -22,6 +23,7 @@ export const EmpleadosScreen = () => {
   const navigation = useNavigation<Nav>()
   const [refreshKey, setRefreshKey] = useState(0)
   const [searchText, setSearchText] = useState('')
+  const [deletingEmployee, setDeletingEmployee] = useState<Employee | null>(null)
 
   const { data: employees, loading, error } = useSupabaseQuery(fetchEmployees, [refreshKey])
 
@@ -49,7 +51,15 @@ export const EmpleadosScreen = () => {
               {item.role}
             </Text>
           </View>
-          <StatusPill status={item.status} />
+          <View style={styles.headerActions}>
+            <StatusPill status={item.status} />
+            <TouchableOpacity
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              onPress={() => setDeletingEmployee(item)}
+            >
+              <Trash2 size={15} color={colors.rose} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.cardBody}>
@@ -127,6 +137,18 @@ export const EmpleadosScreen = () => {
           }
         />
       )}
+
+      <ConfirmModal
+        open={deletingEmployee !== null}
+        onClose={() => setDeletingEmployee(null)}
+        title="Eliminar empleado"
+        message={`¿Eliminar a "${deletingEmployee?.name}"? Esta acción no se puede deshacer.`}
+        onConfirm={async () => {
+          if (!deletingEmployee) return
+          await deleteEmployee(deletingEmployee.id)
+          setRefreshKey((k) => k + 1)
+        }}
+      />
     </View>
   )
 }
@@ -190,6 +212,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 8,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   cardHeaderText: {
     flex: 1,

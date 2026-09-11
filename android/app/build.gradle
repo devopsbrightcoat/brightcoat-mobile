@@ -80,9 +80,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.brightcoatopsmobile"
+    namespace "com.brightcoat"
     defaultConfig {
-        applicationId "com.brightcoatopsmobile"
+        applicationId "com.brightcoat"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -113,6 +113,10 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+    implementation project(':react-native-gesture-handler')
+    implementation project(':react-native-safe-area-context')
+    implementation project(':react-native-screens')
+    implementation project(':react-native-svg')
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")

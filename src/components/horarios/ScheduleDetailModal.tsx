@@ -2,7 +2,6 @@ import React from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { Modal } from '../common/Modal'
 import { StatusPill } from '../common/StatusPill'
-import { formatTime } from '../../lib/scheduleDates'
 import { colors } from '../../theme/colors'
 import type { Schedule } from '../../types'
 
@@ -52,9 +51,6 @@ export const ScheduleDetailModal = ({
           </Field>
           <Field label="Fecha">
             <Text style={styles.fieldValueText}>{schedule.scheduledDate}</Text>
-          </Field>
-          <Field label="Horario">
-            <Text style={styles.fieldValueText}>{formatTime(schedule.scheduledTime)}</Text>
           </Field>
           <Field label="Estatus">
             <StatusPill status={schedule.status} />

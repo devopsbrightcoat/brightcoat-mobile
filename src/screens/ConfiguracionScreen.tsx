@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Plus } from 'lucide-react-native'
+import { Plus, Trash2 } from 'lucide-react-native'
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ConfirmModal } from '../components/common/ConfirmModal'
 import { FormField } from '../components/common/FormField'
 import { Panel } from '../components/common/Panel'
 import { ScreenHeader } from '../components/common/ScreenHeader'
 import { useAuth } from '../auth/AuthProvider'
-import { fetchCompanySettings, fetchServiceTypes, updateCompanySettings, updateOwnPassword, updateOwnProfile } from '../lib/api'
+import { deleteServiceType, fetchCompanySettings, fetchServiceTypes, updateCompanySettings, updateOwnPassword, updateOwnProfile } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import { serviceCategoryLabels } from '../lib/serviceTypeOptions'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
@@ -44,6 +45,7 @@ export const ConfiguracionScreen = () => {
   const isOwner = profile?.role === 'owner'
   const [tab, setTab] = useState<TabKey>('general')
   const [refreshKey, setRefreshKey] = useState(0)
+  const [deletingServiceType, setDeletingServiceType] = useState<ServiceType | null>(null)
 
   const { data: serviceTypes, loading: loadingServiceTypes, error: errorServiceTypes } = useSupabaseQuery(
     fetchServiceTypes,
@@ -385,7 +387,15 @@ export const ConfiguracionScreen = () => {
                     <Text style={styles.cardTitle} numberOfLines={1}>
                       {item.name}
                     </Text>
-                    <Text style={styles.cardMeta}>{serviceCategoryLabels[item.category]}</Text>
+                    <View style={styles.serviceRowActions}>
+                      <Text style={styles.cardMeta}>{serviceCategoryLabels[item.category]}</Text>
+                      <TouchableOpacity
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        onPress={() => setDeletingServiceType(item)}
+                      >
+                        <Trash2 size={15} color={colors.rose} />
+                      </TouchableOpacity>
+                    </View>
                   </Panel>
                 </TouchableOpacity>
               ))}
@@ -393,6 +403,18 @@ export const ConfiguracionScreen = () => {
           )}
         </ScrollView>
       )}
+
+      <ConfirmModal
+        open={deletingServiceType !== null}
+        onClose={() => setDeletingServiceType(null)}
+        title="Eliminar tipo de servicio"
+        message={`¿Eliminar "${deletingServiceType?.name}"? Esta acción no se puede deshacer.`}
+        onConfirm={async () => {
+          if (!deletingServiceType) return
+          await deleteServiceType(deletingServiceType.id)
+          setRefreshKey((k) => k + 1)
+        }}
+      />
     </View>
   )
 }
@@ -522,6 +544,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     color: colors.ink200,
+  },
+  serviceRowActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   cardMeta: {
     fontSize: 12,

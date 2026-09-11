@@ -1,4 +1,4 @@
-package com.brightcoatopsmobile
+package com.brightcoat
 
 import android.app.Application
 import com.facebook.react.PackageList

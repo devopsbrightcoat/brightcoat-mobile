@@ -81,7 +81,6 @@ export type ScheduleRow = {
   service_type_id: string
   employee_id: string
   scheduled_date: string
-  scheduled_time: string
   status: 'pending' | 'in_progress' | 'delivered' | 'cancelled'
 }
 

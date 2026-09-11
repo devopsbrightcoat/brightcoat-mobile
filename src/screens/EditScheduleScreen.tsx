@@ -6,7 +6,6 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, Touchable
 import { DatePicker } from '../components/common/DatePicker'
 import { FormField } from '../components/common/FormField'
 import { InlineSelect } from '../components/common/InlineSelect'
-import { TimePicker } from '../components/common/TimePicker'
 import { fetchEmployees, fetchProperties, fetchServiceTypes, updateSchedule } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
@@ -43,7 +42,6 @@ export const EditScheduleScreen = () => {
   const [date, setDate] = useState(schedule.scheduledDate)
   const [unitLabel, setUnitLabel] = useState(schedule.unitLabel ?? '')
   const [serviceTypeId, setServiceTypeId] = useState(schedule.serviceTypeId)
-  const [scheduledTime, setScheduledTime] = useState(schedule.scheduledTime)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [openField, setOpenField] = useState<string | null>(null)
@@ -69,10 +67,6 @@ export const EditScheduleScreen = () => {
       setError('Selecciona un tipo de servicio.')
       return
     }
-    if (!scheduledTime.trim()) {
-      setError('Escribe la hora (HH:MM).')
-      return
-    }
 
     setSaving(true)
     setError(null)
@@ -83,7 +77,6 @@ export const EditScheduleScreen = () => {
         scheduledDate: date.trim(),
         unitLabel,
         serviceTypeId,
-        scheduledTime: scheduledTime.trim(),
       })
       navigation.goBack()
     } catch (err) {
@@ -139,8 +132,6 @@ export const EditScheduleScreen = () => {
                 onOpenChange={(next) => setOpenField(next ? 'service' : null)}
               />
             </View>
-
-            <TimePicker label="Hora" value={scheduledTime} onChange={setScheduledTime} />
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
