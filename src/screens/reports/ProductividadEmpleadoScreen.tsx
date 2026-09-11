@@ -1,41 +1,91 @@
 import React, { useMemo } from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { DashboardPanel } from '../../components/dashboard/DashboardPanel'
 import { Panel } from '../../components/common/Panel'
-import { currency, employees, services } from '../../mocks/data'
+import { RankingBars } from '../../components/dashboard/RankingBars'
+import { StatusPill } from '../../components/common/StatusPill'
+import { fetchEmployees, fetchSchedules } from '../../lib/api'
+import { computeEmployeeActivity } from '../../lib/dashboardMetrics'
+import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import { colors } from '../../theme/colors'
 
+// Reportes › Actividad por empleado — "distribución de la carga de trabajo
+// entre empleados" (catálogo). A diferencia de la Productividad del
+// Dashboard (solo cuenta "delivered"), acá se cuenta todo lo asignado —
+// pendiente, en proceso y completado — porque la carga de trabajo incluye
+// lo que todavía no se termina.
 export const ProductividadEmpleadoScreen = () => {
-  const rows = useMemo(
-    () =>
-      employees
-        .map((employee) => {
-          const assigned = services.filter((s) => s.employeeId === employee.id)
-          return {
-            employee,
-            jobCount: assigned.length,
-            total: assigned.reduce((sum, s) => sum + s.cost, 0),
-          }
-        })
-        .sort((a, b) => b.total - a.total),
-    [],
-  )
+  const {
+    data: schedules,
+    loading: loadingSchedules,
+    error: errorSchedules,
+    refreshing: refreshingSchedules,
+    refetch: refetchSchedules,
+  } = useSupabaseQuery(fetchSchedules, [])
+  const {
+    data: employees,
+    loading: loadingEmployees,
+    error: errorEmployees,
+    refreshing: refreshingEmployees,
+    refetch: refetchEmployees,
+  } = useSupabaseQuery(fetchEmployees, [])
+
+  const loading = loadingSchedules || loadingEmployees
+  const error = errorSchedules ?? errorEmployees
+  const refreshing = refreshingSchedules || refreshingEmployees
+  const handleRefresh = () => {
+    refetchSchedules()
+    refetchEmployees()
+  }
+
+  const rows = useMemo(() => computeEmployeeActivity(schedules ?? [], employees ?? []), [schedules, employees])
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator color={colors.gold500} />
+      </View>
+    )
+  }
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.gold400} colors={[colors.gold400]} />
+        }
+      >
+        {error ? <Text style={styles.errorText}>No se pudieron cargar los empleados: {error}</Text> : null}
+
+        <View style={styles.panelWrap}>
+          <DashboardPanel title="Distribución de carga de trabajo" subtitle="Trabajos asignados por empleado">
+            <RankingBars
+              items={rows.map((r) => ({ id: r.employeeId, label: r.name, value: r.count }))}
+              formatValue={(v) => `${v} trabajo${v === 1 ? '' : 's'}`}
+              color={colors.gold500}
+              emptyText="No hay empleados con trabajos asignados."
+            />
+          </DashboardPanel>
+        </View>
+
         <View style={styles.list}>
-          {rows.map(({ employee, jobCount, total }) => (
-            <Panel key={employee.id} style={styles.card}>
+          {rows.map((row) => (
+            <Panel key={row.employeeId} style={styles.card}>
               <View style={styles.cardHeader}>
                 <View style={styles.cardHeaderText}>
-                  <Text style={styles.cardTitle}>{employee.name}</Text>
-                  <Text style={styles.cardSubtitle}>{employee.role}</Text>
+                  <View style={styles.titleRow}>
+                    <Text style={styles.cardTitle}>{row.name}</Text>
+                    {row.status === 'inactive' ? <StatusPill status="inactive" /> : null}
+                  </View>
                 </View>
-                <Text style={styles.cardAmount}>{currency(total)}</Text>
+                <Text style={styles.cardAmount}>
+                  {row.count} total{row.count === 1 ? '' : 'es'}
+                </Text>
               </View>
               <View style={styles.cardFooter}>
-                <Text style={styles.cardMeta}>{jobCount} trabajos asignados</Text>
-                {employee.hourlyRate ? <Text style={styles.cardMeta}>${employee.hourlyRate}/hr</Text> : null}
+                <Text style={styles.cardMeta}>{row.completed} completados</Text>
+                <Text style={styles.cardMeta}>{row.pending} pendientes/en proceso</Text>
               </View>
             </Panel>
           ))}
@@ -50,8 +100,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface,
   },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
   scroll: {
     paddingBottom: 32,
+  },
+  errorText: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    fontSize: 13,
+    color: colors.rose,
+  },
+  panelWrap: {
+    marginHorizontal: 20,
+    marginTop: 16,
   },
   list: {
     paddingHorizontal: 20,
@@ -70,18 +136,18 @@ const styles = StyleSheet.create({
   cardHeaderText: {
     flex: 1,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   cardTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: colors.white,
   },
-  cardSubtitle: {
-    marginTop: 2,
-    fontSize: 12,
-    color: colors.ink400,
-  },
   cardAmount: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: colors.gold400,
   },

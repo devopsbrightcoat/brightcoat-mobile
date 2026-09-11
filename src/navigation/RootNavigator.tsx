@@ -18,13 +18,15 @@ import { EditPropertyScreen } from '../screens/EditPropertyScreen'
 import { EditScheduleScreen } from '../screens/EditScheduleScreen'
 import { EditServiceTypeScreen } from '../screens/EditServiceTypeScreen'
 import { LoginScreen } from '../screens/LoginScreen'
-import { CobrosPendientesScreen } from '../screens/reports/CobrosPendientesScreen'
 import { FinancieroPropiedadScreen } from '../screens/reports/FinancieroPropiedadScreen'
-import { GastosCategoriaScreen } from '../screens/reports/GastosCategoriaScreen'
 import { ProductividadEmpleadoScreen } from '../screens/reports/ProductividadEmpleadoScreen'
 import { PropiedadesActividadScreen } from '../screens/reports/PropiedadesActividadScreen'
+import { ReportesCobrosScreen } from '../screens/reports/ReportesCobrosScreen'
+import { ReportesFinancieroScreen } from '../screens/reports/ReportesFinancieroScreen'
+import { ReportesGastosScreen } from '../screens/reports/ReportesGastosScreen'
+import { ReportesPlanillaScreen } from '../screens/reports/ReportesPlanillaScreen'
 import { ServiciosPorTipoScreen } from '../screens/reports/ServiciosPorTipoScreen'
-import { TrabajosAtrasadosScreen } from '../screens/reports/TrabajosAtrasadosScreen'
+import { TrabajosPorEstatusScreen } from '../screens/reports/TrabajosPorEstatusScreen'
 import { DrawerNavigator } from './DrawerNavigator'
 
 export type RootStackParamList = {
@@ -42,11 +44,13 @@ export type RootStackParamList = {
   EditEmployee: { employee: Employee }
   AddServiceType: undefined
   EditServiceType: { serviceType: ServiceType }
-  FinancieroPropiedad: undefined
-  GastosCategoria: undefined
-  CobrosPendientes: undefined
+  FinancieroPropiedad: { propertyId?: string } | undefined
+  ReportesFinanciero: undefined
+  ReportesCobros: undefined
+  ReportesGastos: undefined
+  ReportesPlanilla: undefined
   ServiciosPorTipo: undefined
-  TrabajosAtrasados: undefined
+  TrabajosPorEstatus: undefined
   ProductividadEmpleado: undefined
   PropiedadesActividad: undefined
 }
@@ -123,37 +127,47 @@ export const RootNavigator = () => {
           <Stack.Screen
             name="FinancieroPropiedad"
             component={FinancieroPropiedadScreen}
-            options={{ title: 'Financiero por propiedad' }}
+            options={{ title: 'Historial financiero' }}
           />
           <Stack.Screen
-            name="GastosCategoria"
-            component={GastosCategoriaScreen}
-            options={{ title: 'Gastos por categoría' }}
+            name="ReportesFinanciero"
+            component={ReportesFinancieroScreen}
+            options={{ title: 'Financiero' }}
           />
           <Stack.Screen
-            name="CobrosPendientes"
-            component={CobrosPendientesScreen}
-            options={{ title: 'Cobros pendientes' }}
+            name="ReportesCobros"
+            component={ReportesCobrosScreen}
+            options={{ title: 'Cobros' }}
+          />
+          <Stack.Screen
+            name="ReportesGastos"
+            component={ReportesGastosScreen}
+            options={{ title: 'Gastos' }}
+          />
+          <Stack.Screen
+            name="ReportesPlanilla"
+            component={ReportesPlanillaScreen}
+            options={{ title: 'Planilla' }}
           />
           <Stack.Screen
             name="ServiciosPorTipo"
             component={ServiciosPorTipoScreen}
-            options={{ title: 'Servicios por tipo' }}
+            options={{ title: 'Servicios realizados' }}
           />
           <Stack.Screen
-            name="TrabajosAtrasados"
-            component={TrabajosAtrasadosScreen}
-            options={{ title: 'Trabajos atrasados' }}
+            name="TrabajosPorEstatus"
+            component={TrabajosPorEstatusScreen}
+            options={{ title: 'Trabajos por estatus' }}
           />
           <Stack.Screen
             name="ProductividadEmpleado"
             component={ProductividadEmpleadoScreen}
-            options={{ title: 'Productividad' }}
+            options={{ title: 'Actividad por empleado' }}
           />
           <Stack.Screen
             name="PropiedadesActividad"
             component={PropiedadesActividadScreen}
-            options={{ title: 'Más actividad' }}
+            options={{ title: 'Actividad por propiedad' }}
           />
         </Stack.Navigator>
       )}

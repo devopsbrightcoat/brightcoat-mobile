@@ -1,33 +1,102 @@
 import React, { useMemo, useState } from 'react'
+import { useRoute } from '@react-navigation/native'
+import type { RouteProp } from '@react-navigation/native'
 import { TrendingDown, TrendingUp, Wallet } from 'lucide-react-native'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Panel } from '../../components/common/Panel'
 import { SearchableSelect } from '../../components/common/SearchableSelect'
 import { StatCard } from '../../components/common/StatCard'
 import { StatusPill } from '../../components/common/StatusPill'
-import { currency, expenses, income, properties } from '../../mocks/data'
+import { fetchCharges, fetchEmployees, fetchProperties, fetchSchedules, fetchServiceTypes } from '../../lib/api'
+import { currency } from '../../lib/format'
+import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
+import type { RootStackParamList } from '../../navigation/RootNavigator'
 import { colors } from '../../theme/colors'
 
+type Route = RouteProp<RootStackParamList, 'FinancieroPropiedad'>
+
+// Reportes › Historial financiero de propiedad — "vista de detalle que
+// combina ingresos, cobros y trabajos de una propiedad específica"
+// (catálogo). En este modelo "ingresos" y "cobros" son la misma tabla
+// (Charge: monto + estatus pagado/pendiente), así que se combinan en una
+// sola sección — y "trabajos" es Schedule. Llega con propertyId ya
+// seleccionado cuando se abre desde Actividad por propiedad, o se puede
+// elegir cualquier propiedad (o todas) desde acá directamente.
 export const FinancieroPropiedadScreen = () => {
-  const [propertyId, setPropertyId] = useState('all')
+  const route = useRoute<Route>()
+  const [propertyId, setPropertyId] = useState(route.params?.propertyId ?? 'all')
 
-  const propertyOptions = useMemo(() => properties.map((p) => ({ id: p.id, label: p.name })), [])
-
-  const filteredIncome = useMemo(
-    () => income.filter((i) => propertyId === 'all' || i.propertyId === propertyId),
-    [propertyId],
+  const { data: properties, loading: loadingProperties, error: errorProperties } = useSupabaseQuery(fetchProperties, [])
+  const {
+    data: charges,
+    loading: loadingCharges,
+    error: errorCharges,
+    refreshing: refreshingCharges,
+    refetch: refetchCharges,
+  } = useSupabaseQuery(fetchCharges, [])
+  const {
+    data: schedules,
+    loading: loadingSchedules,
+    error: errorSchedules,
+    refreshing: refreshingSchedules,
+    refetch: refetchSchedules,
+  } = useSupabaseQuery(fetchSchedules, [])
+  const { data: serviceTypes, loading: loadingServiceTypes, error: errorServiceTypes } = useSupabaseQuery(
+    fetchServiceTypes,
+    [],
   )
-  const filteredExpenses = useMemo(
-    () => expenses.filter((e) => propertyId === 'all' || e.propertyId === propertyId),
-    [propertyId],
+  const { data: employees, loading: loadingEmployees, error: errorEmployees } = useSupabaseQuery(fetchEmployees, [])
+
+  const loading = loadingProperties || loadingCharges || loadingSchedules || loadingServiceTypes || loadingEmployees
+  const error = errorProperties ?? errorCharges ?? errorSchedules ?? errorServiceTypes ?? errorEmployees
+  const refreshing = refreshingCharges || refreshingSchedules
+  const handleRefresh = () => {
+    refetchCharges()
+    refetchSchedules()
+  }
+
+  const propertyOptions = useMemo(() => (properties ?? []).map((p) => ({ id: p.id, label: p.name })), [properties])
+  const propertyName = (id: string) => properties?.find((p) => p.id === id)?.name ?? '—'
+  const serviceTypeName = (id: string) => serviceTypes?.find((s) => s.id === id)?.name ?? '—'
+  const employeeName = (id: string) => employees?.find((e) => e.id === id)?.name ?? 'Sin asignar'
+
+  const filteredCharges = useMemo(
+    () =>
+      (charges ?? [])
+        .filter((c) => propertyId === 'all' || c.propertyId === propertyId)
+        .sort((a, b) => (b.generatedDate ?? '').localeCompare(a.generatedDate ?? '')),
+    [charges, propertyId],
+  )
+  const filteredSchedules = useMemo(
+    () =>
+      (schedules ?? [])
+        .filter((s) => propertyId === 'all' || s.propertyId === propertyId)
+        .sort((a, b) => b.scheduledDate.localeCompare(a.scheduledDate)),
+    [schedules, propertyId],
   )
 
-  const totalIncome = filteredIncome.reduce((sum, i) => sum + i.amount, 0)
-  const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0)
+  const totalRevenue = filteredCharges.reduce((sum, c) => sum + c.amount, 0)
+  const collected = filteredCharges.filter((c) => c.status === 'paid').reduce((sum, c) => sum + c.amount, 0)
+  const outstanding = filteredCharges.filter((c) => c.status === 'pending').reduce((sum, c) => sum + c.amount, 0)
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator color={colors.gold500} />
+      </View>
+    )
+  }
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.gold400} colors={[colors.gold400]} />
+        }
+      >
+        {error ? <Text style={styles.errorText}>No se pudieron cargar los datos: {error}</Text> : null}
+
         <View style={styles.selectRow}>
           <SearchableSelect
             title="Seleccionar propiedad"
@@ -40,43 +109,53 @@ export const FinancieroPropiedadScreen = () => {
         </View>
 
         <View style={styles.statsGrid}>
-          <StatCard label="Ingresos" value={currency(totalIncome)} icon={TrendingUp} tone="good" />
-          <StatCard label="Gastos" value={currency(totalExpenses)} icon={TrendingDown} />
-          <StatCard label="Neto" value={currency(totalIncome - totalExpenses)} icon={Wallet} tone="good" />
+          <StatCard label="Ingresos" value={currency(totalRevenue)} icon={TrendingUp} tone="good" />
+          <StatCard label="Cobrado" value={currency(collected)} icon={Wallet} tone="good" />
+          <StatCard label="Pendiente" value={currency(outstanding)} icon={TrendingDown} tone="warn" />
         </View>
 
-        <Text style={styles.sectionTitle}>Ingresos</Text>
+        <Text style={styles.sectionTitle}>Cobros</Text>
         <Panel style={styles.listPanel}>
-          {filteredIncome.length === 0 ? (
-            <Text style={styles.emptyText}>Sin ingresos registrados.</Text>
+          {filteredCharges.length === 0 ? (
+            <Text style={styles.emptyText}>Sin cobros registrados.</Text>
           ) : (
-            filteredIncome.map((entry, index) => (
-              <View key={entry.id} style={[styles.row, index === filteredIncome.length - 1 && styles.rowLast]}>
+            filteredCharges.map((charge, index) => (
+              <View key={charge.id} style={[styles.row, index === filteredCharges.length - 1 && styles.rowLast]}>
                 <View style={styles.rowInfo}>
-                  <Text style={styles.rowTitle} numberOfLines={1}>{entry.clientReference}</Text>
-                  <Text style={styles.rowSubtitle}>{entry.date}</Text>
+                  <Text style={styles.rowTitle} numberOfLines={1}>
+                    {charge.description || (propertyId === 'all' ? propertyName(charge.propertyId) : 'Cobro')}
+                  </Text>
+                  <Text style={styles.rowSubtitle}>
+                    {propertyId === 'all' ? `${propertyName(charge.propertyId)} · ` : ''}
+                    {charge.generatedDate || '—'}
+                  </Text>
                 </View>
                 <View style={styles.rowRight}>
-                  <Text style={styles.rowAmount}>{currency(entry.amount)}</Text>
-                  <StatusPill status={entry.status} />
+                  <Text style={styles.rowAmount}>{currency(charge.amount)}</Text>
+                  <StatusPill status={charge.status} />
                 </View>
               </View>
             ))
           )}
         </Panel>
 
-        <Text style={styles.sectionTitle}>Gastos</Text>
+        <Text style={styles.sectionTitle}>Trabajos</Text>
         <Panel style={styles.listPanel}>
-          {filteredExpenses.length === 0 ? (
-            <Text style={styles.emptyText}>Sin gastos registrados.</Text>
+          {filteredSchedules.length === 0 ? (
+            <Text style={styles.emptyText}>Sin trabajos registrados.</Text>
           ) : (
-            filteredExpenses.map((expense, index) => (
-              <View key={expense.id} style={[styles.row, index === filteredExpenses.length - 1 && styles.rowLast]}>
+            filteredSchedules.map((schedule, index) => (
+              <View key={schedule.id} style={[styles.row, index === filteredSchedules.length - 1 && styles.rowLast]}>
                 <View style={styles.rowInfo}>
-                  <Text style={styles.rowTitle} numberOfLines={1}>{expense.description}</Text>
-                  <Text style={styles.rowSubtitle}>{expense.date}</Text>
+                  <Text style={styles.rowTitle} numberOfLines={1}>
+                    {serviceTypeName(schedule.serviceTypeId)}
+                  </Text>
+                  <Text style={styles.rowSubtitle} numberOfLines={1}>
+                    {propertyId === 'all' ? `${propertyName(schedule.propertyId)} · ` : ''}
+                    {employeeName(schedule.employeeId)} · {schedule.scheduledDate}
+                  </Text>
                 </View>
-                <Text style={styles.rowAmount}>{currency(expense.amount)}</Text>
+                <StatusPill status={schedule.status} />
               </View>
             ))
           )}
@@ -91,8 +170,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface,
   },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
   scroll: {
     paddingBottom: 32,
+  },
+  errorText: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    fontSize: 13,
+    color: colors.rose,
   },
   selectRow: {
     marginHorizontal: 20,

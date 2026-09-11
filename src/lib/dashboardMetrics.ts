@@ -1,5 +1,5 @@
 import type { Charge, Employee, PayrollEntry, Expense, Property, Schedule, ServiceType } from '../types'
-import { toISODate } from './scheduleDates'
+import { parseISODate, startOfWeekMonday, toISODate } from './scheduleDates'
 
 // ---------------------------------------------------------------------------
 // Cálculos para el Dashboard (Business Overview) — ver propuesta de diseño
@@ -250,6 +250,410 @@ export const computeOutstandingAging = (charges: Charge[]): AgingBucket[] => {
 
   return buckets
 }
+
+// --- Revenue/Expenses by Period (granularidad elegible) -------------------
+// A diferencia de computeMonthlyFinancials (fijo a 12 meses, independiente
+// del filtro de fecha de la pantalla), esto agrupa por día, semana, mes,
+// trimestre o año el rango de fecha SELECCIONADO — para "Ingresos por
+// período" (Reportes › Financiero) y "Gastos por período" (Reportes ›
+// Gastos). Puerto de la misma lógica de ops-web (bucketByPeriod), usando
+// startOfWeekMonday (ya importado) en vez de un helper local.
+
+export type RevenuePeriodGranularity = 'day' | 'week' | 'month' | 'quarter' | 'year'
+
+export const REVENUE_PERIOD_GRANULARITY_OPTIONS: { value: RevenuePeriodGranularity; label: string }[] = [
+  { value: 'day', label: 'Día' },
+  { value: 'week', label: 'Semana' },
+  { value: 'month', label: 'Mes' },
+  { value: 'quarter', label: 'Trimestre' },
+  { value: 'year', label: 'Año' },
+]
+
+export type RevenueByPeriod = { key: string; label: string; revenue: number }
+export type ExpensesByPeriod = { key: string; label: string; total: number }
+
+const bucketByPeriod = (
+  items: { date: string; amount: number }[],
+  granularity: RevenuePeriodGranularity,
+): { key: string; label: string; total: number }[] => {
+  const totals = new Map<string, { label: string; total: number }>()
+
+  for (const item of items) {
+    const d = parseISODate(item.date)
+    let key: string
+    let label: string
+
+    if (granularity === 'day') {
+      key = item.date
+      label = item.date
+    } else if (granularity === 'week') {
+      key = toISODate(startOfWeekMonday(d))
+      label = `Sem. ${key}`
+    } else if (granularity === 'month') {
+      key = monthKey(item.date)
+      label = `${MONTH_LABELS[d.getMonth()]} ${d.getFullYear()}`
+    } else if (granularity === 'quarter') {
+      const q = Math.floor(d.getMonth() / 3) + 1
+      key = `${d.getFullYear()}-Q${q}`
+      label = `T${q} ${d.getFullYear()}`
+    } else {
+      key = String(d.getFullYear())
+      label = key
+    }
+
+    const existing = totals.get(key)
+    totals.set(key, { label, total: (existing?.total ?? 0) + item.amount })
+  }
+
+  return Array.from(totals.entries())
+    .map(([key, v]) => ({ key, label: v.label, total: v.total }))
+    .sort((a, b) => a.key.localeCompare(b.key))
+}
+
+export const computeRevenueByPeriod = (
+  charges: Charge[],
+  range: DateRange,
+  granularity: RevenuePeriodGranularity,
+): RevenueByPeriod[] => {
+  const items = filterChargesByRange(charges, range)
+    .filter((c) => c.generatedDate)
+    .map((c) => ({ date: c.generatedDate as string, amount: c.amount }))
+  return bucketByPeriod(items, granularity).map((b) => ({ key: b.key, label: b.label, revenue: b.total }))
+}
+
+export const computeExpensesByPeriod = (
+  expenses: Expense[],
+  range: DateRange,
+  granularity: RevenuePeriodGranularity,
+): ExpensesByPeriod[] => {
+  const items = filterExpensesByRange(expenses, range).map((e) => ({ date: e.date, amount: e.amount }))
+  return bucketByPeriod(items, granularity)
+}
+
+// --- Antigüedad de cobros — detalle por cobro (Reportes › Cobros) --------
+// computeOutstandingAging (arriba) se queda intacta — la sigue usando el
+// Dashboard con solo los 4 totales por bucket. Esto es el drill-down por
+// cobro individual que pide el catálogo de Reportes ("Antigüedad de
+// cobros"), agregado como función nueva y separada en vez de un refactor.
+
+const AGING_BUCKET_LABELS = ['0–30 días', '31–60 días', '61–90 días', '+90 días'] as const
+
+const agingBucketLabel = (days: number): string =>
+  days <= 30
+    ? AGING_BUCKET_LABELS[0]
+    : days <= 60
+      ? AGING_BUCKET_LABELS[1]
+      : days <= 90
+        ? AGING_BUCKET_LABELS[2]
+        : AGING_BUCKET_LABELS[3]
+
+export type AgingDetailRow = {
+  chargeId: string
+  propertyId: string
+  propertyName: string
+  unitLabel?: string
+  invoiceNumber?: string
+  generatedDate?: string
+  days: number
+  bucket: string
+  amount: number
+}
+
+export const computeAgingDetail = (charges: Charge[], properties: Property[] = []): AgingDetailRow[] => {
+  const today = new Date()
+  const propertyName = (id: string) => properties.find((p) => p.id === id)?.name ?? '—'
+
+  return charges
+    .filter((c) => c.status === 'pending')
+    .map((c) => {
+      const days = c.generatedDate
+        ? Math.floor((today.getTime() - new Date(c.generatedDate).getTime()) / 86_400_000)
+        : 0
+      return {
+        chargeId: c.id,
+        propertyId: c.propertyId,
+        propertyName: propertyName(c.propertyId),
+        unitLabel: c.unitLabel,
+        invoiceNumber: c.invoiceNumber,
+        generatedDate: c.generatedDate,
+        days,
+        bucket: agingBucketLabel(days),
+        amount: c.amount,
+      }
+    })
+    .sort((a, b) => b.days - a.days)
+}
+
+// --- Property Profitability (todas las propiedades) ----------------------
+// Base de "Rentabilidad por propiedad" (Reportes › Financiero).
+// computeLowMarginProperties (abajo) se deja intacta — esto es una función
+// nueva y separada, no un refactor de esa.
+
+export type PropertyProfitability = {
+  propertyId: string
+  name: string
+  revenue: number
+  laborCost: number
+  estimatedProfit: number
+  margin: number | null
+}
+
+export const computePropertyProfitability = (
+  charges: Charge[],
+  payrollEntries: PayrollEntry[],
+  properties: Property[],
+  range: DateRange,
+): PropertyProfitability[] => {
+  const periodCharges = filterChargesByRange(charges, range)
+  const periodPayroll = filterPayrollByRange(payrollEntries, range)
+
+  const revenueByProperty = new Map<string, number>()
+  for (const c of periodCharges) revenueByProperty.set(c.propertyId, (revenueByProperty.get(c.propertyId) ?? 0) + c.amount)
+
+  const laborByProperty = new Map<string, number>()
+  for (const p of periodPayroll) laborByProperty.set(p.propertyId, (laborByProperty.get(p.propertyId) ?? 0) + (p.amount ?? 0))
+
+  const propertyIds = new Set([...revenueByProperty.keys(), ...laborByProperty.keys()])
+  const result: PropertyProfitability[] = []
+  for (const propertyId of propertyIds) {
+    const revenue = revenueByProperty.get(propertyId) ?? 0
+    const laborCost = laborByProperty.get(propertyId) ?? 0
+    const estimatedProfit = revenue - laborCost
+    const margin = revenue > 0 ? (estimatedProfit / revenue) * 100 : null
+    result.push({
+      propertyId,
+      name: properties.find((p) => p.id === propertyId)?.name ?? '—',
+      revenue,
+      laborCost,
+      estimatedProfit,
+      margin,
+    })
+  }
+  return result.sort((a, b) => b.estimatedProfit - a.estimatedProfit)
+}
+
+// --- Planilla agrupada (por propiedad / por empleado) ---------------------
+// Para "Planilla por propiedad y por empleado" (Reportes › Planilla) — el
+// mismo total de planillas pagadas, agrupado por cada dimensión. Las
+// planillas sin monto definido cuentan como pendientes, no se suman a
+// totalPaid.
+
+export type PayrollGroupSummary = {
+  id: string
+  name: string
+  totalPaid: number
+  paidCount: number
+  pendingCount: number
+}
+
+const summarizePayrollBy = (
+  entries: PayrollEntry[],
+  keyOf: (e: PayrollEntry) => string,
+  nameOf: (id: string) => string,
+): PayrollGroupSummary[] => {
+  const groups = new Map<string, PayrollGroupSummary>()
+  for (const e of entries) {
+    const id = keyOf(e)
+    const existing = groups.get(id) ?? { id, name: nameOf(id), totalPaid: 0, paidCount: 0, pendingCount: 0 }
+    if (e.amount == null) {
+      existing.pendingCount += 1
+    } else {
+      existing.totalPaid += e.amount
+      existing.paidCount += 1
+    }
+    groups.set(id, existing)
+  }
+  return Array.from(groups.values()).sort((a, b) => b.totalPaid - a.totalPaid)
+}
+
+export const computePayrollByProperty = (
+  payrollEntries: PayrollEntry[],
+  properties: Property[],
+  range: DateRange,
+): PayrollGroupSummary[] =>
+  summarizePayrollBy(
+    filterPayrollByRange(payrollEntries, range),
+    (e) => e.propertyId,
+    (id) => properties.find((p) => p.id === id)?.name ?? '—',
+  )
+
+export const computePayrollByEmployee = (
+  payrollEntries: PayrollEntry[],
+  employees: Employee[],
+  range: DateRange,
+): PayrollGroupSummary[] =>
+  summarizePayrollBy(
+    filterPayrollByRange(payrollEntries, range),
+    (e) => e.employeeId,
+    (id) => employees.find((emp) => emp.id === id)?.name ?? '—',
+  )
+
+export type PendingPayrollRow = {
+  id: string
+  propertyId: string
+  propertyName: string
+  unitLabel: string
+  employeeId: string
+  employeeName: string
+  serviceName: string
+  date: string
+  sales: number
+}
+
+// Trabajo ya hecho (fecha, propiedad, empleado y servicio definidos) cuyo
+// pago todavía no se definió. Igual que la antigüedad de cartera, es sobre
+// toda la planilla pendiente ahora mismo, no solo el período seleccionado.
+export const computePendingPayroll = (
+  payrollEntries: PayrollEntry[],
+  properties: Property[],
+  employees: Employee[],
+): PendingPayrollRow[] =>
+  payrollEntries
+    .filter((e) => e.amount == null)
+    .map((e) => ({
+      id: e.id,
+      propertyId: e.propertyId,
+      propertyName: properties.find((p) => p.id === e.propertyId)?.name ?? '—',
+      unitLabel: e.unitLabel,
+      employeeId: e.employeeId,
+      employeeName: employees.find((emp) => emp.id === e.employeeId)?.name ?? '—',
+      serviceName: e.serviceName,
+      date: e.date,
+      sales: e.items.reduce((sum, item) => sum + item.amount, 0),
+    }))
+    .sort((a, b) => b.date.localeCompare(a.date))
+
+// --- Operaciones y Propiedades (Reportes) ---------------------------------
+// Trabajos por estatus / Actividad por propiedad / Actividad por empleado /
+// Servicios realizados. "Trabajo" acá es Schedule (Horarios), no
+// PayrollEntry. Ya tiene su equivalente en ops-web también (mismo bloque,
+// portado ahí después de construirse acá primero).
+
+const SCHEDULE_STATUS_ORDER: Schedule['status'][] = ['pending', 'in_progress', 'delivered', 'cancelled', 'rescheduled']
+
+const SCHEDULE_STATUS_LABELS: Record<Schedule['status'], string> = {
+  pending: 'Pendiente',
+  in_progress: 'En proceso',
+  delivered: 'Completado',
+  cancelled: 'Cancelado',
+  rescheduled: 'Reagendado',
+}
+
+export type ScheduleStatusCount = { status: Schedule['status']; label: string; count: number }
+
+export const computeScheduleStatusBreakdown = (schedules: Schedule[]): ScheduleStatusCount[] =>
+  SCHEDULE_STATUS_ORDER.map((status) => ({
+    status,
+    label: SCHEDULE_STATUS_LABELS[status],
+    count: schedules.filter((s) => s.status === status).length,
+  }))
+
+export type ScheduleActivityGranularity = 'week' | 'month'
+export type ScheduleActivityPoint = { key: string; label: string; count: number }
+
+// Evolución de la cantidad de trabajos agendados por semana o por mes —
+// "con su evolución semanal o mensual" del catálogo. Recorta a los últimos
+// 12 puntos para que el chart no se sature en negocios con mucho historial.
+export const computeScheduleActivity = (
+  schedules: Schedule[],
+  granularity: ScheduleActivityGranularity,
+): ScheduleActivityPoint[] => {
+  const totals = new Map<string, { label: string; count: number }>()
+
+  for (const s of schedules) {
+    const d = parseISODate(s.scheduledDate)
+    let key: string
+    let label: string
+    if (granularity === 'week') {
+      key = toISODate(startOfWeekMonday(d))
+      label = key.slice(5)
+    } else {
+      key = s.scheduledDate.slice(0, 7)
+      label = `${MONTH_LABELS[d.getMonth()]} ${d.getFullYear()}`
+    }
+    const existing = totals.get(key)
+    totals.set(key, { label, count: (existing?.count ?? 0) + 1 })
+  }
+
+  return Array.from(totals.entries())
+    .map(([key, v]) => ({ key, label: v.label, count: v.count }))
+    .sort((a, b) => a.key.localeCompare(b.key))
+    .slice(-12)
+}
+
+export type PropertyActivity = { propertyId: string; name: string; status: Property['status']; count: number }
+
+// "Actividad por propiedad" — cantidad de trabajos (todo el historial, no
+// un período) por propiedad, con su estatus activa/inactiva para que la
+// pantalla pueda filtrar inactivas (lo que pide el catálogo).
+export const computePropertyActivity = (schedules: Schedule[], properties: Property[]): PropertyActivity[] =>
+  properties
+    .map((p) => ({
+      propertyId: p.id,
+      name: p.name,
+      status: p.status,
+      count: schedules.filter((s) => s.propertyId === p.id).length,
+    }))
+    .sort((a, b) => b.count - a.count)
+
+export type EmployeeActivity = {
+  employeeId: string
+  name: string
+  status: Employee['status']
+  count: number
+  completed: number
+  pending: number
+}
+
+// "Actividad por empleado" — distribución de la carga de trabajo. A
+// diferencia de computeEmployeeProductivity (solo cuenta "delivered", para
+// el Dashboard), acá se cuenta todo lo asignado — la carga incluye lo que
+// todavía no se termina.
+export const computeEmployeeActivity = (schedules: Schedule[], employees: Employee[]): EmployeeActivity[] =>
+  employees
+    .map((e) => {
+      const assigned = schedules.filter((s) => s.employeeId === e.id)
+      return {
+        employeeId: e.id,
+        name: e.name,
+        status: e.status,
+        count: assigned.length,
+        completed: assigned.filter((s) => s.status === 'delivered').length,
+        pending: assigned.filter((s) => s.status === 'pending' || s.status === 'in_progress').length,
+      }
+    })
+    .sort((a, b) => b.count - a.count)
+
+export type ServiceTypeActivity = {
+  serviceTypeId: string
+  name: string
+  count: number
+  byProperty: { propertyId: string; name: string; count: number }[]
+}
+
+// "Servicios realizados" — cantidad de trabajos por tipo de servicio, con
+// desglose por propiedad (top 5 por tipo, para no saturar la pantalla).
+export const computeServiceTypeActivity = (
+  schedules: Schedule[],
+  serviceTypes: ServiceType[],
+  properties: Property[],
+): ServiceTypeActivity[] =>
+  serviceTypes
+    .map((type) => {
+      const matches = schedules.filter((s) => s.serviceTypeId === type.id)
+      const byPropertyMap = new Map<string, number>()
+      for (const s of matches) byPropertyMap.set(s.propertyId, (byPropertyMap.get(s.propertyId) ?? 0) + 1)
+      const byProperty = Array.from(byPropertyMap.entries())
+        .map(([propertyId, count]) => ({
+          propertyId,
+          name: properties.find((p) => p.id === propertyId)?.name ?? '—',
+          count,
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5)
+      return { serviceTypeId: type.id, name: type.name, count: matches.length, byProperty }
+    })
+    .sort((a, b) => b.count - a.count)
 
 // --- Alertas ---------------------------------------------------------------
 

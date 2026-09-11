@@ -1,6 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getErrorMessage } from './errors'
 
+// PostgREST a veces rechaza un token recién emitido por Supabase Auth con
+// "JWT issued at future" (PGRST303) — un desfase de reloj MUY breve entre
+// el servicio de Auth y PostgREST (no del dispositivo), que normalmente se
+// resuelve solo en menos de un segundo. Ver
+// https://github.com/orgs/supabase/discussions/48123. En vez de mostrar el
+// error crudo al usuario, se reintenta un par de veces con una pausa corta
+// antes de darlo por definitivo.
+const isClockSkewError = (err: unknown): boolean => /issued at future/i.test(getErrorMessage(err, ''))
+
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+
+const fetchWithRetry = async <T>(fetcher: () => Promise<T>, retriesLeft = 2, delayMs = 500): Promise<T> => {
+  try {
+    return await fetcher()
+  } catch (err) {
+    if (retriesLeft > 0 && isClockSkewError(err)) {
+      await wait(delayMs)
+      return fetchWithRetry(fetcher, retriesLeft - 1, delayMs)
+    }
+    throw err
+  }
+}
+
 type QueryState<T> = {
   data: T | null
   loading: boolean
@@ -41,7 +64,7 @@ export const useSupabaseQuery = <T>(fetcher: () => Promise<T>, deps: unknown[]):
     let active = true
     setState({ data: null, loading: true, error: null })
 
-    fetcherRef.current()
+    fetchWithRetry(fetcherRef.current)
       .then((data) => {
         if (active) setState({ data, loading: false, error: null })
       })
@@ -59,7 +82,7 @@ export const useSupabaseQuery = <T>(fetcher: () => Promise<T>, deps: unknown[]):
 
   const refetch = useCallback(() => {
     setRefreshing(true)
-    fetcherRef.current()
+    fetchWithRetry(fetcherRef.current)
       .then((data) => {
         if (mountedRef.current) setState({ data, loading: false, error: null })
       })
