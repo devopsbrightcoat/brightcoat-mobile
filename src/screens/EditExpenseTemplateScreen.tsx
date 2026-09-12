@@ -4,42 +4,49 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { RouteProp } from '@react-navigation/native'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native'
 import { FormField } from '../components/common/FormField'
-import { SegmentedField } from '../components/common/SegmentedField'
-import { updateServiceType } from '../lib/api'
+import { updateExpenseTemplate } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
-import { SERVICE_CATEGORY_OPTIONS } from '../lib/serviceTypeOptions'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import { colors } from '../theme/colors'
-import type { ServiceCategory } from '../types'
 
-type Nav = NativeStackNavigationProp<RootStackParamList, 'EditServiceType'>
-type Route = RouteProp<RootStackParamList, 'EditServiceType'>
+type Nav = NativeStackNavigationProp<RootStackParamList, 'EditExpenseTemplate'>
+type Route = RouteProp<RootStackParamList, 'EditExpenseTemplate'>
 
-// Mismos campos y misma validación que ops-web EditServiceTypeModal.tsx. El
-// tipo de servicio llega por parámetro de navegación (snapshot al momento
-// del tap en el catálogo) — igual que EditPropertyScreen.
-export const EditServiceTypeScreen = () => {
+// Mismos campos y misma validación que ops-web EditExpenseTemplateModal.tsx.
+// La plantilla llega por parámetro de navegación (snapshot al momento del
+// tap en el catálogo) — igual que EditServiceTypeScreen.
+export const EditExpenseTemplateScreen = () => {
   const navigation = useNavigation<Nav>()
   const { params } = useRoute<Route>()
-  const { serviceType } = params
+  const { template } = params
 
-  const [name, setName] = useState(serviceType.name)
-  const [category, setCategory] = useState<ServiceCategory>(serviceType.category)
+  const [name, setName] = useState(template.name)
+  const [amount, setAmount] = useState(template.amount != null ? String(template.amount) : '')
+  const [description, setDescription] = useState(template.description ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleSave = async () => {
     if (!name.trim()) {
-      setError('El nombre del servicio es obligatorio.')
+      setError('El nombre es obligatorio.')
       return
+    }
+    let amountValue: number | null = null
+    if (amount.trim()) {
+      const parsed = Number(amount)
+      if (Number.isNaN(parsed) || parsed < 0) {
+        setError('El monto no es un número válido.')
+        return
+      }
+      amountValue = parsed
     }
     setSaving(true)
     setError(null)
     try {
-      await updateServiceType(serviceType.id, { name: name.trim(), category })
+      await updateExpenseTemplate(template.id, { name: name.trim(), amount: amountValue, description })
       navigation.goBack()
     } catch (err) {
-      setError(getErrorMessage(err, 'No se pudo guardar el servicio.'))
+      setError(getErrorMessage(err, 'No se pudo guardar el gasto fijo.'))
     } finally {
       setSaving(false)
     }
@@ -48,8 +55,25 @@ export const EditServiceTypeScreen = () => {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
-        <FormField label="Nombre del servicio" value={name} onChangeText={setName} placeholder="ej. Interior Painting" />
-        <SegmentedField label="Categoría" options={SERVICE_CATEGORY_OPTIONS} value={category} onChange={setCategory} />
+        <FormField label="Nombre" value={name} onChangeText={setName} placeholder="ej. Renta de bodega" />
+
+        <FormField
+          label="Monto"
+          value={amount}
+          onChangeText={setAmount}
+          placeholder="Opcional, si el monto no varía"
+          keyboardType="decimal-pad"
+        />
+
+        <FormField
+          label="Descripción"
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Opcional — se precarga en la descripción del gasto"
+          multiline
+          numberOfLines={4}
+          style={styles.textArea}
+        />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -74,6 +98,10 @@ const styles = StyleSheet.create({
   form: {
     padding: 20,
     gap: 18,
+  },
+  textArea: {
+    minHeight: 90,
+    textAlignVertical: 'top',
   },
   error: {
     fontSize: 13,

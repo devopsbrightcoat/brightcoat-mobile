@@ -34,7 +34,7 @@ export const LoginScreen = () => {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.content}>
         <Image source={require('../assets/brightcoat-logo.png')} style={styles.logo} resizeMode="contain" />

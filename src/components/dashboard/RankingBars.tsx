@@ -1,5 +1,5 @@
 import React from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { colors } from '../../theme/colors'
 
 type RankingBarsItem = {
@@ -13,13 +13,18 @@ type RankingBarsProps = {
   formatValue: (value: number) => string
   color: string
   emptyText: string
+  // Cuando se pasa, cada fila se vuelve tocable (ej. "Ingresos por
+  // categoría" abre el desglose por tipo de servicio) — opcional y
+  // retrocompatible: sin esta prop las filas quedan exactamente igual que
+  // antes, no tocables.
+  onItemPress?: (item: RankingBarsItem) => void
 }
 
 // Réplica de RankingBars.tsx (ops-web) — barras horizontales con el valor
 // directamente etiquetado, para los "top N" del Dashboard (Ingresos por
 // servicio/propiedad, Productividad de empleados). Mismo criterio que ahí:
 // más legible que una gráfica de barras cuando los nombres son largos.
-export const RankingBars = ({ items, formatValue, color, emptyText }: RankingBarsProps) => {
+export const RankingBars = ({ items, formatValue, color, emptyText, onItemPress }: RankingBarsProps) => {
   if (items.length === 0) {
     return <Text style={styles.empty}>{emptyText}</Text>
   }
@@ -28,24 +33,35 @@ export const RankingBars = ({ items, formatValue, color, emptyText }: RankingBar
 
   return (
     <View style={styles.wrap}>
-      {items.map((item) => (
-        <View key={item.id} style={styles.row}>
-          <View style={styles.labelRow}>
-            <Text style={styles.label} numberOfLines={1}>
-              {item.label}
-            </Text>
-            <Text style={styles.value}>{formatValue(item.value)}</Text>
+      {items.map((item) => {
+        const bar = (
+          <>
+            <View style={styles.labelRow}>
+              <Text style={styles.label} numberOfLines={1}>
+                {item.label}
+              </Text>
+              <Text style={styles.value}>{formatValue(item.value)}</Text>
+            </View>
+            <View style={styles.track}>
+              <View
+                style={[
+                  styles.fill,
+                  { width: `${Math.max((item.value / max) * 100, 2)}%`, backgroundColor: color },
+                ]}
+              />
+            </View>
+          </>
+        )
+        return onItemPress ? (
+          <TouchableOpacity key={item.id} style={styles.row} activeOpacity={0.7} onPress={() => onItemPress(item)}>
+            {bar}
+          </TouchableOpacity>
+        ) : (
+          <View key={item.id} style={styles.row}>
+            {bar}
           </View>
-          <View style={styles.track}>
-            <View
-              style={[
-                styles.fill,
-                { width: `${Math.max((item.value / max) * 100, 2)}%`, backgroundColor: color },
-              ]}
-            />
-          </View>
-        </View>
-      ))}
+        )
+      })}
     </View>
   )
 }

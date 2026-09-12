@@ -40,7 +40,7 @@ export const AddServiceTypeScreen = () => {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
         <FormField label="Nombre del servicio" value={name} onChangeText={setName} placeholder="ej. Interior Painting" />
         <SegmentedField label="Categoría" options={SERVICE_CATEGORY_OPTIONS} value={category} onChange={setCategory} />

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "709195741251",
+    "project_id": "brightcoat-painting-91e50",
+    "storage_bucket": "brightcoat-painting-91e50.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:709195741251:android:63499c1345917cef24fcf6",
+        "android_client_info": {
+          "package_name": "com.brightcoat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD0FVaAwVPuZU_lLkdlrD7WeZtkbQ1UXTU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

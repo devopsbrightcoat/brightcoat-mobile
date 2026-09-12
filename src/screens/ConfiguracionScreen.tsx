@@ -1,34 +1,43 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Plus, Trash2 } from 'lucide-react-native'
+import { Check, Plus, Trash2 } from 'lucide-react-native'
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { ConfirmModal } from '../components/common/ConfirmModal'
 import { FormField } from '../components/common/FormField'
 import { Panel } from '../components/common/Panel'
 import { ScreenHeader } from '../components/common/ScreenHeader'
 import { useAuth } from '../auth/AuthProvider'
-import { deleteServiceType, fetchCompanySettings, fetchServiceTypes, updateCompanySettings, updateOwnPassword, updateOwnProfile } from '../lib/api'
+import type { ProfileRole } from '../auth/AuthProvider'
+import { deleteExpenseTemplate, deleteServiceType, fetchCompanySettings, fetchExpenseTemplates, fetchServiceTypes, updateCompanySettings, updateNotificationsEnabled, updateNotifyRoles, updateOwnPassword, updateOwnProfile } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
+import { currency } from '../lib/format'
 import { serviceCategoryLabels } from '../lib/serviceTypeOptions'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import { colors } from '../theme/colors'
-import type { ServiceType } from '../types'
+import type { ExpenseTemplate, ServiceType } from '../types'
 
-type TabKey = 'general' | 'servicios'
+type TabKey = 'general' | 'alertas' | 'servicios' | 'gastos_fijos'
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
 const roleLabel: Record<string, string> = {
   owner: 'Dueño',
   admin: 'Administrador',
   staff: 'Staff',
+  finance: 'Finanzas',
 }
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'general', label: 'General' },
+  // Sin esta pestaña para staff — ver DrawerContent.tsx (misma regla que
+  // el ítem "Alertas" del drawer).
+  { key: 'alertas', label: 'Alertas' },
   { key: 'servicios', label: 'Servicios' },
+  { key: 'gastos_fijos', label: 'Gastos fijos' },
 ]
+
+const ALL_ROLES: ProfileRole[] = ['owner', 'admin', 'staff', 'finance']
 
 // Réplica de ops-web (ConfiguracionGeneral.tsx / ConfiguracionServicios.tsx
 // — dos pestañas separadas ahí) como un tab switcher, mismo criterio que
@@ -43,9 +52,11 @@ export const ConfiguracionScreen = () => {
   // Datos de la empresa: solo el owner puede editarlos — el resto de roles
   // los ve, pero de solo lectura (sin inputs ni botón de guardar).
   const isOwner = profile?.role === 'owner'
+  const visibleTabs = TABS.filter((t) => t.key !== 'alertas' || profile?.role !== 'staff')
   const [tab, setTab] = useState<TabKey>('general')
   const [refreshKey, setRefreshKey] = useState(0)
   const [deletingServiceType, setDeletingServiceType] = useState<ServiceType | null>(null)
+  const [deletingExpenseTemplate, setDeletingExpenseTemplate] = useState<ExpenseTemplate | null>(null)
 
   const {
     data: serviceTypes,
@@ -54,6 +65,14 @@ export const ConfiguracionScreen = () => {
     refreshing: refreshingServiceTypes,
     refetch: refetchServiceTypes,
   } = useSupabaseQuery(fetchServiceTypes, [refreshKey])
+
+  const {
+    data: expenseTemplates,
+    loading: loadingExpenseTemplates,
+    error: errorExpenseTemplates,
+    refreshing: refreshingExpenseTemplates,
+    refetch: refetchExpenseTemplates,
+  } = useSupabaseQuery(fetchExpenseTemplates, [refreshKey])
 
   useFocusEffect(
     useCallback(() => {
@@ -136,6 +155,41 @@ export const ConfiguracionScreen = () => {
     }
   }
 
+  // --- Alertas -------------------------------------------------------------
+  const [savingAlertsToggle, setSavingAlertsToggle] = useState(false)
+  const [savingAlertsRole, setSavingAlertsRole] = useState<ProfileRole | null>(null)
+  const [alertsError, setAlertsError] = useState<string | null>(null)
+
+  const handleToggleAlertsEnabled = async () => {
+    if (!profile) return
+    setSavingAlertsToggle(true)
+    setAlertsError(null)
+    try {
+      await updateNotificationsEnabled(profile.id, !profile.notificationsEnabled)
+      await refreshProfile()
+    } catch (err) {
+      setAlertsError(getErrorMessage(err, 'No se pudo actualizar la preferencia de alertas.'))
+    } finally {
+      setSavingAlertsToggle(false)
+    }
+  }
+
+  const handleToggleAlertsRole = async (role: ProfileRole) => {
+    if (!profile) return
+    const current = profile.notifyRoles
+    const next = current.includes(role) ? current.filter((r) => r !== role) : [...current, role]
+    setSavingAlertsRole(role)
+    setAlertsError(null)
+    try {
+      await updateNotifyRoles(profile.id, next)
+      await refreshProfile()
+    } catch (err) {
+      setAlertsError(getErrorMessage(err, 'No se pudo actualizar la preferencia de alertas.'))
+    } finally {
+      setSavingAlertsRole(null)
+    }
+  }
+
   // --- Cambiar contraseña -------------------------------------------------
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -183,12 +237,20 @@ export const ConfiguracionScreen = () => {
             >
               <Plus size={22} color={colors.gold500} />
             </TouchableOpacity>
+          ) : tab === 'gastos_fijos' ? (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('AddExpenseTemplate')}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={styles.addButton}
+            >
+              <Plus size={22} color={colors.gold500} />
+            </TouchableOpacity>
           ) : null
         }
       />
 
       <View style={styles.tabRow}>
-        {TABS.map(({ key, label }) => (
+        {visibleTabs.map(({ key, label }) => (
           <TouchableOpacity
             key={key}
             style={[styles.tab, tab === key && styles.tabActive]}
@@ -366,7 +428,7 @@ export const ConfiguracionScreen = () => {
             </TouchableOpacity>
           </View>
         </ScrollView>
-      ) : (
+      ) : tab === 'servicios' ? (
         <ScrollView
           contentContainerStyle={styles.scroll}
           refreshControl={
@@ -415,6 +477,102 @@ export const ConfiguracionScreen = () => {
             </View>
           )}
         </ScrollView>
+      ) : tab === 'alertas' ? (
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+          <Text style={styles.sectionTitle}>Activar alertas</Text>
+          <View style={styles.section}>
+            <TouchableOpacity
+              style={styles.toggleRow}
+              activeOpacity={0.85}
+              disabled={savingAlertsToggle || !profile}
+              onPress={handleToggleAlertsEnabled}
+            >
+              <View style={styles.toggleTextGroup}>
+                <Text style={styles.toggleLabel}>Activar alertas</Text>
+                <Text style={styles.toggleHint}>
+                  Interruptor general — si está apagado, no recibes ninguna alerta.
+                </Text>
+              </View>
+              <View style={[styles.switchTrack, profile?.notificationsEnabled && styles.switchTrackOn]}>
+                <View style={[styles.switchThumb, profile?.notificationsEnabled && styles.switchThumbOn]} />
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.sectionTitle}>Recibir alertas de estos roles</Text>
+          <View style={styles.section}>
+            <Text style={styles.roleHint}>
+              Elige de qué roles quieres enterarte cuando agreguen o modifiquen información.
+            </Text>
+            {ALL_ROLES.map((role) => {
+              const checked = profile?.notifyRoles.includes(role) ?? false
+              return (
+                <TouchableOpacity
+                  key={role}
+                  style={styles.roleRow}
+                  activeOpacity={0.85}
+                  disabled={savingAlertsRole === role || !profile}
+                  onPress={() => handleToggleAlertsRole(role)}
+                >
+                  <Text style={styles.roleLabel}>{roleLabel[role]}</Text>
+                  <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
+                    {checked ? <Check size={13} color={colors.brand900} strokeWidth={3} /> : null}
+                  </View>
+                </TouchableOpacity>
+              )
+            })}
+            {alertsError ? <Text style={styles.error}>{alertsError}</Text> : null}
+          </View>
+        </ScrollView>
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshingExpenseTemplates}
+              onRefresh={refetchExpenseTemplates}
+              tintColor={colors.gold400}
+              colors={[colors.gold400]}
+            />
+          }
+        >
+          <Text style={styles.sectionTitle}>Catálogo de gastos fijos</Text>
+
+          {loadingExpenseTemplates ? (
+            <View style={styles.centered}>
+              <ActivityIndicator color={colors.gold400} />
+            </View>
+          ) : errorExpenseTemplates ? (
+            <Text style={styles.errorText}>No se pudo cargar el catálogo: {errorExpenseTemplates}</Text>
+          ) : !expenseTemplates || expenseTemplates.length === 0 ? (
+            <Text style={styles.emptyListText}>Todavía no hay gastos fijos.</Text>
+          ) : (
+            <View style={styles.list}>
+              {expenseTemplates.map((item: ExpenseTemplate) => (
+                <TouchableOpacity
+                  key={item.id}
+                  activeOpacity={0.75}
+                  onPress={() => navigation.navigate('EditExpenseTemplate', { template: item })}
+                >
+                  <Panel style={styles.card}>
+                    <Text style={styles.cardTitle} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    <View style={styles.serviceRowActions}>
+                      <Text style={styles.cardMeta}>{item.amount != null ? currency(item.amount) : '—'}</Text>
+                      <TouchableOpacity
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        onPress={() => setDeletingExpenseTemplate(item)}
+                      >
+                        <Trash2 size={15} color={colors.rose} />
+                      </TouchableOpacity>
+                    </View>
+                  </Panel>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </ScrollView>
       )}
 
       <ConfirmModal
@@ -425,6 +583,18 @@ export const ConfiguracionScreen = () => {
         onConfirm={async () => {
           if (!deletingServiceType) return
           await deleteServiceType(deletingServiceType.id)
+          setRefreshKey((k) => k + 1)
+        }}
+      />
+
+      <ConfirmModal
+        open={deletingExpenseTemplate !== null}
+        onClose={() => setDeletingExpenseTemplate(null)}
+        title="Eliminar gasto fijo"
+        message={`¿Eliminar "${deletingExpenseTemplate?.name}"? Esta acción no se puede deshacer.`}
+        onConfirm={async () => {
+          if (!deletingExpenseTemplate) return
+          await deleteExpenseTemplate(deletingExpenseTemplate.id)
           setRefreshKey((k) => k + 1)
         }}
       />
@@ -566,5 +736,76 @@ const styles = StyleSheet.create({
   cardMeta: {
     fontSize: 12,
     color: colors.ink400,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  toggleTextGroup: {
+    flex: 1,
+    gap: 4,
+  },
+  toggleLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.white,
+  },
+  toggleHint: {
+    fontSize: 12,
+    color: colors.ink400,
+  },
+  switchTrack: {
+    width: 44,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    padding: 2,
+  },
+  switchTrackOn: {
+    backgroundColor: colors.gold500,
+  },
+  switchThumb: {
+    height: 22,
+    width: 22,
+    borderRadius: 11,
+    backgroundColor: colors.white,
+  },
+  switchThumbOn: {
+    alignSelf: 'flex-end',
+  },
+  roleHint: {
+    fontSize: 12,
+    color: colors.ink400,
+    marginBottom: 4,
+  },
+  roleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: colors.surface,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  roleLabel: {
+    fontSize: 14,
+    color: colors.white,
+  },
+  checkbox: {
+    height: 20,
+    width: 20,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: colors.gold500,
+    borderColor: colors.gold500,
   },
 })

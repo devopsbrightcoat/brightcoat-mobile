@@ -7,13 +7,16 @@
 // portan completas de una vez para no repetir este trabajo en cada fase.
 // ---------------------------------------------------------------------------
 
-import type { Charge, CompanySettings, Employee, Expense, PayrollEntry, Property, Schedule, ServiceType } from '../types'
+import type { ProfileRole } from '../auth/AuthProvider'
+import type { AppNotification, Charge, CompanySettings, Employee, Expense, ExpenseTemplate, PayrollEntry, Property, Schedule, ServiceType } from '../types'
 import { supabase } from './supabase'
 import type {
   ChargeRow,
   CompanySettingsRow,
   EmployeeRow,
   ExpenseRow,
+  ExpenseTemplateRow,
+  NotificationRow,
   PayrollEntryRow,
   PropertyRow,
   ScheduleRow,
@@ -136,6 +139,57 @@ export const updateExpense = async (
       description: patch.description.trim() || null,
     })
     .eq('id', id)
+  if (error) throw error
+}
+
+// ---------------------------------------------------------------------------
+// "Gastos fijos" — catálogo de plantillas para Agregar gasto (ver comentario
+// en types.ts). Tabla propia expense_templates, sin relación hacia expenses.
+// ---------------------------------------------------------------------------
+
+const mapExpenseTemplate = (row: ExpenseTemplateRow): ExpenseTemplate => ({
+  id: row.id,
+  name: row.name,
+  amount: row.amount == null ? undefined : Number(row.amount),
+  description: row.description ?? undefined,
+})
+
+export const fetchExpenseTemplates = async (): Promise<ExpenseTemplate[]> => {
+  const { data, error } = await supabase.from('expense_templates').select('*').order('name')
+  if (error) throw error
+  return ((data ?? []) as ExpenseTemplateRow[]).map(mapExpenseTemplate)
+}
+
+export const createExpenseTemplate = async (data: {
+  name: string
+  amount: number | null
+  description: string
+}): Promise<void> => {
+  const { error } = await supabase.from('expense_templates').insert({
+    name: data.name.trim(),
+    amount: data.amount,
+    description: data.description.trim() || null,
+  })
+  if (error) throw error
+}
+
+export const updateExpenseTemplate = async (
+  id: string,
+  patch: { name: string; amount: number | null; description: string },
+): Promise<void> => {
+  const { error } = await supabase
+    .from('expense_templates')
+    .update({
+      name: patch.name.trim(),
+      amount: patch.amount,
+      description: patch.description.trim() || null,
+    })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export const deleteExpenseTemplate = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('expense_templates').delete().eq('id', id)
   if (error) throw error
 }
 
@@ -656,5 +710,78 @@ export const updateOwnProfile = async (id: string, patch: { fullName: string; em
 
 export const updateOwnPassword = async (password: string): Promise<void> => {
   const { error } = await supabase.auth.updateUser({ password })
+  if (error) throw error
+}
+
+export const updateNotificationsEnabled = async (id: string, enabled: boolean): Promise<void> => {
+  const { error } = await supabase.from('profiles').update({ notifications_enabled: enabled }).eq('id', id)
+  if (error) throw error
+}
+
+export const updateNotifyRoles = async (id: string, roles: ProfileRole[]): Promise<void> => {
+  const { error } = await supabase.from('profiles').update({ notify_roles: roles }).eq('id', id)
+  if (error) throw error
+}
+
+// ---------------------------------------------------------------------------
+// Alertas entre usuarios — igual que ops-web/src/lib/api.ts. Las filas las
+// crean únicamente los triggers de la base; acá solo leemos las propias
+// (RLS: notifications_select_own) y marcamos como leídas (RLS:
+// notifications_update_own).
+// ---------------------------------------------------------------------------
+
+const mapNotification = (row: NotificationRow): AppNotification => ({
+  id: row.id,
+  actorId: row.actor_id ?? undefined,
+  entityType: row.entity_type as AppNotification['entityType'],
+  entityId: row.entity_id ?? undefined,
+  message: row.message,
+  readAt: row.read_at ?? undefined,
+  createdAt: row.created_at,
+})
+
+export const fetchNotifications = async (): Promise<AppNotification[]> => {
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(30)
+  if (error) throw error
+  return ((data ?? []) as NotificationRow[]).map(mapNotification)
+}
+
+// Leer una alerta la borra de una vez — no se quiere que se acumulen
+// (requiere la policy notifications_delete_own, ver
+// 20260929000000_add_notifications_delete_policy.sql).
+export const markNotificationRead = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('notifications').delete().eq('id', id)
+  if (error) throw error
+}
+
+export const markAllNotificationsRead = async (): Promise<void> => {
+  const { error } = await supabase.from('notifications').delete().not('id', 'is', null)
+  if (error) throw error
+}
+
+// ---------------------------------------------------------------------------
+// Push notifications nativas (Android/FCM) — ver src/lib/pushNotifications.ts
+// y 20260927000000_add_device_tokens.sql. onConflict: 'token' porque el
+// mismo token puede reaparecer (reinstalación, refresh) para el mismo o
+// incluso otro profile en el mismo teléfono.
+// ---------------------------------------------------------------------------
+
+export const registerDeviceToken = async (
+  profileId: string,
+  token: string,
+  platform: 'android' | 'ios',
+): Promise<void> => {
+  const { error } = await supabase
+    .from('device_tokens')
+    .upsert({ profile_id: profileId, token, platform }, { onConflict: 'token' })
+  if (error) throw error
+}
+
+export const deleteDeviceToken = async (token: string): Promise<void> => {
+  const { error } = await supabase.from('device_tokens').delete().eq('token', token)
   if (error) throw error
 }

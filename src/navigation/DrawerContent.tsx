@@ -2,6 +2,7 @@ import React from 'react'
 import type { DrawerContentComponentProps } from '@react-navigation/drawer'
 import {
   Banknote,
+  Bell,
   Building2,
   Calendar,
   LayoutDashboard,
@@ -14,6 +15,7 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../auth/AuthProvider'
 import type { ProfileRole } from '../auth/AuthProvider'
+import { useUnreadNotificationsCount } from '../lib/useUnreadNotificationsCount'
 import { colors } from '../theme/colors'
 import type { DrawerParamList } from './DrawerNavigator'
 
@@ -21,12 +23,16 @@ const roleLabel: Record<ProfileRole, string> = {
   owner: 'Dueño',
   admin: 'Administrador',
   staff: 'Staff',
+  finance: 'Finanzas',
 }
 
-const items: { key: keyof DrawerParamList; label: string; icon: typeof LayoutDashboard }[] = [
+const items: { key: keyof DrawerParamList; label: string; icon: typeof LayoutDashboard; hiddenForStaff?: boolean }[] = [
   { key: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'Horarios', label: 'Horarios', icon: Calendar },
   { key: 'Finanzas', label: 'Finanzas', icon: Banknote },
+  // Sin esta pantalla para staff — ver ConfiguracionScreen.tsx (misma
+  // regla que la pestaña "Alertas" de Configuración).
+  { key: 'Alertas', label: 'Alertas', icon: Bell, hiddenForStaff: true },
   { key: 'Reportes', label: 'Reportes', icon: LineChart },
   { key: 'Propiedades', label: 'Propiedades', icon: Building2 },
   { key: 'Empleados', label: 'Empleados', icon: Users },
@@ -39,6 +45,9 @@ const items: { key: keyof DrawerParamList; label: string; icon: typeof LayoutDas
 export const DrawerContent = (props: DrawerContentComponentProps) => {
   const { profile, signOut } = useAuth()
   const activeRoute = props.state.routeNames[props.state.index]
+  const isStaff = profile?.role === 'staff'
+  const unreadCount = useUnreadNotificationsCount(!isStaff)
+  const visibleItems = items.filter((item) => !item.hiddenForStaff || !isStaff)
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -51,7 +60,7 @@ export const DrawerContent = (props: DrawerContentComponentProps) => {
       </View>
 
       <View style={styles.items}>
-        {items.map(({ key, label, icon: Icon }) => {
+        {visibleItems.map(({ key, label, icon: Icon }) => {
           const active = activeRoute === key
           return (
             <TouchableOpacity
@@ -62,6 +71,11 @@ export const DrawerContent = (props: DrawerContentComponentProps) => {
             >
               <Icon size={18} color={active ? colors.gold400 : colors.ink300} />
               <Text style={[styles.itemLabel, active && styles.itemLabelActive]}>{label}</Text>
+              {key === 'Alertas' && unreadCount > 0 ? (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                </View>
+              ) : null}
             </TouchableOpacity>
           )
         })}
@@ -133,9 +147,24 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(207,145,34,0.14)',
   },
   itemLabel: {
+    flex: 1,
     fontSize: 14,
     fontWeight: '500',
     color: colors.ink300,
+  },
+  badge: {
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 5,
+    borderRadius: 10,
+    backgroundColor: colors.gold500,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.brand900,
   },
   itemLabelActive: {
     color: colors.gold400,

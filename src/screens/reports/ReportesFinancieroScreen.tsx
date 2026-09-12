@@ -6,6 +6,7 @@ import { DashboardPanel } from '../../components/dashboard/DashboardPanel'
 import { FilterCarousel } from '../../components/common/FilterCarousel'
 import { Panel } from '../../components/common/Panel'
 import { RankingBars } from '../../components/dashboard/RankingBars'
+import { ServiceCategoryModal } from '../../components/dashboard/ServiceCategoryModal'
 import { SegmentedField } from '../../components/common/SegmentedField'
 import { StatCard } from '../../components/common/StatCard'
 import {
@@ -21,8 +22,8 @@ import {
   computeKpis,
   computeMonthlyFinancials,
   computePropertyProfitability,
+  computeRevenueByCategory,
   computeRevenueByPeriod,
-  computeRevenueByService,
   DASHBOARD_DATE_RANGE_OPTIONS,
   REVENUE_PERIOD_GRANULARITY_OPTIONS,
   type DashboardDateRangeKey,
@@ -66,6 +67,7 @@ const compareChartConfig = {
 export const ReportesFinancieroScreen = () => {
   const [rangeKey, setRangeKey] = useState<DashboardDateRangeKey>('this_month')
   const [periodGranularity, setPeriodGranularity] = useState<RevenuePeriodGranularity>('day')
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
 
   const {
     data: charges,
@@ -134,9 +136,13 @@ export const ReportesFinancieroScreen = () => {
     () => computeMonthlyFinancials(charges ?? [], expenses ?? [], payrollEntries ?? []),
     [charges, expenses, payrollEntries],
   )
-  const revenueByService = useMemo(
-    () => computeRevenueByService(charges ?? [], serviceTypes ?? [], range),
+  const revenueByCategory = useMemo(
+    () => computeRevenueByCategory(charges ?? [], serviceTypes ?? [], range),
     [charges, serviceTypes, range],
+  )
+  const selectedCategory = useMemo(
+    () => revenueByCategory.find((c) => (c.category ?? c.label) === selectedCategoryId) ?? null,
+    [revenueByCategory, selectedCategoryId],
   )
   const revenueByPeriod = useMemo(
     () => computeRevenueByPeriod(charges ?? [], range, periodGranularity),
@@ -268,12 +274,13 @@ export const ReportesFinancieroScreen = () => {
         </View>
 
         <View style={styles.panelWrap}>
-          <DashboardPanel title="Ingresos por tipo de servicio" subtitle="Período seleccionado">
+          <DashboardPanel title="Ingresos por categoría de servicio" subtitle="Período seleccionado">
             <RankingBars
-              items={revenueByService.map((s) => ({ id: s.serviceTypeId ?? s.label, label: s.label, value: s.revenue }))}
+              items={revenueByCategory.map((c) => ({ id: c.category ?? c.label, label: c.label, value: c.revenue }))}
               formatValue={currency}
               color={COLOR_GOLD}
               emptyText="No hay cobros en este período."
+              onItemPress={(item) => setSelectedCategoryId(item.id)}
             />
           </DashboardPanel>
         </View>
@@ -312,6 +319,8 @@ export const ReportesFinancieroScreen = () => {
           )}
         </View>
       </ScrollView>
+
+      <ServiceCategoryModal category={selectedCategory} onClose={() => setSelectedCategoryId(null)} />
     </View>
   )
 }

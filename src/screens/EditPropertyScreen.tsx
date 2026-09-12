@@ -50,7 +50,7 @@ export const EditPropertyScreen = () => {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
         <FormField label="Nombre" value={name} onChangeText={setName} placeholder="ej. Riverside Apartments" />
         <FormField label="Dirección" value={address} onChangeText={setAddress} placeholder="Dirección completa" />

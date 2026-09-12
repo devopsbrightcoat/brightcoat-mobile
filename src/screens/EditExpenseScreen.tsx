@@ -53,7 +53,7 @@ export const EditExpenseScreen = () => {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
         <FormField
           label="Número de factura"

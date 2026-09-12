@@ -1,5 +1,6 @@
 import React from 'react'
 import { createDrawerNavigator } from '@react-navigation/drawer'
+import { AlertasScreen } from '../screens/AlertasScreen'
 import { ConfiguracionScreen } from '../screens/ConfiguracionScreen'
 import { DashboardScreen } from '../screens/DashboardScreen'
 import { EmpleadosScreen } from '../screens/EmpleadosScreen'
@@ -13,6 +14,7 @@ export type DrawerParamList = {
   Dashboard: undefined
   Horarios: undefined
   Finanzas: undefined
+  Alertas: undefined
   Reportes: undefined
   Propiedades: undefined
   Empleados: undefined
@@ -39,6 +41,7 @@ export const DrawerNavigator = () => {
       <Drawer.Screen name="Dashboard" component={DashboardScreen} />
       <Drawer.Screen name="Horarios" component={HorariosScreen} />
       <Drawer.Screen name="Finanzas" component={FinanzasScreen} />
+      <Drawer.Screen name="Alertas" component={AlertasScreen} />
       <Drawer.Screen name="Reportes" component={ReportesScreen} />
       <Drawer.Screen name="Propiedades" component={PropiedadesScreen} />
       <Drawer.Screen name="Empleados" component={EmpleadosScreen} />

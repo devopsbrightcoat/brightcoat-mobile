@@ -2,7 +2,7 @@ import type { Session } from '@supabase/supabase-js'
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { supabase, usernameToSyntheticEmail } from '../lib/supabase'
 
-export type ProfileRole = 'owner' | 'admin' | 'staff'
+export type ProfileRole = 'owner' | 'admin' | 'staff' | 'finance'
 
 export type Profile = {
   id: string
@@ -10,6 +10,14 @@ export type Profile = {
   fullName: string | null
   email: string | null
   role: ProfileRole
+  // Toggle "Activar alertas" (Configuración -> pestaña Alertas) — si es
+  // false, los triggers de notifications no le generan alertas a este
+  // usuario. Ver 20260924000000_add_notifications.sql (ops-web).
+  notificationsEnabled: boolean
+  // Roles cuya actividad este usuario quiere ver en sus alertas — ver
+  // 20260926000000_add_notify_roles.sql (ops-web). Vacío para quien nunca
+  // configuró nada (ej. staff, que no tiene esta pestaña).
+  notifyRoles: ProfileRole[]
 }
 
 type AuthContextValue = {
@@ -30,7 +38,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 const loadProfile = async (userId: string): Promise<Profile | null> => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, username, full_name, email, role')
+    .select('id, username, full_name, email, role, notifications_enabled, notify_roles')
     .eq('id', userId)
     .single()
 
@@ -42,6 +50,8 @@ const loadProfile = async (userId: string): Promise<Profile | null> => {
     fullName: data.full_name,
     email: data.email,
     role: data.role,
+    notificationsEnabled: data.notifications_enabled ?? true,
+    notifyRoles: (data.notify_roles ?? []) as ProfileRole[],
   }
 }
 

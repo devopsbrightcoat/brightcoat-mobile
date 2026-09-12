@@ -137,7 +137,7 @@ export const EditPayrollEntryScreen = () => {
   const loadingLookups = loadingProperties || loadingEmployees
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
         {loadingLookups ? null : (
           <>

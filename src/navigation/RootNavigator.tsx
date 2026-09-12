@@ -1,18 +1,22 @@
 import React from 'react'
 import { NavigationContainer, DarkTheme } from '@react-navigation/native'
+import type { NavigatorScreenParams } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { ActivityIndicator, StyleSheet, View } from 'react-native'
 import { useAuth } from '../auth/AuthProvider'
+import { usePushNotifications } from '../lib/pushNotifications'
 import { colors } from '../theme/colors'
-import type { Employee, Expense, PayrollEntry, Property, Schedule, ServiceType } from '../types'
+import type { Employee, Expense, ExpenseTemplate, PayrollEntry, Property, Schedule, ServiceType } from '../types'
 import { AddEmployeeScreen } from '../screens/AddEmployeeScreen'
 import { AddExpenseScreen } from '../screens/AddExpenseScreen'
+import { AddExpenseTemplateScreen } from '../screens/AddExpenseTemplateScreen'
 import { AddPayrollEntryScreen } from '../screens/AddPayrollEntryScreen'
 import { AddPropertyScreen } from '../screens/AddPropertyScreen'
 import { AddScheduleScreen } from '../screens/AddScheduleScreen'
 import { AddServiceTypeScreen } from '../screens/AddServiceTypeScreen'
 import { EditEmployeeScreen } from '../screens/EditEmployeeScreen'
 import { EditExpenseScreen } from '../screens/EditExpenseScreen'
+import { EditExpenseTemplateScreen } from '../screens/EditExpenseTemplateScreen'
 import { EditPayrollEntryScreen } from '../screens/EditPayrollEntryScreen'
 import { EditPropertyScreen } from '../screens/EditPropertyScreen'
 import { EditScheduleScreen } from '../screens/EditScheduleScreen'
@@ -28,16 +32,20 @@ import { ReportesPlanillaScreen } from '../screens/reports/ReportesPlanillaScree
 import { ServiciosPorTipoScreen } from '../screens/reports/ServiciosPorTipoScreen'
 import { TrabajosPorEstatusScreen } from '../screens/reports/TrabajosPorEstatusScreen'
 import { DrawerNavigator } from './DrawerNavigator'
+import type { DrawerParamList } from './DrawerNavigator'
+import { navigationRef } from './navigationRef'
 
 export type RootStackParamList = {
   Login: undefined
-  Tabs: undefined
+  Tabs: NavigatorScreenParams<DrawerParamList> | undefined
   AddProperty: undefined
   EditProperty: { property: Property }
   AddSchedule: { defaultDate: string }
   EditSchedule: { schedule: Schedule }
   AddExpense: undefined
   EditExpense: { expense: Expense }
+  AddExpenseTemplate: undefined
+  EditExpenseTemplate: { template: ExpenseTemplate }
   AddPayrollEntry: undefined
   EditPayrollEntry: { entry: PayrollEntry }
   AddEmployee: undefined
@@ -82,9 +90,10 @@ const screenOptions = {
 // según AuthProvider), adaptado a react-navigation en vez de react-router.
 export const RootNavigator = () => {
   const { loading, session } = useAuth()
+  usePushNotifications(session?.user.id)
 
   return (
-    <NavigationContainer theme={navigationTheme}>
+    <NavigationContainer theme={navigationTheme} ref={navigationRef}>
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator color={colors.gold500} size="large" />
@@ -102,6 +111,16 @@ export const RootNavigator = () => {
           <Stack.Screen name="EditSchedule" component={EditScheduleScreen} options={{ title: 'Editar horario' }} />
           <Stack.Screen name="AddExpense" component={AddExpenseScreen} options={{ title: 'Agregar gasto' }} />
           <Stack.Screen name="EditExpense" component={EditExpenseScreen} options={{ title: 'Editar gasto' }} />
+          <Stack.Screen
+            name="AddExpenseTemplate"
+            component={AddExpenseTemplateScreen}
+            options={{ title: 'Agregar gasto fijo' }}
+          />
+          <Stack.Screen
+            name="EditExpenseTemplate"
+            component={EditExpenseTemplateScreen}
+            options={{ title: 'Editar gasto fijo' }}
+          />
           <Stack.Screen
             name="AddPayrollEntry"
             component={AddPayrollEntryScreen}

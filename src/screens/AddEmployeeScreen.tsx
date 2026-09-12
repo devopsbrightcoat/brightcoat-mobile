@@ -65,7 +65,7 @@ export const AddEmployeeScreen = () => {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
         <FormField label="Nombre" value={name} onChangeText={setName} placeholder="ej. Carlos Mejía" />
         <FormField label="Rol / puesto" value={role} onChangeText={setRole} placeholder="ej. Pintor" />

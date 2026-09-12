@@ -39,6 +39,13 @@ export type ExpenseRow = {
   description: string | null
 }
 
+export type ExpenseTemplateRow = {
+  id: string
+  name: string
+  amount: number | string | null
+  description: string | null
+}
+
 export type PayrollEntryItemRow = {
   id: string
   payroll_entry_id: string
@@ -92,4 +99,14 @@ export type CompanySettingsRow = {
   phone: string | null
   email: string | null
   default_hourly_rate: number | string | null
+}
+
+export type NotificationRow = {
+  id: string
+  actor_id: string | null
+  entity_type: string
+  entity_id: string | null
+  message: string
+  read_at: string | null
+  created_at: string
 }

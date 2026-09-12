@@ -42,7 +42,12 @@ type ModalProps = {
 export const Modal = ({ open, onClose, title, children, minHeight, scrollEnabled = true }: ModalProps) => {
   return (
     <RNModal visible={open} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* behavior 'height' en Android (no undefined): este modal abre su
+          propia ventana nativa, separada de la Activity principal, así que
+          android:windowSoftInputMode="adjustResize" del manifest no lo
+          alcanza — sin esto el teclado tapa los campos de cualquier
+          formulario dentro de un modal en Android. */}
+      <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={[styles.sheet, minHeight != null && { minHeight }]}>
           <View style={styles.modalHeader}>

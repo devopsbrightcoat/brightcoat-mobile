@@ -37,6 +37,18 @@ export type Expense = {
   description?: string
 }
 
+// "Gastos fijos" — catálogo de tipos de gasto recurrentes (renta, seguro,
+// internet, etc.) que se puede elegir como plantilla al agregar un gasto
+// real (ver AddExpenseScreen). Precarga monto y descripción en el
+// formulario nada más — no crea gastos ni queda ligada a ellos de ninguna
+// forma, ni siquiera al elegirla.
+export type ExpenseTemplate = {
+  id: string
+  name: string
+  amount?: number
+  description?: string
+}
+
 // Planillas — pago de mano de obra por trabajo completo (propiedad +
 // unidad + empleado + servicio, todos obligatorios). Tabla propia
 // (payroll_entries), separada de expenses desde
@@ -126,4 +138,20 @@ export type Schedule = {
   scheduledDate: string
   status: ScheduleStatus
   rescheduledToId?: string
+}
+
+// Alertas entre usuarios (owner/admin/staff/finance) — ver
+// ops-web/supabase/migrations/20260924000000_add_notifications.sql. El
+// nombre AppNotification evita chocar con el tipo Notification del DOM
+// (irrelevante acá, pero se mantiene igual que ops-web por consistencia).
+export type NotificationEntityType = 'property' | 'employee' | 'schedule' | 'expense' | 'payroll_entry' | 'charge'
+
+export type AppNotification = {
+  id: string
+  actorId?: string
+  entityType: NotificationEntityType
+  entityId?: string
+  message: string
+  readAt?: string
+  createdAt: string
 }

@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native'
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { DatePicker } from '../components/common/DatePicker'
 import { FormField } from '../components/common/FormField'
-import { createExpense } from '../lib/api'
+import { InlineSelect } from '../components/common/InlineSelect'
+import { createExpense, fetchExpenseTemplates } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
+import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import { colors } from '../theme/colors'
 
@@ -23,8 +25,22 @@ export const AddExpenseScreen = () => {
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState('')
   const [description, setDescription] = useState('')
+  const [templateId, setTemplateId] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const { data: templates } = useSupabaseQuery(fetchExpenseTemplates, [])
+  const templateOptions = (templates ?? []).map((t) => ({ id: t.id, label: t.name }))
+
+  // Elegir un gasto fijo solo precarga monto y descripción — no queda
+  // ningún vínculo guardado entre el gasto y la plantilla usada.
+  const handleTemplateChange = (id: string) => {
+    setTemplateId(id)
+    const template = (templates ?? []).find((t) => t.id === id)
+    if (!template) return
+    if (template.amount != null) setAmount(String(template.amount))
+    if (template.description) setDescription(template.description)
+  }
 
   const handleSave = async () => {
     const amountNum = Number(amount)
@@ -50,8 +66,21 @@ export const AddExpenseScreen = () => {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+        {templateOptions.length > 0 && (
+          <View style={styles.field}>
+            <Text style={styles.label}>Gasto fijo (opcional)</Text>
+            <InlineSelect
+              options={templateOptions}
+              value={templateId}
+              onChange={handleTemplateChange}
+              placeholder="Seleccionar plantilla…"
+              searchPlaceholder="Buscar…"
+            />
+          </View>
+        )}
+
         <FormField
           label="Número de factura"
           value={invoiceNumber}
@@ -98,6 +127,14 @@ const styles = StyleSheet.create({
   form: {
     padding: 20,
     gap: 18,
+  },
+  field: {
+    gap: 6,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.ink200,
   },
   textArea: {
     minHeight: 90,
