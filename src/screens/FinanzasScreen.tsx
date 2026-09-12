@@ -6,17 +6,19 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { ScreenHeader } from '../components/common/ScreenHeader'
 import { CobrosScreen } from './finanzas/CobrosScreen'
 import { GastosScreen } from './finanzas/GastosScreen'
+import { ImpuestosScreen } from './finanzas/ImpuestosScreen'
 import { PlanillasScreen } from './finanzas/PlanillasScreen'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import { colors } from '../theme/colors'
 
-type TabKey = 'cobros' | 'gastos' | 'planillas'
+type TabKey = 'cobros' | 'gastos' | 'planillas' | 'impuestos'
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'cobros', label: 'Cobros' },
   { key: 'gastos', label: 'Gastos' },
   { key: 'planillas', label: 'Planillas' },
+  { key: 'impuestos', label: 'Impuestos' },
 ]
 
 // Réplica de ops-web (Cobros.tsx / Gastos.tsx / Planillas.tsx — tres páginas
@@ -80,7 +82,15 @@ export const FinanzasScreen = () => {
         ))}
       </View>
 
-      {tab === 'cobros' ? <CobrosScreen /> : tab === 'gastos' ? <GastosScreen /> : <PlanillasScreen />}
+      {tab === 'cobros' ? (
+        <CobrosScreen />
+      ) : tab === 'gastos' ? (
+        <GastosScreen />
+      ) : tab === 'planillas' ? (
+        <PlanillasScreen />
+      ) : (
+        <ImpuestosScreen />
+      )}
     </View>
   )
 }

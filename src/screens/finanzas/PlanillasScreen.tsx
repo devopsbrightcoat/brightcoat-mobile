@@ -9,6 +9,7 @@ import { Panel } from '../../components/common/Panel'
 import { StatCard } from '../../components/common/StatCard'
 import { fetchEmployees, fetchPayrollEntries, fetchProperties } from '../../lib/api'
 import { currency } from '../../lib/format'
+import { taxOnAmount, SALES_TAX_RATE } from '../../lib/tax'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../../navigation/RootNavigator'
 import { colors } from '../../theme/colors'
@@ -110,6 +111,9 @@ export const PlanillasScreen = () => {
   const renderItem = ({ item }: { item: PayrollEntry }) => {
     const sales = item.items.reduce((sum, i) => sum + i.amount, 0)
     const profit = item.amount == null ? null : sales - item.amount
+    // Informativo únicamente (8.25% fijo sobre el pago) — no se resta de
+    // nada ni se guarda en base de datos, ver lib/tax.ts.
+    const tax = item.amount == null ? null : taxOnAmount(item.amount)
     return (
       <TouchableOpacity activeOpacity={0.75} onPress={() => setDetailEntry(item)}>
         <Panel style={styles.card}>
@@ -132,6 +136,10 @@ export const PlanillasScreen = () => {
             <Text style={profit == null ? styles.pendingSmall : profit < 0 ? styles.negativeSmall : styles.profitSmall}>
               {profit == null ? 'Ganancia pendiente' : `Ganancia ${currency(profit)}`}
             </Text>
+          </View>
+          <View style={styles.taxRow}>
+            <Text style={styles.taxRowLabel}>Impuesto ({(SALES_TAX_RATE * 100).toFixed(2)}%)</Text>
+            <Text style={styles.taxRowValue}>{tax == null ? 'Pendiente' : currency(tax)}</Text>
           </View>
         </Panel>
       </TouchableOpacity>
@@ -364,6 +372,21 @@ const styles = StyleSheet.create({
   pendingSmall: {
     fontSize: 11,
     color: colors.ink500,
+  },
+  taxRow: {
+    marginTop: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  taxRowLabel: {
+    fontSize: 11,
+    color: colors.ink500,
+  },
+  taxRowValue: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.gold400,
   },
   emptyText: {
     marginTop: 24,
