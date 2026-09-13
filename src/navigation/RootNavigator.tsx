@@ -6,7 +6,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native'
 import { useAuth } from '../auth/AuthProvider'
 import { usePushNotifications } from '../lib/pushNotifications'
 import { colors } from '../theme/colors'
-import type { Employee, Expense, ExpenseTemplate, PayrollEntry, Property, Schedule, ServiceType } from '../types'
+import type { Employee, Expense, ExpenseTemplate, PayrollEntry, Property, Schedule, ServiceType, Vendor } from '../types'
 import { AddEmployeeScreen } from '../screens/AddEmployeeScreen'
 import { AddExpenseScreen } from '../screens/AddExpenseScreen'
 import { AddExpenseTemplateScreen } from '../screens/AddExpenseTemplateScreen'
@@ -14,6 +14,7 @@ import { AddPayrollEntryScreen } from '../screens/AddPayrollEntryScreen'
 import { AddPropertyScreen } from '../screens/AddPropertyScreen'
 import { AddScheduleScreen } from '../screens/AddScheduleScreen'
 import { AddServiceTypeScreen } from '../screens/AddServiceTypeScreen'
+import { AddVendorScreen } from '../screens/AddVendorScreen'
 import { EditEmployeeScreen } from '../screens/EditEmployeeScreen'
 import { EditExpenseScreen } from '../screens/EditExpenseScreen'
 import { EditExpenseTemplateScreen } from '../screens/EditExpenseTemplateScreen'
@@ -21,6 +22,7 @@ import { EditPayrollEntryScreen } from '../screens/EditPayrollEntryScreen'
 import { EditPropertyScreen } from '../screens/EditPropertyScreen'
 import { EditScheduleScreen } from '../screens/EditScheduleScreen'
 import { EditServiceTypeScreen } from '../screens/EditServiceTypeScreen'
+import { EditVendorScreen } from '../screens/EditVendorScreen'
 import { LoginScreen } from '../screens/LoginScreen'
 import { FinancieroPropiedadScreen } from '../screens/reports/FinancieroPropiedadScreen'
 import { ProductividadEmpleadoScreen } from '../screens/reports/ProductividadEmpleadoScreen'
@@ -52,6 +54,8 @@ export type RootStackParamList = {
   EditEmployee: { employee: Employee }
   AddServiceType: undefined
   EditServiceType: { serviceType: ServiceType }
+  AddVendor: undefined
+  EditVendor: { vendor: Vendor }
   FinancieroPropiedad: { propertyId?: string } | undefined
   ReportesFinanciero: undefined
   ReportesCobros: undefined
@@ -143,6 +147,8 @@ export const RootNavigator = () => {
             component={EditServiceTypeScreen}
             options={{ title: 'Editar servicio' }}
           />
+          <Stack.Screen name="AddVendor" component={AddVendorScreen} options={{ title: 'Agregar proveedor' }} />
+          <Stack.Screen name="EditVendor" component={EditVendorScreen} options={{ title: 'Editar proveedor' }} />
           <Stack.Screen
             name="FinancieroPropiedad"
             component={FinancieroPropiedadScreen}

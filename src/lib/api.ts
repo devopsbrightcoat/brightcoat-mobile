@@ -8,7 +8,7 @@
 // ---------------------------------------------------------------------------
 
 import type { ProfileRole } from '../auth/AuthProvider'
-import type { AppNotification, Charge, CompanySettings, Employee, Expense, ExpenseTemplate, PayrollEntry, Property, Schedule, ServiceType } from '../types'
+import type { AppNotification, Charge, CompanySettings, Employee, Expense, ExpenseTemplate, PayrollEntry, Property, Schedule, ServiceType, Vendor } from '../types'
 import { supabase } from './supabase'
 import type {
   ChargeRow,
@@ -21,6 +21,7 @@ import type {
   PropertyRow,
   ScheduleRow,
   ServiceTypeRow,
+  VendorRow,
 } from './dbTypes'
 
 const mapProperty = (row: PropertyRow): Property => ({
@@ -103,6 +104,7 @@ const mapExpense = (row: ExpenseRow): Expense => ({
   amount: Number(row.amount),
   date: row.date,
   description: row.description ?? undefined,
+  vendorId: row.vendor_id ?? undefined,
 })
 
 export const fetchExpenses = async (): Promise<Expense[]> => {
@@ -116,19 +118,21 @@ export const createExpense = async (data: {
   amount: number
   date: string
   description: string
+  vendorId?: string
 }): Promise<void> => {
   const { error } = await supabase.from('expenses').insert({
     invoice_number: data.invoiceNumber.trim() || null,
     amount: data.amount,
     date: data.date,
     description: data.description.trim() || null,
+    vendor_id: data.vendorId || null,
   })
   if (error) throw error
 }
 
 export const updateExpense = async (
   id: string,
-  patch: { invoiceNumber: string; amount: number; date: string; description: string },
+  patch: { invoiceNumber: string; amount: number; date: string; description: string; vendorId?: string },
 ): Promise<void> => {
   const { error } = await supabase
     .from('expenses')
@@ -137,6 +141,7 @@ export const updateExpense = async (
       amount: patch.amount,
       date: patch.date,
       description: patch.description.trim() || null,
+      vendor_id: patch.vendorId || null,
     })
     .eq('id', id)
   if (error) throw error
@@ -194,6 +199,44 @@ export const deleteExpenseTemplate = async (id: string): Promise<void> => {
 }
 
 // ---------------------------------------------------------------------------
+// Proveedores — catálogo de proveedores (ver comentario en types.ts). A
+// diferencia de expense_templates, sí tiene una relación real: expenses.vendor_id
+// (on delete set null — borrar un proveedor no borra el gasto, solo lo desliga).
+// ---------------------------------------------------------------------------
+
+const mapVendor = (row: VendorRow): Vendor => ({
+  id: row.id,
+  name: row.name,
+  notes: row.notes ?? undefined,
+})
+
+export const fetchVendors = async (): Promise<Vendor[]> => {
+  const { data, error } = await supabase.from('vendors').select('*').order('name')
+  if (error) throw error
+  return ((data ?? []) as VendorRow[]).map(mapVendor)
+}
+
+export const createVendor = async (data: { name: string; notes: string }): Promise<void> => {
+  const { error } = await supabase
+    .from('vendors')
+    .insert({ name: data.name.trim(), notes: data.notes.trim() || null })
+  if (error) throw error
+}
+
+export const updateVendor = async (id: string, patch: { name: string; notes: string }): Promise<void> => {
+  const { error } = await supabase
+    .from('vendors')
+    .update({ name: patch.name.trim(), notes: patch.notes.trim() || null })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export const deleteVendor = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('vendors').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ---------------------------------------------------------------------------
 // Planillas — pago de mano de obra por trabajo completo (propiedad + unidad
 // + empleado + servicio, todos obligatorios). Tabla propia (payroll_entries)
 // desde 20260917000000_split_expenses_payroll.sql, separada de expenses (que
@@ -211,6 +254,7 @@ const mapPayrollEntry = (row: PayrollEntryRow): PayrollEntry => ({
   serviceName: row.service_name,
   amount: row.amount == null ? null : Number(row.amount),
   date: row.date,
+  notes: row.notes ?? undefined,
   items: (row.payroll_entry_items ?? []).map((item) => ({
     id: item.id,
     description: item.description,
@@ -235,6 +279,7 @@ type PayrollEntryInput = {
   serviceName: string
   amount: number | null
   date: string
+  notes?: string
   items: { description: string; amount: number }[]
 }
 
@@ -261,6 +306,7 @@ export const createPayrollEntry = async (data: PayrollEntryInput): Promise<void>
       service_name: data.serviceName,
       amount: data.amount,
       date: data.date,
+      notes: data.notes || null,
     })
     .select('id')
     .single()
@@ -282,6 +328,7 @@ export const updatePayrollEntry = async (id: string, data: PayrollEntryInput): P
       service_name: data.serviceName,
       amount: data.amount,
       date: data.date,
+      notes: data.notes || null,
     })
     .eq('id', id)
   if (error) throw error

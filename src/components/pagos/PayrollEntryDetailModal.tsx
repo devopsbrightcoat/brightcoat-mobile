@@ -72,6 +72,12 @@ export const PayrollEntryDetailModal = ({ entry, propertyMap, employeeMap, onClo
             </View>
           </View>
 
+          {entry.notes ? (
+            <Field label="Notas">
+              <Text style={styles.fieldValueText}>{entry.notes}</Text>
+            </Field>
+          ) : null}
+
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>Desglose del servicio</Text>
             {entry.items.length === 0 ? (

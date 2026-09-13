@@ -3,7 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Modal } from '../common/Modal'
 import { currency } from '../../lib/format'
 import { colors } from '../../theme/colors'
-import type { Expense } from '../../types'
+import type { Expense, Vendor } from '../../types'
 
 const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <View style={styles.field}>
@@ -14,6 +14,7 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
 
 type ExpenseDetailModalProps = {
   expense: Expense | null
+  vendors: Vendor[]
   onClose: () => void
   // Web separa "ver" (fila -> detalle) de "editar" (botón aparte en la
   // columna de acciones) — acá el botón vive adentro de este mismo modal en
@@ -23,7 +24,8 @@ type ExpenseDetailModalProps = {
   onEdit: (expense: Expense) => void
 }
 
-export const ExpenseDetailModal = ({ expense, onClose, onEdit }: ExpenseDetailModalProps) => {
+export const ExpenseDetailModal = ({ expense, vendors, onClose, onEdit }: ExpenseDetailModalProps) => {
+  const vendorName = expense?.vendorId ? vendors.find((v) => v.id === expense.vendorId)?.name : undefined
   return (
     <Modal open={expense !== null} onClose={onClose} title="Detalle del gasto">
       {expense ? (
@@ -36,6 +38,9 @@ export const ExpenseDetailModal = ({ expense, onClose, onEdit }: ExpenseDetailMo
           </Field>
           <Field label="Fecha">
             <Text style={styles.fieldValueText}>{expense.date || '—'}</Text>
+          </Field>
+          <Field label="Proveedor">
+            <Text style={styles.fieldValueText}>{vendorName || '—'}</Text>
           </Field>
           <Field label="Descripción">
             <Text style={styles.fieldValueText}>{expense.description || '—'}</Text>

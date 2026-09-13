@@ -1,34 +1,37 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { useFocusEffect, useNavigation } from '@react-navigation/native'
+import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Filter, Search, TrendingUp, Wallet } from 'lucide-react-native'
+import { Filter, Plus, Search, TrendingUp, Wallet } from 'lucide-react-native'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import { PayrollEntryDetailModal } from '../../components/pagos/PayrollEntryDetailModal'
-import { PayrollFiltersModal } from '../../components/pagos/PayrollFiltersModal'
-import { Panel } from '../../components/common/Panel'
-import { StatCard } from '../../components/common/StatCard'
-import { fetchEmployees, fetchPayrollEntries, fetchProperties } from '../../lib/api'
-import { currency } from '../../lib/format'
-import { taxOnAmount, SALES_TAX_RATE } from '../../lib/tax'
-import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
-import type { RootStackParamList } from '../../navigation/RootNavigator'
-import { colors } from '../../theme/colors'
-import type { PayrollEntry } from '../../types'
+import { ScreenHeader } from '../components/common/ScreenHeader'
+import { PayrollEntryDetailModal } from '../components/pagos/PayrollEntryDetailModal'
+import { PayrollFiltersModal } from '../components/pagos/PayrollFiltersModal'
+import { Panel } from '../components/common/Panel'
+import { StatCard } from '../components/common/StatCard'
+import { fetchEmployees, fetchPayrollEntries, fetchProperties } from '../lib/api'
+import { currency } from '../lib/format'
+import { taxOnAmount, SALES_TAX_RATE } from '../lib/tax'
+import { useSupabaseQuery } from '../lib/useSupabaseQuery'
+import type { RootStackParamList } from '../navigation/RootNavigator'
+import { colors } from '../theme/colors'
+import type { PayrollEntry } from '../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
-// Tab "Planillas" de FinanzasScreen — mismos datos y filtros que
-// ops-web/src/pages/Planillas.tsx. fetchPayrollEntries/createPayrollEntry/
-// updatePayrollEntry ya existían en lib/api.ts (portados junto con
-// Horarios), así que este tab también es puro UI. Venta y Ganancia no se
-// guardan — se calculan acá igual que en PayrollEntryDetailModal/web: Venta
-// es la suma del desglose, Ganancia es Venta - Pago (o "Pendiente" si el
-// pago todavía no se define).
+// Ítem propio del menú (antes era la pestaña "Planillas" de FinanzasScreen —
+// se movió a su propio lugar, ver DrawerNavigator.tsx/DrawerContent.tsx).
+// Mismos datos y filtros que ops-web/src/pages/Planillas.tsx.
+// fetchPayrollEntries/createPayrollEntry/updatePayrollEntry ya existían en
+// lib/api.ts (portados junto con Horarios), así que este screen también es
+// puro UI. Venta y Ganancia no se guardan — se calculan acá igual que en
+// PayrollEntryDetailModal/web: Venta es la suma del desglose, Ganancia es
+// Venta - Pago (o "Pendiente" si el pago todavía no se define).
 //
-// Igual que Gastos: el botón "+" vive en el ScreenHeader de FinanzasScreen,
-// tocar una tarjeta abre el detalle de solo lectura (con botón "Editar
-// planilla" adentro que navega a EditPayrollEntryScreen), y useFocusEffect
-// refresca la lista al volver de Agregar/Editar.
+// Igual que Empleados/Propiedades: el botón "+" vive en el propio
+// ScreenHeader de este screen, tocar una tarjeta abre el detalle de solo
+// lectura (con botón "Editar planilla" adentro que navega a
+// EditPayrollEntryScreen), y useFocusEffect refresca la lista al volver de
+// Agregar/Editar.
 export const PlanillasScreen = () => {
   const navigation = useNavigation<Nav>()
   const [refreshKey, setRefreshKey] = useState(0)
@@ -148,6 +151,20 @@ export const PlanillasScreen = () => {
 
   return (
     <View style={styles.container}>
+      <ScreenHeader
+        title="Planillas"
+        onMenuPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+        right={
+          <TouchableOpacity
+            onPress={() => navigation.navigate('AddPayrollEntry')}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={styles.addButton}
+          >
+            <Plus size={22} color={colors.gold500} />
+          </TouchableOpacity>
+        }
+      />
+
       <View style={styles.statsGrid}>
         <StatCard label="Ventas" value={currency(totals.sales)} icon={TrendingUp} tone="good" size="compact" />
         <StatCard label="Ganancia" value={currency(totals.profit)} icon={Wallet} size="compact" />
@@ -236,6 +253,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
+  },
+  addButton: {
+    paddingHorizontal: 4,
+    paddingVertical: 2,
   },
   statsGrid: {
     flexDirection: 'row',

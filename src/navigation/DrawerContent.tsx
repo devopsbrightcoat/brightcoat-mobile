@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LineChart,
   LogOut,
+  Receipt,
   Settings,
   Users,
 } from 'lucide-react-native'
@@ -30,6 +31,7 @@ const items: { key: keyof DrawerParamList; label: string; icon: typeof LayoutDas
   { key: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'Horarios', label: 'Horarios', icon: Calendar },
   { key: 'Finanzas', label: 'Finanzas', icon: Banknote },
+  { key: 'Planillas', label: 'Planillas', icon: Receipt },
   // Sin esta pantalla para staff — ver ConfiguracionScreen.tsx (misma
   // regla que la pestaña "Alertas" de Configuración).
   { key: 'Alertas', label: 'Alertas', icon: Bell, hiddenForStaff: true },

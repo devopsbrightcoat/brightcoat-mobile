@@ -7,12 +7,12 @@ import { ExpenseDetailModal } from '../../components/gastos/ExpenseDetailModal'
 import { ExpenseFiltersModal } from '../../components/gastos/ExpenseFiltersModal'
 import { Panel } from '../../components/common/Panel'
 import { StatCard } from '../../components/common/StatCard'
-import { fetchExpenses } from '../../lib/api'
+import { fetchExpenses, fetchVendors } from '../../lib/api'
 import { currency } from '../../lib/format'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../../navigation/RootNavigator'
 import { colors } from '../../theme/colors'
-import type { Expense } from '../../types'
+import type { Expense, Vendor } from '../../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
@@ -35,10 +35,13 @@ export const GastosScreen = () => {
   const [dateTo, setDateTo] = useState('')
   const [amountMin, setAmountMin] = useState('')
   const [amountMax, setAmountMax] = useState('')
+  const [vendorId, setVendorId] = useState('')
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [detailExpense, setDetailExpense] = useState<Expense | null>(null)
 
   const { data: expenses, loading, error, refreshing, refetch } = useSupabaseQuery(fetchExpenses, [refreshKey])
+  const { data: vendors } = useSupabaseQuery(fetchVendors, [refreshKey])
+  const vendorMap = new Map((vendors ?? []).map((v: Vendor) => [v.id, v.name]))
 
   // Al volver de Agregar/Editar gasto, refresca la lista — mismo efecto que
   // PropiedadesScreen.
@@ -62,11 +65,12 @@ export const GastosScreen = () => {
       if (dateTo && e.date > dateTo) return false
       if (min != null && !Number.isNaN(min) && e.amount < min) return false
       if (max != null && !Number.isNaN(max) && e.amount > max) return false
+      if (vendorId && e.vendorId !== vendorId) return false
       return true
     })
-  }, [expenses, searchText, dateFrom, dateTo, amountMin, amountMax])
+  }, [expenses, searchText, dateFrom, dateTo, amountMin, amountMax, vendorId])
 
-  const activeFilterCount = [dateFrom, dateTo, amountMin, amountMax].filter(Boolean).length
+  const activeFilterCount = [dateFrom, dateTo, amountMin, amountMax, vendorId].filter(Boolean).length
   const totalAmount = filtered.reduce((sum, e) => sum + e.amount, 0)
 
   const renderItem = ({ item }: { item: Expense }) => (
@@ -78,7 +82,10 @@ export const GastosScreen = () => {
           </Text>
           <Text style={styles.amount}>{currency(item.amount)}</Text>
         </View>
-        <Text style={styles.cardSubtitle}>{item.date || '—'}</Text>
+        <Text style={styles.cardSubtitle}>
+          {item.date || '—'}
+          {item.vendorId && vendorMap.get(item.vendorId) ? ` · ${vendorMap.get(item.vendorId)}` : ''}
+        </Text>
         {item.description ? (
           <Text style={styles.cardDescription} numberOfLines={2}>
             {item.description}
@@ -146,6 +153,7 @@ export const GastosScreen = () => {
 
       <ExpenseDetailModal
         expense={detailExpense}
+        vendors={vendors ?? []}
         onClose={() => setDetailExpense(null)}
         onEdit={(expense) => {
           setDetailExpense(null)
@@ -160,10 +168,13 @@ export const GastosScreen = () => {
         dateTo={dateTo}
         amountMin={amountMin}
         amountMax={amountMax}
+        vendorId={vendorId}
+        vendors={vendors ?? []}
         onDateFromChange={setDateFrom}
         onDateToChange={setDateTo}
         onAmountMinChange={setAmountMin}
         onAmountMaxChange={setAmountMax}
+        onVendorIdChange={setVendorId}
       />
     </View>
   )

@@ -5,7 +5,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, Touchable
 import { DatePicker } from '../components/common/DatePicker'
 import { FormField } from '../components/common/FormField'
 import { InlineSelect } from '../components/common/InlineSelect'
-import { createExpense, fetchExpenseTemplates } from '../lib/api'
+import { createExpense, fetchExpenseTemplates, fetchVendors } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
@@ -26,11 +26,14 @@ export const AddExpenseScreen = () => {
   const [date, setDate] = useState('')
   const [description, setDescription] = useState('')
   const [templateId, setTemplateId] = useState('')
+  const [vendorId, setVendorId] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const { data: templates } = useSupabaseQuery(fetchExpenseTemplates, [])
   const templateOptions = (templates ?? []).map((t) => ({ id: t.id, label: t.name }))
+  const { data: vendors } = useSupabaseQuery(fetchVendors, [])
+  const vendorOptions = (vendors ?? []).map((v) => ({ id: v.id, label: v.name }))
 
   // Elegir un gasto fijo solo precarga monto y descripción — no queda
   // ningún vínculo guardado entre el gasto y la plantilla usada.
@@ -56,7 +59,13 @@ export const AddExpenseScreen = () => {
     setSaving(true)
     setError(null)
     try {
-      await createExpense({ invoiceNumber, amount: amountNum, date: date.trim(), description })
+      await createExpense({
+        invoiceNumber,
+        amount: amountNum,
+        date: date.trim(),
+        description,
+        vendorId: vendorId || undefined,
+      })
       navigation.goBack()
     } catch (err) {
       setError(getErrorMessage(err, 'No se pudo crear el gasto.'))
@@ -80,6 +89,17 @@ export const AddExpenseScreen = () => {
             />
           </View>
         )}
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Proveedor (opcional)</Text>
+          <InlineSelect
+            options={vendorOptions}
+            value={vendorId}
+            onChange={setVendorId}
+            placeholder="Seleccionar proveedor…"
+            searchPlaceholder="Buscar…"
+          />
+        </View>
 
         <FormField
           label="Número de factura"

@@ -2,8 +2,10 @@ import React from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { DatePicker } from '../common/DatePicker'
 import { FormField } from '../common/FormField'
+import { InlineSelect } from '../common/InlineSelect'
 import { Modal } from '../common/Modal'
 import { colors } from '../../theme/colors'
+import type { Vendor } from '../../types'
 
 type ExpenseFiltersModalProps = {
   open: boolean
@@ -16,6 +18,9 @@ type ExpenseFiltersModalProps = {
   onDateToChange: (value: string) => void
   onAmountMinChange: (value: string) => void
   onAmountMaxChange: (value: string) => void
+  vendorId: string
+  vendors: Vendor[]
+  onVendorIdChange: (value: string) => void
 }
 
 // Filtros de Gastos — rango de fecha y rango de monto, mismos campos que
@@ -35,8 +40,12 @@ export const ExpenseFiltersModal = ({
   onDateToChange,
   onAmountMinChange,
   onAmountMaxChange,
+  vendorId,
+  vendors,
+  onVendorIdChange,
 }: ExpenseFiltersModalProps) => {
-  const hasFilters = Boolean(dateFrom || dateTo || amountMin || amountMax)
+  const hasFilters = Boolean(dateFrom || dateTo || amountMin || amountMax || vendorId)
+  const vendorOptions = vendors.map((v) => ({ id: v.id, label: v.name }))
 
   return (
     <Modal open={open} onClose={onClose} title="Filtros" minHeight="55%">
@@ -70,6 +79,17 @@ export const ExpenseFiltersModal = ({
         </View>
       </View>
 
+      <View style={styles.field}>
+        <Text style={styles.fieldLabel}>Proveedor</Text>
+        <InlineSelect
+          options={vendorOptions}
+          value={vendorId}
+          onChange={onVendorIdChange}
+          placeholder="Todos"
+          searchPlaceholder="Buscar…"
+        />
+      </View>
+
       <TouchableOpacity
         style={[styles.clearButton, !hasFilters && styles.clearButtonDisabled]}
         activeOpacity={0.7}
@@ -79,6 +99,7 @@ export const ExpenseFiltersModal = ({
           onDateToChange('')
           onAmountMinChange('')
           onAmountMaxChange('')
+          onVendorIdChange('')
         }}
       >
         <Text style={[styles.clearButtonText, !hasFilters && styles.clearButtonTextDisabled]}>Limpiar filtros</Text>
@@ -94,6 +115,15 @@ const styles = StyleSheet.create({
   },
   half: {
     flex: 1,
+  },
+  field: {
+    gap: 6,
+    marginBottom: 4,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.ink200,
   },
   clearButton: {
     alignItems: 'center',

@@ -7,22 +7,22 @@ import { ScreenHeader } from '../components/common/ScreenHeader'
 import { CobrosScreen } from './finanzas/CobrosScreen'
 import { GastosScreen } from './finanzas/GastosScreen'
 import { ImpuestosScreen } from './finanzas/ImpuestosScreen'
-import { PlanillasScreen } from './finanzas/PlanillasScreen'
+import { ProveedoresScreen } from './finanzas/ProveedoresScreen'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import { colors } from '../theme/colors'
 
-type TabKey = 'cobros' | 'gastos' | 'planillas' | 'impuestos'
+type TabKey = 'cobros' | 'gastos' | 'impuestos' | 'proveedores'
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'cobros', label: 'Cobros' },
   { key: 'gastos', label: 'Gastos' },
-  { key: 'planillas', label: 'Planillas' },
   { key: 'impuestos', label: 'Impuestos' },
+  { key: 'proveedores', label: 'Proveedores' },
 ]
 
-// Réplica de ops-web (Cobros.tsx / Gastos.tsx / Planillas.tsx — tres páginas
-// separadas ahí) como un solo tab switcher acá, igual que ya tenía este
+// Réplica de ops-web (Cobros.tsx / Gastos.tsx — páginas separadas ahí) como
+// un solo tab switcher acá, igual que ya tenía este
 // screen (antes con datos mock, "Gastos"/"Ingresos"). Cada tab es su propia
 // pantalla en screens/finanzas/ — no un ScrollView compartido — porque cada
 // una necesita su propia lista scrolleable (FlatList), y anidar un
@@ -35,8 +35,9 @@ const TABS: { key: TabKey; label: string }[] = [
 // Propiedades para el suyo. Cobros no tiene: los cobros se generan solos
 // desde Horarios o se suben por Excel en la web.
 //
-// Las tres pestañas de Finanzas ya están completas (Cobros, Gastos,
-// Planillas) — Fase 3 completa.
+// Las pestañas de Finanzas (Cobros, Gastos, Impuestos, Proveedores) ya
+// están completas — Planillas se movió a su propio ítem del menú, ver
+// screens/PlanillasScreen.tsx.
 export const FinanzasScreen = () => {
   const navigation = useNavigation<Nav>()
   const [tab, setTab] = useState<TabKey>('cobros')
@@ -45,7 +46,7 @@ export const FinanzasScreen = () => {
     <View style={styles.container}>
       <ScreenHeader
         title="Finanzas"
-        subtitle="Cobros, gastos y planillas"
+        subtitle="Cobros, gastos e impuestos"
         showLogo
         onMenuPress={() => navigation.dispatch(DrawerActions.openDrawer())}
         right={
@@ -57,9 +58,9 @@ export const FinanzasScreen = () => {
             >
               <Plus size={22} color={colors.gold500} />
             </TouchableOpacity>
-          ) : tab === 'planillas' ? (
+          ) : tab === 'proveedores' ? (
             <TouchableOpacity
-              onPress={() => navigation.navigate('AddPayrollEntry')}
+              onPress={() => navigation.navigate('AddVendor')}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               style={styles.addButton}
             >
@@ -86,10 +87,10 @@ export const FinanzasScreen = () => {
         <CobrosScreen />
       ) : tab === 'gastos' ? (
         <GastosScreen />
-      ) : tab === 'planillas' ? (
-        <PlanillasScreen />
-      ) : (
+      ) : tab === 'impuestos' ? (
         <ImpuestosScreen />
+      ) : (
+        <ProveedoresScreen />
       )}
     </View>
   )

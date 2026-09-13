@@ -46,6 +46,7 @@ export const AddPayrollEntryScreen = () => {
   const [serviceName, setServiceName] = useState('')
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState('')
+  const [notes, setNotes] = useState('')
   const [items, setItems] = useState<ItemLine[]>([emptyItem(0)])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -117,6 +118,7 @@ export const AddPayrollEntryScreen = () => {
         serviceName: serviceName.trim(),
         amount: amountValue,
         date: date.trim(),
+        notes: notes.trim(),
         items: parsedItems,
       })
       navigation.goBack()
@@ -175,6 +177,16 @@ export const AddPayrollEntryScreen = () => {
               onChangeText={setAmount}
               placeholder="Se define después si aún no se sabe"
               keyboardType="decimal-pad"
+            />
+
+            <FormField
+              label="Notas (opcional)"
+              value={notes}
+              onChangeText={setNotes}
+              placeholder="Opcional"
+              multiline
+              numberOfLines={3}
+              style={styles.textArea}
             />
 
             <View style={styles.itemsSection}>
@@ -254,6 +266,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: colors.ink200,
+  },
+  textArea: {
+    minHeight: 80,
+    textAlignVertical: 'top',
   },
   itemsSection: {
     gap: 10,

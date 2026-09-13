@@ -35,6 +35,8 @@ export type Expense = {
   amount: number
   date: string
   description?: string
+  // De qué proveedor fue la compra (opcional) — ver Vendor más abajo.
+  vendorId?: string
 }
 
 // "Gastos fijos" — catálogo de tipos de gasto recurrentes (renta, seguro,
@@ -47,6 +49,15 @@ export type ExpenseTemplate = {
   name: string
   amount?: number
   description?: string
+}
+
+// Catálogo de proveedores — de dónde sale cada compra registrada en Gastos
+// (ver Expense.vendorId más arriba). A diferencia de ExpenseTemplate, este sí
+// queda ligado a los gastos que lo usan (expenses.vendor_id).
+export type Vendor = {
+  id: string
+  name: string
+  notes?: string
 }
 
 // Planillas — pago de mano de obra por trabajo completo (propiedad +
@@ -73,6 +84,7 @@ export type PayrollEntry = {
   amount: number | null
   date: string
   items: PayrollEntryItem[]
+  notes?: string
 }
 
 export type W2Status = 'approved' | 'pending'

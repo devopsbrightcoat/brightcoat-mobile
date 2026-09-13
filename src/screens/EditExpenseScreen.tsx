@@ -2,11 +2,13 @@ import React, { useState } from 'react'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { RouteProp } from '@react-navigation/native'
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native'
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { DatePicker } from '../components/common/DatePicker'
 import { FormField } from '../components/common/FormField'
-import { updateExpense } from '../lib/api'
+import { InlineSelect } from '../components/common/InlineSelect'
+import { fetchVendors, updateExpense } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
+import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import { colors } from '../theme/colors'
 
@@ -26,8 +28,12 @@ export const EditExpenseScreen = () => {
   const [amount, setAmount] = useState(String(expense.amount))
   const [date, setDate] = useState(expense.date)
   const [description, setDescription] = useState(expense.description ?? '')
+  const [vendorId, setVendorId] = useState(expense.vendorId ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const { data: vendors } = useSupabaseQuery(fetchVendors, [])
+  const vendorOptions = (vendors ?? []).map((v) => ({ id: v.id, label: v.name }))
 
   const handleSave = async () => {
     const amountNum = Number(amount)
@@ -43,7 +49,13 @@ export const EditExpenseScreen = () => {
     setSaving(true)
     setError(null)
     try {
-      await updateExpense(expense.id, { invoiceNumber, amount: amountNum, date: date.trim(), description })
+      await updateExpense(expense.id, {
+        invoiceNumber,
+        amount: amountNum,
+        date: date.trim(),
+        description,
+        vendorId: vendorId || undefined,
+      })
       navigation.goBack()
     } catch (err) {
       setError(getErrorMessage(err, 'No se pudo guardar el gasto.'))
@@ -67,6 +79,17 @@ export const EditExpenseScreen = () => {
         <FormField label="Monto" value={amount} onChangeText={setAmount} placeholder="0.00" keyboardType="decimal-pad" />
 
         <DatePicker label="Fecha" value={date} onChange={setDate} />
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Proveedor (opcional)</Text>
+          <InlineSelect
+            options={vendorOptions}
+            value={vendorId}
+            onChange={setVendorId}
+            placeholder="Seleccionar proveedor…"
+            searchPlaceholder="Buscar…"
+          />
+        </View>
 
         <FormField
           label="Descripción"
@@ -101,6 +124,14 @@ const styles = StyleSheet.create({
   form: {
     padding: 20,
     gap: 18,
+  },
+  field: {
+    gap: 6,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.ink200,
   },
   textArea: {
     minHeight: 90,
