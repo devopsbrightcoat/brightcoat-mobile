@@ -1,8 +1,10 @@
 import React from 'react'
+import { Trash2 } from 'lucide-react-native'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Modal } from '../common/Modal'
 import { formatFullDate } from '../../lib/scheduleDates'
 import { currency } from '../../lib/format'
+import { taxOnAmount, SALES_TAX_RATE } from '../../lib/tax'
 import { colors } from '../../theme/colors'
 import type { PayrollEntry } from '../../types'
 
@@ -19,16 +21,31 @@ type PayrollEntryDetailModalProps = {
   employeeMap: Map<string, string>
   onClose: () => void
   onEdit: (entry: PayrollEntry) => void
+  onDelete: (entry: PayrollEntry) => void
 }
 
 // Vista de solo lectura de una planilla, con el desglose del servicio y los
-// cálculos de Venta (suma del desglose) y Ganancia (Venta - Pago) — mismos
-// campos que PayrollEntryDetailModal.tsx en ops-web. El botón "Editar" vive
-// adentro de este modal (mismo criterio que ExpenseDetailModal) y navega a
-// EditPayrollEntryScreen.
-export const PayrollEntryDetailModal = ({ entry, propertyMap, employeeMap, onClose, onEdit }: PayrollEntryDetailModalProps) => {
+// cálculos de Pago (suma del desglose) y Ganancia (Cobro - Pago) — mismos
+// campos que PayrollEntryDetailModal.tsx en ops-web. Los botones "Editar" y
+// "Eliminar" viven adentro de este modal (mismo criterio que
+// ExpenseDetailModal) — Editar navega a EditPayrollEntryScreen, Eliminar
+// avisa al padre (PlanillasScreen), que muestra el ConfirmModal.
+export const PayrollEntryDetailModal = ({
+  entry,
+  propertyMap,
+  employeeMap,
+  onClose,
+  onEdit,
+  onDelete,
+}: PayrollEntryDetailModalProps) => {
   const sales = entry ? entry.items.reduce((sum, item) => sum + item.amount, 0) : 0
-  const profit = entry && entry.amount != null ? sales - entry.amount : null
+  // Ganancia = Cobro - Pago (antes era al revés, cuando "amount" era el pago
+  // al empleado en vez del cobro al cliente).
+  const profit = entry && entry.amount != null ? entry.amount - sales : null
+  // Impuesto (8.25%) SUMADO sobre el Cobro, no extraído de adentro — ver
+  // taxOnAmount en lib/tax.ts. Solo aplica si se marcó el checkbox al
+  // agregar/editar la planilla.
+  const tax = entry && entry.taxable && entry.amount != null ? taxOnAmount(entry.amount) : null
 
   return (
     <Modal open={entry !== null} onClose={onClose} title="Detalle de la planilla">
@@ -52,11 +69,11 @@ export const PayrollEntryDetailModal = ({ entry, propertyMap, employeeMap, onClo
 
           <View style={styles.summaryBox}>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Pago</Text>
+              <Text style={styles.summaryLabel}>Cobro</Text>
               <Text style={styles.summaryValue}>{entry.amount == null ? 'Pendiente' : currency(entry.amount)}</Text>
             </View>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Venta</Text>
+              <Text style={styles.summaryLabel}>Pago</Text>
               <Text style={[styles.summaryValue, styles.salesValue]}>{currency(sales)}</Text>
             </View>
             <View style={styles.summaryItem}>
@@ -70,6 +87,14 @@ export const PayrollEntryDetailModal = ({ entry, propertyMap, employeeMap, onClo
                 {profit == null ? 'Pendiente' : currency(profit)}
               </Text>
             </View>
+            {entry.taxable && (
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Impuesto ({(SALES_TAX_RATE * 100).toFixed(2)}%)</Text>
+                <Text style={[styles.summaryValue, styles.profitValue]}>
+                  {tax == null ? 'Pendiente' : currency(tax)}
+                </Text>
+              </View>
+            )}
           </View>
 
           {entry.notes ? (
@@ -96,9 +121,23 @@ export const PayrollEntryDetailModal = ({ entry, propertyMap, employeeMap, onClo
             )}
           </View>
 
-          <TouchableOpacity style={styles.editButton} activeOpacity={0.85} onPress={() => onEdit(entry)}>
-            <Text style={styles.editButtonText}>Editar planilla</Text>
-          </TouchableOpacity>
+          <View style={styles.actionsRow}>
+            <TouchableOpacity
+              style={[styles.editButton, styles.actionButtonFlex]}
+              activeOpacity={0.85}
+              onPress={() => onEdit(entry)}
+            >
+              <Text style={styles.editButtonText}>Editar planilla</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.deleteButton, styles.actionButtonFlex]}
+              activeOpacity={0.85}
+              onPress={() => onDelete(entry)}
+            >
+              <Trash2 size={15} color={colors.rose} />
+              <Text style={styles.deleteButtonText}>Eliminar</Text>
+            </TouchableOpacity>
+          </View>
         </>
       ) : null}
     </Modal>
@@ -184,6 +223,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.white,
   },
+  actionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  actionButtonFlex: {
+    flex: 1,
+  },
   editButton: {
     alignItems: 'center',
     borderRadius: 10,
@@ -195,5 +241,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.gold400,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(244,63,94,0.3)',
+    paddingVertical: 12,
+  },
+  deleteButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.rose,
   },
 })

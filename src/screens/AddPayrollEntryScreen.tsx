@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react-native'
+import { Check, ChevronDown, ChevronUp, Plus, X } from 'lucide-react-native'
 import {
   KeyboardAvoidingView,
   Platform,
@@ -17,6 +17,7 @@ import { FormField } from '../components/common/FormField'
 import { InlineSelect } from '../components/common/InlineSelect'
 import {
   createPayrollEntry,
+  fetchChargeForSchedule,
   fetchEmployees,
   fetchProperties,
   fetchSchedulesForEmployee,
@@ -25,6 +26,7 @@ import {
 import { currency } from '../lib/format'
 import { getErrorMessage } from '../lib/errors'
 import { formatFullDate } from '../lib/scheduleDates'
+import { SALES_TAX_RATE } from '../lib/tax'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import type { Schedule } from '../types'
@@ -64,6 +66,8 @@ export const AddPayrollEntryScreen = () => {
   const [employeeId, setEmployeeId] = useState('')
   const [serviceName, setServiceName] = useState('')
   const [amount, setAmount] = useState('')
+  const [taxable, setTaxable] = useState(false)
+  const [chargeNotFound, setChargeNotFound] = useState(false)
   const [date, setDate] = useState('')
   const [notes, setNotes] = useState('')
   const [items, setItems] = useState<ItemLine[]>([emptyItem(0)])
@@ -94,11 +98,18 @@ export const AddPayrollEntryScreen = () => {
   const handleEmployeeChange = (id: string) => {
     setEmployeeId(id)
     setSelectedScheduleId('')
+    setChargeNotFound(false)
     setScheduleOpen(true)
   }
 
-  const handleScheduleSelect = (id: string) => {
+  // Igual que ops-web AddPayrollEntryModal.tsx: al elegir un horario, además
+  // de precargar Propiedad/Unidad/Fecha/Servicio, busca el cobro real de ese
+  // trabajo en Cobros y llena "Cobro" con el total ya cobrado. Si todavía no
+  // hay un cobro capturado para ese horario, se avisa y el campo queda
+  // manual.
+  const handleScheduleSelect = async (id: string) => {
     setSelectedScheduleId(id)
+    setChargeNotFound(false)
     const schedule = employeeSchedules.find((s) => s.id === id)
     if (!schedule) return
     setPropertyId(schedule.propertyId)
@@ -106,6 +117,22 @@ export const AddPayrollEntryScreen = () => {
     setDate(schedule.scheduledDate)
     const serviceType = (serviceTypes ?? []).find((st) => st.id === schedule.serviceTypeId)
     if (serviceType) setServiceName(serviceType.name)
+
+    try {
+      const charge = await fetchChargeForSchedule(
+        schedule.propertyId,
+        schedule.unitLabel,
+        schedule.serviceTypeId,
+        schedule.scheduledDate,
+      )
+      if (charge) {
+        setAmount(String(charge.amount))
+      } else {
+        setChargeNotFound(true)
+      }
+    } catch {
+      setChargeNotFound(true)
+    }
   }
 
   const updateItem = (key: number, patch: Partial<ItemLine>) =>
@@ -138,7 +165,7 @@ export const AddPayrollEntryScreen = () => {
     if (amount.trim()) {
       amountValue = Number(amount)
       if (Number.isNaN(amountValue) || amountValue < 0) {
-        setError('El pago no es un número válido.')
+        setError('El cobro no es un número válido.')
         return
       }
     }
@@ -172,6 +199,7 @@ export const AddPayrollEntryScreen = () => {
         amount: amountValue,
         date: date.trim(),
         notes: notes.trim(),
+        taxable,
         scheduleId: selectedScheduleId || undefined,
         items: parsedItems,
       })
@@ -261,9 +289,15 @@ export const AddPayrollEntryScreen = () => {
                           onOpenChange={(next) => setOpenField(next ? 'schedule' : null)}
                         />
                         <Text style={styles.scheduleHint}>
-                          Al elegir un horario se llenan Propiedad, Unidad, Fecha y Servicio — puedes
-                          editarlos después.
+                          Al elegir un horario se llenan Propiedad, Unidad, Fecha, Servicio y Cobro —
+                          puedes editarlos después.
                         </Text>
+                        {chargeNotFound && (
+                          <Text style={styles.scheduleWarning}>
+                            Todavía no hay un cobro capturado para este horario — completa el Cobro a
+                            mano.
+                          </Text>
+                        )}
                       </>
                     )}
                   </View>
@@ -307,15 +341,28 @@ export const AddPayrollEntryScreen = () => {
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Pago</Text>
+              <Text style={styles.sectionLabel}>Cobro</Text>
 
               <FormField
-                label="Pago al empleado (opcional — se puede completar después)"
+                label="Cobro total del trabajo (opcional — se puede completar después)"
                 value={amount}
                 onChangeText={setAmount}
                 placeholder="Se define después si aún no se sabe"
                 keyboardType="decimal-pad"
               />
+
+              <TouchableOpacity
+                style={styles.taxableRow}
+                activeOpacity={0.75}
+                onPress={() => setTaxable((prev) => !prev)}
+              >
+                <View style={[styles.checkbox, taxable && styles.checkboxChecked]}>
+                  {taxable ? <Check size={13} color={colors.brand900} strokeWidth={3} /> : null}
+                </View>
+                <Text style={styles.taxableLabel}>
+                  Este servicio lleva impuesto de ventas ({(SALES_TAX_RATE * 100).toFixed(2)}%)
+                </Text>
+              </TouchableOpacity>
 
               <FormField
                 label="Notas (opcional)"
@@ -367,7 +414,7 @@ export const AddPayrollEntryScreen = () => {
                 </View>
 
                 <Text style={styles.salesHint}>
-                  Venta del desglose: <Text style={styles.salesHintValue}>{currency(salesTotal)}</Text>
+                  Pago del desglose: <Text style={styles.salesHintValue}>{currency(salesTotal)}</Text>
                 </Text>
               </View>
             </View>
@@ -452,6 +499,33 @@ const styles = StyleSheet.create({
   scheduleHint: {
     fontSize: 12,
     color: colors.ink500,
+  },
+  scheduleWarning: {
+    fontSize: 12,
+    color: colors.amber,
+  },
+  taxableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  checkbox: {
+    height: 20,
+    width: 20,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: colors.gold500,
+    borderColor: colors.gold500,
+  },
+  taxableLabel: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.ink300,
   },
   label: {
     fontSize: 13,

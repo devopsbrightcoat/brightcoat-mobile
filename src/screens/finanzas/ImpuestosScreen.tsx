@@ -9,7 +9,7 @@ import { ImpuestosMonthDetailModal, type MonthGroup } from '../../components/imp
 import { fetchCharges, fetchProperties, updateChargesTaxPaid } from '../../lib/api'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import { formatMonthLabel, parseISODate } from '../../lib/scheduleDates'
-import { extractTaxFromTotal, SALES_TAX_RATE } from '../../lib/tax'
+import { taxOnAmount, SALES_TAX_RATE } from '../../lib/tax'
 import { getErrorMessage } from '../../lib/errors'
 import { colors } from '../../theme/colors'
 import type { Charge } from '../../types'
@@ -23,10 +23,10 @@ const currency = (value: number) =>
 // Tab "Impuestos" de FinanzasScreen — mismo criterio que ops-web
 // (pages/Impuestos.tsx): agrupa por mes calendario los cobros ya "subidos a
 // OPS" (status='paid', los únicos con generatedDate real — un cobro
-// "pendiente por cobrar" todavía no genera obligación de impuesto) y
-// extrae el 8.25% que ya viene incluido en cada monto (ver lib/tax.ts).
-// Cada mes se marca pagado/pendiente en bloque acá, o cobro por cobro
-// dentro de ImpuestosMonthDetailModal.
+// "pendiente por cobrar" todavía no genera obligación de impuesto) y le
+// SUMA el 8.25% sobre cada monto (ver taxOnAmount en lib/tax.ts) — el monto
+// no lo incluye. Cada mes se marca pagado/pendiente en bloque acá, o cobro
+// por cobro dentro de ImpuestosMonthDetailModal.
 export const ImpuestosScreen = () => {
   const [refreshKey, setRefreshKey] = useState(0)
   const [detailMonthKey, setDetailMonthKey] = useState<string | null>(null)
@@ -70,7 +70,7 @@ export const ImpuestosScreen = () => {
         let totalTax = 0
         let paidTax = 0
         for (const c of groupCharges) {
-          const tax = extractTaxFromTotal(c.amount)
+          const tax = taxOnAmount(c.amount)
           totalTax += tax
           if (c.taxPaid) paidTax += tax
         }
@@ -81,7 +81,9 @@ export const ImpuestosScreen = () => {
           key,
           label: formatMonthLabel(year, month - 1),
           charges: groupCharges,
-          totalBase: totalAmount - totalTax,
+          // El impuesto ya no se extrae del cobro — se suma aparte, así que
+          // la base (lo cobrado sin impuesto) es el monto del cobro tal cual.
+          totalBase: totalAmount,
           totalTax,
           paidTax,
           pendingTax: totalTax - paidTax,

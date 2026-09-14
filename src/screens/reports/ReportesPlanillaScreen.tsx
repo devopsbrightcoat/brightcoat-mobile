@@ -108,7 +108,7 @@ export const ReportesPlanillaScreen = () => {
         />
 
         <View style={styles.statsGrid}>
-          <StatCard label="Total pagado" value={currency(totalPaid)} icon={Banknote} tone="good" />
+          <StatCard label="Total cobrado" value={currency(totalPaid)} icon={Banknote} tone="good" />
           <StatCard label="Planillas pagadas" value={String(paidCount)} icon={CheckCircle2} />
           <StatCard label="Pendientes en período" value={String(pendingCountPeriod)} icon={Clock} tone="warn" />
           <StatCard label="Pendientes (todo el tiempo)" value={String(pendingAll.length)} icon={Users} tone="warn" />
@@ -168,7 +168,7 @@ export const ReportesPlanillaScreen = () => {
 
         <Text style={styles.sectionTitle}>Planilla pendiente</Text>
         <Text style={styles.sectionHint}>
-          Trabajo ya hecho cuyo pago todavía no se definió — toda la cartera, no solo el período seleccionado arriba.
+          Trabajo ya hecho cuyo cobro todavía no se ha definido — toda la cartera, no solo el período seleccionado arriba.
         </Text>
         <View style={styles.list}>
           {pendingAll.length === 0 ? (

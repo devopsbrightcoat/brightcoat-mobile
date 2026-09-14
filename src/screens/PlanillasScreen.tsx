@@ -1,14 +1,16 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Filter, Plus, Search, TrendingUp, Wallet } from 'lucide-react-native'
+import { Filter, Plus, Search, Trash2, TrendingUp, Wallet } from 'lucide-react-native'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { ScreenHeader } from '../components/common/ScreenHeader'
+import { ConfirmModal } from '../components/common/ConfirmModal'
 import { PayrollEntryDetailModal } from '../components/pagos/PayrollEntryDetailModal'
 import { PayrollFiltersModal } from '../components/pagos/PayrollFiltersModal'
 import { Panel } from '../components/common/Panel'
 import { StatCard } from '../components/common/StatCard'
-import { fetchEmployees, fetchPayrollEntries, fetchProperties } from '../lib/api'
+import { deletePayrollEntry, fetchEmployees, fetchPayrollEntries, fetchProperties } from '../lib/api'
+import { formatFullDate } from '../lib/scheduleDates'
 import { currency } from '../lib/format'
 import { taxOnAmount, SALES_TAX_RATE } from '../lib/tax'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
@@ -42,6 +44,7 @@ export const PlanillasScreen = () => {
   const [dateTo, setDateTo] = useState('')
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [detailEntry, setDetailEntry] = useState<PayrollEntry | null>(null)
+  const [deletingEntry, setDeletingEntry] = useState<PayrollEntry | null>(null)
 
   const {
     data: entries,
@@ -98,7 +101,9 @@ export const PlanillasScreen = () => {
     for (const entry of filtered) {
       const entrySales = entry.items.reduce((sum, item) => sum + item.amount, 0)
       sales += entrySales
-      if (entry.amount != null) profit += entrySales - entry.amount
+      // Ganancia = Cobro - Pago (antes era al revés, cuando "amount" era el
+      // pago al empleado en vez del cobro al cliente).
+      if (entry.amount != null) profit += entry.amount - entrySales
     }
     return { sales, profit }
   }, [filtered])
@@ -113,9 +118,12 @@ export const PlanillasScreen = () => {
 
   const renderItem = ({ item }: { item: PayrollEntry }) => {
     const sales = item.items.reduce((sum, i) => sum + i.amount, 0)
-    const profit = item.amount == null ? null : sales - item.amount
-    // Informativo únicamente (8.25% fijo sobre el pago) — no se resta de
-    // nada ni se guarda en base de datos, ver lib/tax.ts.
+    // Ganancia = Cobro - Pago (antes era al revés, cuando "amount" era el
+    // pago al empleado en vez del cobro al cliente).
+    const profit = item.amount == null ? null : item.amount - sales
+    // El impuesto (8.25%) se SUMA sobre el Cobro — Cobro + impuesto, no se
+    // extrae de adentro (ver taxOnAmount en lib/tax.ts). Solo aplica si se
+    // marcó el checkbox al agregar/editar la planilla.
     const tax = item.amount == null ? null : taxOnAmount(item.amount)
     return (
       <TouchableOpacity activeOpacity={0.75} onPress={() => setDetailEntry(item)}>
@@ -125,9 +133,20 @@ export const PlanillasScreen = () => {
               {propertyMap.get(item.propertyId) ?? '—'}
               {item.unitLabel ? ` · ${item.unitLabel}` : ''}
             </Text>
-            <Text style={item.amount == null ? styles.pendingAmount : styles.amount}>
-              {item.amount == null ? 'Pendiente' : currency(item.amount)}
-            </Text>
+            <View style={styles.cardHeaderActions}>
+              <Text style={item.amount == null ? styles.pendingAmount : styles.amount}>
+                {item.amount == null ? 'Pendiente' : currency(item.amount)}
+              </Text>
+              <TouchableOpacity
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                onPress={(e) => {
+                  e.stopPropagation()
+                  setDeletingEntry(item)
+                }}
+              >
+                <Trash2 size={15} color={colors.rose} />
+              </TouchableOpacity>
+            </View>
           </View>
           <Text style={styles.cardSubtitle} numberOfLines={1}>
             {employeeMap.get(item.employeeId) ?? '—'} · {item.serviceName}
@@ -140,10 +159,12 @@ export const PlanillasScreen = () => {
               {profit == null ? 'Ganancia pendiente' : `Ganancia ${currency(profit)}`}
             </Text>
           </View>
-          <View style={styles.taxRow}>
-            <Text style={styles.taxRowLabel}>Impuesto ({(SALES_TAX_RATE * 100).toFixed(2)}%)</Text>
-            <Text style={styles.taxRowValue}>{tax == null ? 'Pendiente' : currency(tax)}</Text>
-          </View>
+          {item.taxable && (
+            <View style={styles.taxRow}>
+              <Text style={styles.taxRowLabel}>Impuesto ({(SALES_TAX_RATE * 100).toFixed(2)}%)</Text>
+              <Text style={styles.taxRowValue}>{tax == null ? 'Pendiente' : currency(tax)}</Text>
+            </View>
+          )}
         </Panel>
       </TouchableOpacity>
     )
@@ -166,7 +187,7 @@ export const PlanillasScreen = () => {
       />
 
       <View style={styles.statsGrid}>
-        <StatCard label="Ventas" value={currency(totals.sales)} icon={TrendingUp} tone="good" size="compact" />
+        <StatCard label="Pago" value={currency(totals.sales)} icon={TrendingUp} tone="good" size="compact" />
         <StatCard label="Ganancia" value={currency(totals.profit)} icon={Wallet} size="compact" />
       </View>
 
@@ -228,6 +249,26 @@ export const PlanillasScreen = () => {
         onEdit={(entry) => {
           setDetailEntry(null)
           navigation.navigate('EditPayrollEntry', { entry })
+        }}
+        onDelete={(entry) => {
+          setDetailEntry(null)
+          setDeletingEntry(entry)
+        }}
+      />
+
+      <ConfirmModal
+        open={deletingEntry !== null}
+        onClose={() => setDeletingEntry(null)}
+        title="Eliminar planilla"
+        message={
+          deletingEntry
+            ? `¿Eliminar la planilla de "${deletingEntry.serviceName}" del ${formatFullDate(deletingEntry.date)}? Esta acción no se puede deshacer. Si estaba ligada a un horario, ese horario vuelve a estar disponible para seleccionarse.`
+            : ''
+        }
+        onConfirm={async () => {
+          if (!deletingEntry) return
+          await deletePayrollEntry(deletingEntry.id)
+          setRefreshKey((k) => k + 1)
         }}
       />
 
@@ -345,6 +386,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
+  },
+  cardHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   cardTitle: {
     flex: 1,

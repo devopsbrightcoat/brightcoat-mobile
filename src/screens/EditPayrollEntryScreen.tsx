@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { RouteProp } from '@react-navigation/native'
-import { Plus, X } from 'lucide-react-native'
+import { Check, Plus, X } from 'lucide-react-native'
 import {
   KeyboardAvoidingView,
   Platform,
@@ -19,6 +19,7 @@ import { InlineSelect } from '../components/common/InlineSelect'
 import { fetchEmployees, fetchProperties, updatePayrollEntry } from '../lib/api'
 import { currency } from '../lib/format'
 import { getErrorMessage } from '../lib/errors'
+import { SALES_TAX_RATE } from '../lib/tax'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import { colors } from '../theme/colors'
@@ -48,6 +49,7 @@ export const EditPayrollEntryScreen = () => {
   const [employeeId, setEmployeeId] = useState(entry.employeeId)
   const [serviceName, setServiceName] = useState(entry.serviceName)
   const [amount, setAmount] = useState(entry.amount == null ? '' : String(entry.amount))
+  const [taxable, setTaxable] = useState(entry.taxable)
   const [date, setDate] = useState(entry.date)
   const [notes, setNotes] = useState(entry.notes ?? '')
   const [items, setItems] = useState<ItemLine[]>(
@@ -92,7 +94,7 @@ export const EditPayrollEntryScreen = () => {
     if (amount.trim()) {
       amountValue = Number(amount)
       if (Number.isNaN(amountValue) || amountValue < 0) {
-        setError('El pago no es un número válido.')
+        setError('El cobro no es un número válido.')
         return
       }
     }
@@ -126,6 +128,7 @@ export const EditPayrollEntryScreen = () => {
         amount: amountValue,
         date: date.trim(),
         notes: notes.trim(),
+        taxable,
         items: parsedItems,
       })
       navigation.goBack()
@@ -179,12 +182,25 @@ export const EditPayrollEntryScreen = () => {
             />
 
             <FormField
-              label="Pago al empleado (opcional — se puede completar después)"
+              label="Cobro total del trabajo (opcional — se puede completar después)"
               value={amount}
               onChangeText={setAmount}
               placeholder="Se define después si aún no se sabe"
               keyboardType="decimal-pad"
             />
+
+            <TouchableOpacity
+              style={styles.taxableRow}
+              activeOpacity={0.75}
+              onPress={() => setTaxable((prev) => !prev)}
+            >
+              <View style={[styles.checkbox, taxable && styles.checkboxChecked]}>
+                {taxable ? <Check size={13} color={colors.brand900} strokeWidth={3} /> : null}
+              </View>
+              <Text style={styles.taxableLabel}>
+                Este servicio lleva impuesto de ventas ({(SALES_TAX_RATE * 100).toFixed(2)}%)
+              </Text>
+            </TouchableOpacity>
 
             <FormField
               label="Notas (opcional)"
@@ -236,7 +252,7 @@ export const EditPayrollEntryScreen = () => {
               </View>
 
               <Text style={styles.salesHint}>
-                Venta del desglose: <Text style={styles.salesHintValue}>{currency(salesTotal)}</Text>
+                Pago del desglose: <Text style={styles.salesHintValue}>{currency(salesTotal)}</Text>
               </Text>
             </View>
 
@@ -273,6 +289,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: colors.ink200,
+  },
+  taxableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  checkbox: {
+    height: 20,
+    width: 20,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: colors.gold500,
+    borderColor: colors.gold500,
+  },
+  taxableLabel: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.ink300,
   },
   textArea: {
     minHeight: 80,
