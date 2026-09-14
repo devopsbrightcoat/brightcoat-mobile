@@ -255,6 +255,7 @@ const mapPayrollEntry = (row: PayrollEntryRow): PayrollEntry => ({
   amount: row.amount == null ? null : Number(row.amount),
   date: row.date,
   notes: row.notes ?? undefined,
+  scheduleId: row.schedule_id ?? undefined,
   items: (row.payroll_entry_items ?? []).map((item) => ({
     id: item.id,
     description: item.description,
@@ -280,6 +281,7 @@ type PayrollEntryInput = {
   amount: number | null
   date: string
   notes?: string
+  scheduleId?: string
   items: { description: string; amount: number }[]
 }
 
@@ -307,6 +309,7 @@ export const createPayrollEntry = async (data: PayrollEntryInput): Promise<void>
       amount: data.amount,
       date: data.date,
       notes: data.notes || null,
+      schedule_id: data.scheduleId || null,
     })
     .select('id')
     .single()
@@ -536,6 +539,37 @@ export const fetchSchedules = async (): Promise<Schedule[]> => {
     .order('created_at', { ascending: true })
   if (error) throw error
   return ((data ?? []) as ScheduleRow[]).map(mapSchedule)
+}
+
+// Usado por el selector de "Horario relacionado" en AddPayrollEntryScreen —
+// a propósito NO es fetchSchedules() + filtro en el cliente: se acota por
+// empleado y rango de fechas directo en la consulta (igual que ops-web) y
+// excluye los horarios que ya se convirtieron en una planilla (ver
+// payroll_entries.schedule_id), para no ofrecer de nuevo un horario ya
+// pagado.
+export const fetchSchedulesForEmployee = async (
+  employeeId: string,
+  dateFrom: string,
+  dateTo: string,
+): Promise<Schedule[]> => {
+  const { data, error } = await supabase
+    .from('schedules')
+    .select('*')
+    .eq('employee_id', employeeId)
+    .gte('scheduled_date', dateFrom)
+    .lte('scheduled_date', dateTo)
+    .order('scheduled_date', { ascending: false })
+  if (error) throw error
+  const scheduleRows = ((data ?? []) as ScheduleRow[]).map(mapSchedule)
+  if (scheduleRows.length === 0) return scheduleRows
+
+  const { data: used, error: usedError } = await supabase
+    .from('payroll_entries')
+    .select('schedule_id')
+    .in('schedule_id', scheduleRows.map((s) => s.id))
+  if (usedError) throw usedError
+  const usedIds = new Set((used ?? []).map((row) => row.schedule_id as string))
+  return scheduleRows.filter((s) => !usedIds.has(s.id))
 }
 
 export const createSchedules = async (

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Plus, X } from 'lucide-react-native'
+import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react-native'
 import {
   KeyboardAvoidingView,
   Platform,
@@ -15,11 +15,19 @@ import {
 import { DatePicker } from '../components/common/DatePicker'
 import { FormField } from '../components/common/FormField'
 import { InlineSelect } from '../components/common/InlineSelect'
-import { createPayrollEntry, fetchEmployees, fetchProperties } from '../lib/api'
+import {
+  createPayrollEntry,
+  fetchEmployees,
+  fetchProperties,
+  fetchSchedulesForEmployee,
+  fetchServiceTypes,
+} from '../lib/api'
 import { currency } from '../lib/format'
 import { getErrorMessage } from '../lib/errors'
+import { formatFullDate } from '../lib/scheduleDates'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
+import type { Schedule } from '../types'
 import { colors } from '../theme/colors'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'AddPayrollEntry'>
@@ -28,10 +36,21 @@ type ItemLine = { key: number; description: string; amount: string }
 
 const emptyItem = (key: number): ItemLine => ({ key, description: '', amount: '' })
 
-// Mismos campos y misma validación que ops-web AddPayrollEntryModal.tsx,
-// como pantalla completa (no modal) — igual que AddScheduleScreen. El pago
-// al empleado es opcional (se puede completar después, ver comentario en
-// types.ts sobre `amount` en PayrollEntry) y el desglose del servicio
+const SCHEDULE_STATUS_LABELS: Record<Schedule['status'], string> = {
+  pending: 'Pendiente',
+  in_progress: 'En proceso',
+  delivered: 'Entregado',
+  cancelled: 'Cancelado',
+  rescheduled: 'Reagendado',
+}
+
+// Mismos campos, misma validación y mismo orden/secciones que ops-web
+// AddPayrollEntryModal.tsx, como pantalla completa (no modal) — igual que
+// AddScheduleScreen. Tres secciones, igual que web: 1) Empleado (con el
+// buscador de horarios relacionados, colapsable, justo debajo) 2) Propiedad
+// — propiedad/unidad/fecha/servicio y 3) Pago — pago/notas/desglose. El
+// pago al empleado es opcional (se puede completar después, ver comentario
+// en types.ts sobre `amount` en PayrollEntry) y el desglose del servicio
 // (descripción + costo por línea) usa el mismo patrón de líneas dinámicas
 // que las "Extras" de ScheduleActionModal.
 export const AddPayrollEntryScreen = () => {
@@ -51,9 +70,43 @@ export const AddPayrollEntryScreen = () => {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [openField, setOpenField] = useState<string | null>(null)
+  const [scheduleOpen, setScheduleOpen] = useState(true)
+  const [scheduleFrom, setScheduleFrom] = useState('')
+  const [scheduleTo, setScheduleTo] = useState('')
+  const [selectedScheduleId, setSelectedScheduleId] = useState('')
 
   const propertyOptions = (properties ?? []).map((p) => ({ id: p.id, label: p.name }))
   const employeeOptions = (employees ?? []).map((e) => ({ id: e.id, label: e.name }))
+
+  // Igual que ops-web AddPayrollEntryModal.tsx: sin rango de fechas no se
+  // pide nada al servidor, y fetchSchedulesForEmployee ya excluye del lado
+  // del servidor los horarios que ya se usaron en otra planilla.
+  const { data: schedules, loading: schedulesLoading } = useSupabaseQuery(
+    () =>
+      employeeId && scheduleFrom && scheduleTo
+        ? fetchSchedulesForEmployee(employeeId, scheduleFrom, scheduleTo)
+        : Promise.resolve([]),
+    [employeeId, scheduleFrom, scheduleTo],
+  )
+  const { data: serviceTypes } = useSupabaseQuery(fetchServiceTypes, [])
+  const employeeSchedules = schedules ?? []
+
+  const handleEmployeeChange = (id: string) => {
+    setEmployeeId(id)
+    setSelectedScheduleId('')
+    setScheduleOpen(true)
+  }
+
+  const handleScheduleSelect = (id: string) => {
+    setSelectedScheduleId(id)
+    const schedule = employeeSchedules.find((s) => s.id === id)
+    if (!schedule) return
+    setPropertyId(schedule.propertyId)
+    setUnitLabel(schedule.unitLabel ?? '')
+    setDate(schedule.scheduledDate)
+    const serviceType = (serviceTypes ?? []).find((st) => st.id === schedule.serviceTypeId)
+    if (serviceType) setServiceName(serviceType.name)
+  }
 
   const updateItem = (key: number, patch: Partial<ItemLine>) =>
     setItems((prev) => prev.map((item) => (item.key === key ? { ...item, ...patch } : item)))
@@ -119,6 +172,7 @@ export const AddPayrollEntryScreen = () => {
         amount: amountValue,
         date: date.trim(),
         notes: notes.trim(),
+        scheduleId: selectedScheduleId || undefined,
         items: parsedItems,
       })
       navigation.goBack()
@@ -137,100 +191,185 @@ export const AddPayrollEntryScreen = () => {
         {loadingLookups ? null : (
           <>
             <View style={styles.field}>
-              <Text style={styles.label}>Propiedad</Text>
-              <InlineSelect
-                options={propertyOptions}
-                value={propertyId}
-                onChange={setPropertyId}
-                searchPlaceholder="Buscar propiedad..."
-                open={openField === 'property'}
-                onOpenChange={(next) => setOpenField(next ? 'property' : null)}
-              />
-            </View>
-
-            <FormField label="Unidad (ej. L303)" value={unitLabel} onChangeText={setUnitLabel} placeholder="L303" />
-
-            <View style={styles.field}>
               <Text style={styles.label}>Empleado</Text>
               <InlineSelect
                 options={employeeOptions}
                 value={employeeId}
-                onChange={setEmployeeId}
+                onChange={handleEmployeeChange}
                 searchPlaceholder="Buscar empleado..."
                 open={openField === 'employee'}
                 onOpenChange={(next) => setOpenField(next ? 'employee' : null)}
               />
             </View>
 
-            <DatePicker label="Fecha" value={date} onChange={setDate} />
-
-            <FormField
-              label="Servicio"
-              value={serviceName}
-              onChangeText={setServiceName}
-              placeholder="ej. Vacante reparación tape and float"
-            />
-
-            <FormField
-              label="Pago al empleado (opcional — se puede completar después)"
-              value={amount}
-              onChangeText={setAmount}
-              placeholder="Se define después si aún no se sabe"
-              keyboardType="decimal-pad"
-            />
-
-            <FormField
-              label="Notas (opcional)"
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Opcional"
-              multiline
-              numberOfLines={3}
-              style={styles.textArea}
-            />
-
-            <View style={styles.itemsSection}>
-              <View style={styles.itemsHeader}>
-                <Text style={styles.label}>Desglose del servicio</Text>
-                <TouchableOpacity style={styles.addItemButton} activeOpacity={0.7} onPress={addItem}>
-                  <Plus size={14} color={colors.ink300} />
-                  <Text style={styles.addItemText}>Agregar línea</Text>
+            {employeeId && (
+              <View style={styles.scheduleBox}>
+                <TouchableOpacity
+                  style={styles.scheduleHeader}
+                  activeOpacity={0.7}
+                  onPress={() => setScheduleOpen((prev) => !prev)}
+                >
+                  <Text style={styles.scheduleHeaderText}>Horario relacionado (opcional)</Text>
+                  {scheduleOpen ? (
+                    <ChevronUp size={16} color={colors.ink400} />
+                  ) : (
+                    <ChevronDown size={16} color={colors.ink400} />
+                  )}
                 </TouchableOpacity>
-              </View>
 
-              <View style={styles.itemsList}>
-                {items.map((item) => (
-                  <View key={item.key} style={styles.itemRow}>
-                    <TextInput
-                      value={item.description}
-                      onChangeText={(text) => updateItem(item.key, { description: text })}
-                      placeholder="Descripción (ej. 5X1 en cocina)"
-                      placeholderTextColor={colors.ink500}
-                      style={[styles.input, styles.itemDescInput]}
-                    />
-                    <TextInput
-                      value={item.amount}
-                      onChangeText={(text) => updateItem(item.key, { amount: text })}
-                      placeholder="Costo"
-                      placeholderTextColor={colors.ink500}
-                      keyboardType="decimal-pad"
-                      style={[styles.input, styles.itemAmountInput]}
-                    />
-                    <TouchableOpacity
-                      onPress={() => removeItem(item.key)}
-                      disabled={items.length === 1}
-                      hitSlop={8}
-                      style={styles.removeItemButton}
-                    >
-                      <X size={16} color={items.length === 1 ? 'rgba(100,116,139,0.4)' : colors.ink500} />
-                    </TouchableOpacity>
+                {scheduleOpen && (
+                  <View style={styles.scheduleBody}>
+                    <View style={styles.scheduleRow}>
+                      <View style={styles.scheduleRangeField}>
+                        <DatePicker label="Desde" value={scheduleFrom} onChange={setScheduleFrom} />
+                      </View>
+                      <View style={styles.scheduleRangeField}>
+                        <DatePicker label="Hasta" value={scheduleTo} onChange={setScheduleTo} />
+                      </View>
+                    </View>
+
+                    {!scheduleFrom || !scheduleTo ? (
+                      <Text style={styles.scheduleHint}>
+                        Elige un rango de fechas (Desde y Hasta) para buscar los horarios de este empleado.
+                      </Text>
+                    ) : schedulesLoading ? (
+                      <Text style={styles.scheduleHint}>Buscando horarios…</Text>
+                    ) : (
+                      <>
+                        <InlineSelect
+                          options={employeeSchedules.map((s) => {
+                            const scheduleProperty =
+                              (properties ?? []).find((p) => p.id === s.propertyId)?.name ?? '—'
+                            const scheduleService =
+                              (serviceTypes ?? []).find((st) => st.id === s.serviceTypeId)?.name ?? '—'
+                            return {
+                              id: s.id,
+                              label: `${formatFullDate(s.scheduledDate)} · ${scheduleProperty}${
+                                s.unitLabel ? ` · ${s.unitLabel}` : ''
+                              } · ${scheduleService} (${SCHEDULE_STATUS_LABELS[s.status]})`,
+                            }
+                          })}
+                          value={selectedScheduleId}
+                          onChange={handleScheduleSelect}
+                          placeholder={
+                            employeeSchedules.length === 0
+                              ? 'Sin horarios disponibles en ese rango'
+                              : 'Seleccionar horario…'
+                          }
+                          searchPlaceholder="Buscar horario..."
+                          open={openField === 'schedule'}
+                          onOpenChange={(next) => setOpenField(next ? 'schedule' : null)}
+                        />
+                        <Text style={styles.scheduleHint}>
+                          Al elegir un horario se llenan Propiedad, Unidad, Fecha y Servicio — puedes
+                          editarlos después.
+                        </Text>
+                      </>
+                    )}
                   </View>
-                ))}
+                )}
+              </View>
+            )}
+
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Propiedad</Text>
+
+              <View style={styles.row}>
+                <View style={[styles.field, styles.rowItem]}>
+                  <Text style={styles.label}>Propiedad</Text>
+                  <InlineSelect
+                    options={propertyOptions}
+                    value={propertyId}
+                    onChange={setPropertyId}
+                    searchPlaceholder="Buscar propiedad..."
+                    open={openField === 'property'}
+                    onOpenChange={(next) => setOpenField(next ? 'property' : null)}
+                  />
+                </View>
+                <View style={styles.rowItem}>
+                  <FormField label="Unidad" value={unitLabel} onChangeText={setUnitLabel} placeholder="ej. L303" />
+                </View>
               </View>
 
-              <Text style={styles.salesHint}>
-                Venta del desglose: <Text style={styles.salesHintValue}>{currency(salesTotal)}</Text>
-              </Text>
+              <View style={styles.row}>
+                <View style={styles.rowItem}>
+                  <DatePicker label="Fecha" value={date} onChange={setDate} />
+                </View>
+                <View style={styles.rowItem}>
+                  <FormField
+                    label="Servicio"
+                    value={serviceName}
+                    onChangeText={setServiceName}
+                    placeholder="ej. Vacante reparación"
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Pago</Text>
+
+              <FormField
+                label="Pago al empleado (opcional — se puede completar después)"
+                value={amount}
+                onChangeText={setAmount}
+                placeholder="Se define después si aún no se sabe"
+                keyboardType="decimal-pad"
+              />
+
+              <FormField
+                label="Notas (opcional)"
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="Opcional"
+                multiline
+                numberOfLines={3}
+                style={styles.textArea}
+              />
+
+              <View style={styles.itemsSection}>
+                <View style={styles.itemsHeader}>
+                  <Text style={styles.label}>Desglose del servicio</Text>
+                  <TouchableOpacity style={styles.addItemButton} activeOpacity={0.7} onPress={addItem}>
+                    <Plus size={14} color={colors.ink300} />
+                    <Text style={styles.addItemText}>Agregar línea</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.itemsList}>
+                  {items.map((item) => (
+                    <View key={item.key} style={styles.itemRow}>
+                      <TextInput
+                        value={item.description}
+                        onChangeText={(text) => updateItem(item.key, { description: text })}
+                        placeholder="Descripción (ej. 5X1 en cocina)"
+                        placeholderTextColor={colors.ink500}
+                        style={[styles.input, styles.itemDescInput]}
+                      />
+                      <TextInput
+                        value={item.amount}
+                        onChangeText={(text) => updateItem(item.key, { amount: text })}
+                        placeholder="Costo"
+                        placeholderTextColor={colors.ink500}
+                        keyboardType="decimal-pad"
+                        style={[styles.input, styles.itemAmountInput]}
+                      />
+                      <TouchableOpacity
+                        onPress={() => removeItem(item.key)}
+                        disabled={items.length === 1}
+                        hitSlop={8}
+                        style={styles.removeItemButton}
+                      >
+                        <X size={16} color={items.length === 1 ? 'rgba(100,116,139,0.4)' : colors.ink500} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+
+                <Text style={styles.salesHint}>
+                  Venta del desglose: <Text style={styles.salesHintValue}>{currency(salesTotal)}</Text>
+                </Text>
+              </View>
             </View>
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -261,6 +400,58 @@ const styles = StyleSheet.create({
   },
   field: {
     gap: 6,
+  },
+  section: {
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.1)',
+    paddingTop: 16,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    color: colors.ink500,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  rowItem: {
+    flex: 1,
+  },
+  scheduleBox: {
+    gap: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: colors.surface,
+    padding: 12,
+  },
+  scheduleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  scheduleHeaderText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.ink200,
+  },
+  scheduleBody: {
+    gap: 10,
+  },
+  scheduleRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  scheduleRangeField: {
+    flex: 1,
+  },
+  scheduleHint: {
+    fontSize: 12,
+    color: colors.ink500,
   },
   label: {
     fontSize: 13,

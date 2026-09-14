@@ -1,3 +1,11 @@
+# react-native-firebase resuelve Firebase vía Swift Package Manager por
+# defecto, pero eso choca con use_frameworks! :linkage => :static (cada pod
+# de RNFB termina con su propia copia de los símbolos de Firebase y el
+# linker tira duplicate-symbol). Se desactiva SPM para que RNFB vuelva a
+# usar sus propios pods de CocoaPods, sin tener que bajar el proyecto a
+# linkage dinámico. Debe ir ANTES de cualquier bloque target.
+$RNFirebaseDisableSPM = true
+
 # Resolve react_native_pods.rb with node to allow for hoisting
 require Pod::Executable.execute_command('node', ['-p',
   'require.resolve(
@@ -14,7 +22,17 @@ if linkage != nil
   use_frameworks! :linkage => linkage.to_sym
 end
 
-target 'Brightcoat Manager' do
+def shared_pods
+  pod 'GoogleUtilities',       :modular_headers => true
+  pod 'FirebaseCore',          :modular_headers => true
+  pod 'FirebaseCoreInternal',  :modular_headers => true
+  pod 'FirebaseInstallations', :modular_headers => true
+  pod 'FirebaseMessaging',     :modular_headers => true
+  pod 'GoogleDataTransport',   :modular_headers => true
+end
+
+target 'BrightcoatOpsMobile' do
+  shared_pods
   config = use_native_modules!
 
   use_react_native!(
