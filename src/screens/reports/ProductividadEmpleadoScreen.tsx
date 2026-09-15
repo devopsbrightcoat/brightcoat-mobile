@@ -1,11 +1,12 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { DashboardPanel } from '../../components/dashboard/DashboardPanel'
 import { Panel } from '../../components/common/Panel'
 import { RankingBars } from '../../components/dashboard/RankingBars'
+import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBar'
 import { StatusPill } from '../../components/common/StatusPill'
 import { fetchEmployees, fetchSchedules } from '../../lib/api'
-import { computeEmployeeActivity } from '../../lib/dashboardMetrics'
+import { computeEmployeeActivity, filterSchedulesByRange, type DateRange } from '../../lib/dashboardMetrics'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import { colors } from '../../theme/colors'
 
@@ -15,6 +16,8 @@ import { colors } from '../../theme/colors'
 // pendiente, en proceso y completado — porque la carga de trabajo incluye
 // lo que todavía no se termina.
 export const ProductividadEmpleadoScreen = () => {
+  const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
+
   const {
     data: schedules,
     loading: loadingSchedules,
@@ -38,7 +41,9 @@ export const ProductividadEmpleadoScreen = () => {
     refetchEmployees()
   }
 
-  const rows = useMemo(() => computeEmployeeActivity(schedules ?? [], employees ?? []), [schedules, employees])
+  const range = useMemo(() => appliedRange ?? { start: '', end: '' }, [appliedRange])
+  const rangedSchedules = useMemo(() => filterSchedulesByRange(schedules ?? [], range), [schedules, range])
+  const rows = useMemo(() => computeEmployeeActivity(rangedSchedules, employees ?? []), [rangedSchedules, employees])
 
   if (loading) {
     return (
@@ -58,6 +63,14 @@ export const ProductividadEmpleadoScreen = () => {
       >
         {error ? <Text style={styles.errorText}>No se pudieron cargar los empleados: {error}</Text> : null}
 
+        <ReportDateRangeBar onGenerate={setAppliedRange} generated={appliedRange !== null} />
+
+        {!appliedRange ? (
+          <Text style={styles.rangePlaceholder}>
+            Elige un rango de fechas y dale &quot;Generar reporte&quot; para ver la información.
+          </Text>
+        ) : (
+          <>
         <View style={styles.panelWrap}>
           <DashboardPanel title="Distribución de carga de trabajo" subtitle="Trabajos asignados por empleado">
             <RankingBars
@@ -90,6 +103,8 @@ export const ProductividadEmpleadoScreen = () => {
             </Panel>
           ))}
         </View>
+          </>
+        )}
       </ScrollView>
     </View>
   )
@@ -114,6 +129,13 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 13,
     color: colors.rose,
+  },
+  rangePlaceholder: {
+    marginHorizontal: 20,
+    marginTop: 40,
+    textAlign: 'center',
+    fontSize: 13,
+    color: colors.ink500,
   },
   panelWrap: {
     marginHorizontal: 20,

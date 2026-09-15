@@ -1,19 +1,17 @@
 import React, { useMemo, useState } from 'react'
 import { AlertTriangle, Clock, DollarSign, Receipt } from 'lucide-react-native'
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { FilterCarousel } from '../../components/common/FilterCarousel'
 import { Panel } from '../../components/common/Panel'
+import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBar'
 import { SegmentedField } from '../../components/common/SegmentedField'
 import { StatCard } from '../../components/common/StatCard'
 import { StatusPill } from '../../components/common/StatusPill'
 import { fetchCharges, fetchProperties } from '../../lib/api'
 import {
   computeAgingDetail,
-  computeDateRange,
   computeOutstandingAging,
-  DASHBOARD_DATE_RANGE_OPTIONS,
   filterChargesByRange,
-  type DashboardDateRangeKey,
+  type DateRange,
 } from '../../lib/dashboardMetrics'
 import { currency } from '../../lib/format'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
@@ -39,7 +37,7 @@ const SEVERE_BUCKETS = new Set(['61–90 días', '+90 días'])
 // con "Cobrado vs. pendiente" e "Invoices por período", más el drill-down
 // de antigüedad de cartera con detalle por cobro.
 export const ReportesCobrosScreen = () => {
-  const [rangeKey, setRangeKey] = useState<DashboardDateRangeKey>('this_month')
+  const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
   const [bucketFilter, setBucketFilter] = useState<string>('all')
 
   const {
@@ -65,7 +63,7 @@ export const ReportesCobrosScreen = () => {
     refetchProperties()
   }
 
-  const range = useMemo(() => computeDateRange(rangeKey), [rangeKey])
+  const range = useMemo(() => appliedRange ?? { start: '', end: '' }, [appliedRange])
   const propertyName = (id: string) => properties?.find((p) => p.id === id)?.name ?? '—'
 
   const periodCharges = useMemo(() => filterChargesByRange(charges ?? [], range), [charges, range])
@@ -109,14 +107,14 @@ export const ReportesCobrosScreen = () => {
       >
         {error ? <Text style={styles.errorText}>No se pudieron cargar los cobros: {error}</Text> : null}
 
-        <FilterCarousel
-          label="Período"
-          options={DASHBOARD_DATE_RANGE_OPTIONS}
-          value={rangeKey}
-          onChange={setRangeKey}
-          style={styles.periodCarousel}
-        />
+        <ReportDateRangeBar onGenerate={setAppliedRange} generated={appliedRange !== null} />
 
+        {!appliedRange ? (
+          <Text style={styles.rangePlaceholder}>
+            Elige un rango de fechas y dale &quot;Generar reporte&quot; para ver la información.
+          </Text>
+        ) : (
+          <>
         <View style={styles.statsGrid}>
           <StatCard label="Cobrado" value={currency(collected)} icon={DollarSign} tone="good" />
           <StatCard label="Pendiente" value={currency(outstanding)} icon={Clock} tone="warn" />
@@ -202,6 +200,8 @@ export const ReportesCobrosScreen = () => {
             })
           )}
         </View>
+          </>
+        )}
       </ScrollView>
     </View>
   )
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   scroll: { paddingBottom: 32 },
   errorText: { marginHorizontal: 20, marginTop: 16, fontSize: 13, color: colors.rose },
   segmentRow: { paddingHorizontal: 20, paddingTop: 16 },
-  periodCarousel: { marginTop: 16 },
+  rangePlaceholder: { marginHorizontal: 20, marginTop: 40, textAlign: 'center', fontSize: 13, color: colors.ink500 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 20, paddingTop: 16 },
   sectionTitle: {
     marginHorizontal: 20,

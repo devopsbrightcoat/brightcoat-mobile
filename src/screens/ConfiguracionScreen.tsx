@@ -9,16 +9,16 @@ import { Panel } from '../components/common/Panel'
 import { ScreenHeader } from '../components/common/ScreenHeader'
 import { useAuth } from '../auth/AuthProvider'
 import type { ProfileRole } from '../auth/AuthProvider'
-import { deleteExpenseTemplate, deleteServiceType, fetchCompanySettings, fetchExpenseTemplates, fetchServiceTypes, updateCompanySettings, updateNotificationsEnabled, updateNotifyRoles, updateOwnPassword, updateOwnProfile } from '../lib/api'
+import { deleteChargeTemplate, deleteExpenseTemplate, deleteServiceType, fetchChargeTemplates, fetchCompanySettings, fetchExpenseTemplates, fetchProperties, fetchServiceTypes, updateCompanySettings, updateNotificationsEnabled, updateNotifyRoles, updateOwnPassword, updateOwnProfile } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import { currency } from '../lib/format'
 import { serviceCategoryLabels } from '../lib/serviceTypeOptions'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import { colors } from '../theme/colors'
-import type { ExpenseTemplate, ServiceType } from '../types'
+import type { ChargeTemplate, ExpenseTemplate, ServiceType } from '../types'
 
-type TabKey = 'general' | 'alertas' | 'servicios' | 'gastos_fijos'
+type TabKey = 'general' | 'alertas' | 'servicios' | 'gastos_fijos' | 'cobros_fijos'
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
 const roleLabel: Record<string, string> = {
@@ -35,6 +35,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 'alertas', label: 'Alertas' },
   { key: 'servicios', label: 'Servicios' },
   { key: 'gastos_fijos', label: 'Gastos fijos' },
+  { key: 'cobros_fijos', label: 'Cobros fijos' },
 ]
 
 const ALL_ROLES: ProfileRole[] = ['owner', 'admin', 'staff', 'finance']
@@ -57,6 +58,7 @@ export const ConfiguracionScreen = () => {
   const [refreshKey, setRefreshKey] = useState(0)
   const [deletingServiceType, setDeletingServiceType] = useState<ServiceType | null>(null)
   const [deletingExpenseTemplate, setDeletingExpenseTemplate] = useState<ExpenseTemplate | null>(null)
+  const [deletingChargeTemplate, setDeletingChargeTemplate] = useState<ChargeTemplate | null>(null)
 
   const {
     data: serviceTypes,
@@ -73,6 +75,17 @@ export const ConfiguracionScreen = () => {
     refreshing: refreshingExpenseTemplates,
     refetch: refetchExpenseTemplates,
   } = useSupabaseQuery(fetchExpenseTemplates, [refreshKey])
+
+  const {
+    data: chargeTemplates,
+    loading: loadingChargeTemplates,
+    error: errorChargeTemplates,
+    refreshing: refreshingChargeTemplates,
+    refetch: refetchChargeTemplates,
+  } = useSupabaseQuery(fetchChargeTemplates, [refreshKey])
+
+  const { data: chargeTemplateProperties } = useSupabaseQuery(fetchProperties, [refreshKey])
+  const chargeTemplatePropertyNameById = new Map((chargeTemplateProperties ?? []).map((p) => [p.id, p.name]))
 
   useFocusEffect(
     useCallback(() => {
@@ -240,6 +253,14 @@ export const ConfiguracionScreen = () => {
           ) : tab === 'gastos_fijos' ? (
             <TouchableOpacity
               onPress={() => navigation.navigate('AddExpenseTemplate')}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={styles.addButton}
+            >
+              <Plus size={22} color={colors.gold500} />
+            </TouchableOpacity>
+          ) : tab === 'cobros_fijos' ? (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('AddChargeTemplate')}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               style={styles.addButton}
             >
@@ -524,7 +545,7 @@ export const ConfiguracionScreen = () => {
             {alertsError ? <Text style={styles.error}>{alertsError}</Text> : null}
           </View>
         </ScrollView>
-      ) : (
+      ) : tab === 'gastos_fijos' ? (
         <ScrollView
           contentContainerStyle={styles.scroll}
           refreshControl={
@@ -573,6 +594,58 @@ export const ConfiguracionScreen = () => {
             </View>
           )}
         </ScrollView>
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshingChargeTemplates}
+              onRefresh={refetchChargeTemplates}
+              tintColor={colors.gold400}
+              colors={[colors.gold400]}
+            />
+          }
+        >
+          <Text style={styles.sectionTitle}>Catálogo de cobros fijos</Text>
+
+          {loadingChargeTemplates ? (
+            <View style={styles.centered}>
+              <ActivityIndicator color={colors.gold400} />
+            </View>
+          ) : errorChargeTemplates ? (
+            <Text style={styles.errorText}>No se pudo cargar el catálogo: {errorChargeTemplates}</Text>
+          ) : !chargeTemplates || chargeTemplates.length === 0 ? (
+            <Text style={styles.emptyListText}>Todavía no hay cobros fijos.</Text>
+          ) : (
+            <View style={styles.list}>
+              {chargeTemplates.map((item: ChargeTemplate) => (
+                <TouchableOpacity
+                  key={item.id}
+                  activeOpacity={0.75}
+                  onPress={() => navigation.navigate('EditChargeTemplate', { template: item })}
+                >
+                  <Panel style={styles.card}>
+                    <Text style={styles.cardTitle} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    <Text style={styles.cardMeta} numberOfLines={1}>
+                      {chargeTemplatePropertyNameById.get(item.propertyId) ?? '—'}
+                    </Text>
+                    <View style={styles.serviceRowActions}>
+                      <Text style={styles.cardMeta}>{currency(item.amount)}</Text>
+                      <TouchableOpacity
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        onPress={() => setDeletingChargeTemplate(item)}
+                      >
+                        <Trash2 size={15} color={colors.rose} />
+                      </TouchableOpacity>
+                    </View>
+                  </Panel>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </ScrollView>
       )}
 
       <ConfirmModal
@@ -595,6 +668,18 @@ export const ConfiguracionScreen = () => {
         onConfirm={async () => {
           if (!deletingExpenseTemplate) return
           await deleteExpenseTemplate(deletingExpenseTemplate.id)
+          setRefreshKey((k) => k + 1)
+        }}
+      />
+
+      <ConfirmModal
+        open={deletingChargeTemplate !== null}
+        onClose={() => setDeletingChargeTemplate(null)}
+        title="Eliminar cobro fijo"
+        message={`¿Eliminar "${deletingChargeTemplate?.name}"? Esta acción no se puede deshacer.`}
+        onConfirm={async () => {
+          if (!deletingChargeTemplate) return
+          await deleteChargeTemplate(deletingChargeTemplate.id)
           setRefreshKey((k) => k + 1)
         }}
       />

@@ -3,6 +3,7 @@ import { AlertTriangle, CheckCircle2, Clock, RotateCcw, XCircle } from 'lucide-r
 import { ActivityIndicator, Dimensions, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { LineChart } from 'react-native-chart-kit'
 import { DashboardPanel } from '../../components/dashboard/DashboardPanel'
+import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBar'
 import { SegmentedField } from '../../components/common/SegmentedField'
 import { StatCard } from '../../components/common/StatCard'
 import { fetchSchedules } from '../../lib/api'
@@ -10,6 +11,8 @@ import {
   computeOverdueSchedules,
   computeScheduleActivity,
   computeScheduleStatusBreakdown,
+  filterSchedulesByRange,
+  type DateRange,
   type ScheduleActivityGranularity,
 } from '../../lib/dashboardMetrics'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
@@ -40,11 +43,20 @@ const GRANULARITY_OPTIONS: { value: ScheduleActivityGranularity; label: string }
 // react-native-chart-kit (no tiene multi-serie apilada utilizable acá).
 export const TrabajosPorEstatusScreen = () => {
   const [granularity, setGranularity] = useState<ScheduleActivityGranularity>('week')
+  const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
   const { data: schedules, loading, error, refreshing, refetch } = useSupabaseQuery(fetchSchedules, [])
 
-  const breakdown = useMemo(() => computeScheduleStatusBreakdown(schedules ?? []), [schedules])
+  const range = useMemo(() => appliedRange ?? { start: '', end: '' }, [appliedRange])
+  const rangedSchedules = useMemo(() => filterSchedulesByRange(schedules ?? [], range), [schedules, range])
+
+  const breakdown = useMemo(() => computeScheduleStatusBreakdown(rangedSchedules), [rangedSchedules])
+  // Atrasados es "a día de hoy", no del rango seleccionado — igual que la
+  // antigüedad de cartera en Reportes · Cobros (web y móvil) y "Atrasados"
+  // en ReportesOperaciones.tsx (web): un trabajo atrasado lo sigue estando
+  // sin importar qué período estés revisando, así que se calcula sobre
+  // TODOS los horarios sin filtrar por el rango elegido arriba.
   const overdueCount = useMemo(() => computeOverdueSchedules(schedules ?? []).length, [schedules])
-  const activity = useMemo(() => computeScheduleActivity(schedules ?? [], granularity), [schedules, granularity])
+  const activity = useMemo(() => computeScheduleActivity(rangedSchedules, granularity), [rangedSchedules, granularity])
 
   const countOf = (status: string) => breakdown.find((b) => b.status === status)?.count ?? 0
   const pendingCount = countOf('pending') + countOf('in_progress')
@@ -75,6 +87,14 @@ export const TrabajosPorEstatusScreen = () => {
       >
         {error ? <Text style={styles.errorText}>No se pudieron cargar los trabajos: {error}</Text> : null}
 
+        <ReportDateRangeBar onGenerate={setAppliedRange} generated={appliedRange !== null} />
+
+        {!appliedRange ? (
+          <Text style={styles.rangePlaceholder}>
+            Elige un rango de fechas y dale &quot;Generar reporte&quot; para ver la información.
+          </Text>
+        ) : (
+          <>
         <View style={styles.statsGrid}>
           <StatCard label="Completados" value={String(completedCount)} icon={CheckCircle2} tone="good" />
           <StatCard label="Pendientes" value={String(pendingCount)} icon={Clock} tone="warn" />
@@ -116,6 +136,8 @@ export const TrabajosPorEstatusScreen = () => {
             )}
           </DashboardPanel>
         </View>
+          </>
+        )}
       </ScrollView>
     </View>
   )
@@ -140,6 +162,13 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 13,
     color: colors.rose,
+  },
+  rangePlaceholder: {
+    marginHorizontal: 20,
+    marginTop: 40,
+    textAlign: 'center',
+    fontSize: 13,
+    color: colors.ink500,
   },
   statsGrid: {
     flexDirection: 'row',

@@ -6,16 +6,19 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native'
 import { useAuth } from '../auth/AuthProvider'
 import { usePushNotifications } from '../lib/pushNotifications'
 import { colors } from '../theme/colors'
-import type { Employee, Expense, ExpenseTemplate, PayrollEntry, Property, Schedule, ServiceType, Vendor } from '../types'
+import type { ChargeTemplate, Employee, Expense, ExpenseTemplate, PayrollEntry, Property, Schedule, ServiceType, Vendor } from '../types'
 import { AddEmployeeScreen } from '../screens/AddEmployeeScreen'
 import { AddExpenseScreen } from '../screens/AddExpenseScreen'
+import { AddChargeTemplateScreen } from '../screens/AddChargeTemplateScreen'
 import { AddExpenseTemplateScreen } from '../screens/AddExpenseTemplateScreen'
+import { AddFixedChargeScreen } from '../screens/AddFixedChargeScreen'
 import { AddPayrollEntryScreen } from '../screens/AddPayrollEntryScreen'
 import { AddPropertyScreen } from '../screens/AddPropertyScreen'
 import { AddScheduleScreen } from '../screens/AddScheduleScreen'
 import { AddServiceTypeScreen } from '../screens/AddServiceTypeScreen'
 import { AddVendorScreen } from '../screens/AddVendorScreen'
 import { EditEmployeeScreen } from '../screens/EditEmployeeScreen'
+import { EditChargeTemplateScreen } from '../screens/EditChargeTemplateScreen'
 import { EditExpenseScreen } from '../screens/EditExpenseScreen'
 import { EditExpenseTemplateScreen } from '../screens/EditExpenseTemplateScreen'
 import { EditPayrollEntryScreen } from '../screens/EditPayrollEntryScreen'
@@ -48,6 +51,9 @@ export type RootStackParamList = {
   EditExpense: { expense: Expense }
   AddExpenseTemplate: undefined
   EditExpenseTemplate: { template: ExpenseTemplate }
+  AddFixedCharge: undefined
+  AddChargeTemplate: undefined
+  EditChargeTemplate: { template: ChargeTemplate }
   AddPayrollEntry: undefined
   EditPayrollEntry: { entry: PayrollEntry }
   AddEmployee: undefined
@@ -115,6 +121,21 @@ export const RootNavigator = () => {
           <Stack.Screen name="EditSchedule" component={EditScheduleScreen} options={{ title: 'Editar horario' }} />
           <Stack.Screen name="AddExpense" component={AddExpenseScreen} options={{ title: 'Agregar gasto' }} />
           <Stack.Screen name="EditExpense" component={EditExpenseScreen} options={{ title: 'Editar gasto' }} />
+          <Stack.Screen
+            name="AddFixedCharge"
+            component={AddFixedChargeScreen}
+            options={{ title: 'Agregar cobro fijo' }}
+          />
+          <Stack.Screen
+            name="AddChargeTemplate"
+            component={AddChargeTemplateScreen}
+            options={{ title: 'Agregar cobro fijo' }}
+          />
+          <Stack.Screen
+            name="EditChargeTemplate"
+            component={EditChargeTemplateScreen}
+            options={{ title: 'Editar cobro fijo' }}
+          />
           <Stack.Screen
             name="AddExpenseTemplate"
             component={AddExpenseTemplateScreen}

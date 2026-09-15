@@ -125,8 +125,5 @@ dependencies {
     }
 }
 
-// Push notifications (Firebase Cloud Messaging) — tiene que ir después del
-// resto de plugins/config de Android. Necesita android/app/google-services.json
-// (Javier lo descarga de la consola de Firebase).
 apply plugin: "com.google.gms.google-services"
 

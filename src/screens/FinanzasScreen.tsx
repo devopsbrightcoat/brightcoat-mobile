@@ -32,8 +32,9 @@ const TABS: { key: TabKey; label: string }[] = [
 //
 // El botón "+" de agregar (cuando aplica) vive en el ScreenHeader en vez de
 // dentro de cada tab, condicionado al tab activo — mismo lugar que usa
-// Propiedades para el suyo. Cobros no tiene: los cobros se generan solos
-// desde Horarios o se suben por Excel en la web.
+// Propiedades para el suyo. Cobros solo permite agregar cobros FIJOS a mano
+// (ver AddFixedChargeScreen.tsx) — los cobros regulares se siguen
+// generando solos desde Horarios o se suben por Excel en la web.
 //
 // Las pestañas de Finanzas (Cobros, Gastos, Impuestos, Proveedores) ya
 // están completas — Planillas se movió a su propio ítem del menú, ver
@@ -50,7 +51,15 @@ export const FinanzasScreen = () => {
         showLogo
         onMenuPress={() => navigation.dispatch(DrawerActions.openDrawer())}
         right={
-          tab === 'gastos' ? (
+          tab === 'cobros' ? (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('AddFixedCharge')}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={styles.addButton}
+            >
+              <Plus size={22} color={colors.gold500} />
+            </TouchableOpacity>
+          ) : tab === 'gastos' ? (
             <TouchableOpacity
               onPress={() => navigation.navigate('AddExpense')}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}

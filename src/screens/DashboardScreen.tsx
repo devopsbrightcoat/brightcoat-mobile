@@ -68,7 +68,7 @@ const percent = (value: number) => `${value.toFixed(1)}%`
 const chartConfig = {
   backgroundGradientFrom: colors.surfaceAlt,
   backgroundGradientTo: colors.surfaceAlt,
-  decimalPlaces: 0,
+  decimalPlaces: 2,
   color: () => colors.ink400,
   labelColor: () => colors.ink400,
   propsForDots: { r: '0' },
@@ -155,7 +155,7 @@ export const DashboardScreen = () => {
       { data: monthlyFinancials.map((m) => m.expenses), color: () => COLOR_ORANGE, strokeWidth: 2 },
       { data: monthlyFinancials.map((m) => m.labor), color: () => COLOR_AQUA, strokeWidth: 2 },
     ],
-    legend: ['Ingresos', 'Gastos', 'Mano de obra'],
+    legend: ['Ingresos', 'Gastos', 'Pago a empleados'],
   }
 
   return (
@@ -182,7 +182,7 @@ export const DashboardScreen = () => {
             <StatCard label="Ingresos" value={currency(kpis.revenue)} icon={DollarSign} hint={revenueHint} />
             <StatCard label="Cobrado" value={currency(kpis.collected)} icon={Wallet} tone="good" />
             <StatCard label="Pendiente" value={currency(kpis.outstanding)} icon={Clock} tone="warn" />
-            <StatCard label="Mano de obra" value={currency(kpis.laborCost)} icon={Banknote} />
+            <StatCard label="Pago a empleados" value={currency(kpis.laborCost)} icon={Banknote} />
             <StatCard label="Gastos" value={currency(kpis.expenses)} icon={TrendingDown} />
             <StatCard
               label="Ganancia estimada"
@@ -214,8 +214,8 @@ export const DashboardScreen = () => {
               />
             </DashboardPanel>
   
-            {/* Ingresos vs. gastos vs. mano de obra */}
-            <DashboardPanel title="Ingresos vs. gastos vs. mano de obra" subtitle="Últimos 12 meses">
+            {/* Ingresos vs. gastos vs. pago a empleados */}
+            <DashboardPanel title="Ingresos vs. gastos vs. pago a empleados" subtitle="Últimos 12 meses">
               <LineChart
                 data={financialsCompareData}
                 width={screenWidth - 64}

@@ -51,6 +51,22 @@ export type ExpenseTemplate = {
   description?: string
 }
 
+// "Cobros fijos" — catálogo de cargos recurrentes (cuota de
+// administración, mantenimiento mensual, etc.) que sirve como plantilla
+// OBLIGATORIA al agregar un cobro fijo (ver AddFixedChargeScreen). A
+// diferencia de ExpenseTemplate, `amount` no es opcional — un cobro fijo
+// siempre tiene un monto conocido. Cada cobro fijo ya trae su propiedad:
+// elegir uno precarga propiedad, monto y servicio (nombre pasa a
+// Charge.description, propertyId pasa a Charge.propertyId) — el formulario
+// de "Agregar cobro fijo" ya no pide propiedad por separado. No queda
+// ningún vínculo guardado hacia charges.
+export type ChargeTemplate = {
+  id: string
+  propertyId: string
+  name: string
+  amount: number
+}
+
 // Catálogo de proveedores — de dónde sale cada compra registrada en Gastos
 // (ver Expense.vendorId más arriba). A diferencia de ExpenseTemplate, este sí
 // queda ligado a los gastos que lo usan (expenses.vendor_id).
@@ -130,6 +146,10 @@ export type Charge = {
   // — estos dos campos solo trackean si ya se remitió al estado.
   taxPaid: boolean
   taxPaidDate?: string
+  // true = creado a mano con "Agregar cobro fijo" en Cobros (propiedad +
+  // monto + fecha, sin unidad ni servicio). false = generado desde
+  // Horarios o importado de Excel.
+  isFixed: boolean
 }
 
 // Configuración general — tabla singleton (una sola fila) con los datos del

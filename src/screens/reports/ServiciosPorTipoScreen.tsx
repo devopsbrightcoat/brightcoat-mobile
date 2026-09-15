@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { ActivityIndicator, Dimensions, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { BarChart } from 'react-native-chart-kit'
 import { Panel } from '../../components/common/Panel'
+import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBar'
 import { fetchProperties, fetchSchedules, fetchServiceTypes } from '../../lib/api'
-import { computeServiceTypeActivity } from '../../lib/dashboardMetrics'
+import { computeServiceTypeActivity, filterSchedulesByRange, type DateRange } from '../../lib/dashboardMetrics'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import { colors } from '../../theme/colors'
 
@@ -15,6 +16,8 @@ const screenWidth = Dimensions.get('window').width
 // acá se cuentan trabajos (Schedule) — no hay monto en Schedule, eso vive
 // en Charge.
 export const ServiciosPorTipoScreen = () => {
+  const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
+
   const {
     data: schedules,
     loading: loadingSchedules,
@@ -46,9 +49,12 @@ export const ServiciosPorTipoScreen = () => {
     refetchProperties()
   }
 
+  const range = useMemo(() => appliedRange ?? { start: '', end: '' }, [appliedRange])
+  const rangedSchedules = useMemo(() => filterSchedulesByRange(schedules ?? [], range), [schedules, range])
+
   const rows = useMemo(
-    () => computeServiceTypeActivity(schedules ?? [], serviceTypes ?? [], properties ?? []),
-    [schedules, serviceTypes, properties],
+    () => computeServiceTypeActivity(rangedSchedules, serviceTypes ?? [], properties ?? []),
+    [rangedSchedules, serviceTypes, properties],
   )
 
   const chartData = {
@@ -74,6 +80,14 @@ export const ServiciosPorTipoScreen = () => {
       >
         {error ? <Text style={styles.errorText}>No se pudieron cargar los servicios: {error}</Text> : null}
 
+        <ReportDateRangeBar onGenerate={setAppliedRange} generated={appliedRange !== null} />
+
+        {!appliedRange ? (
+          <Text style={styles.rangePlaceholder}>
+            Elige un rango de fechas y dale &quot;Generar reporte&quot; para ver la información.
+          </Text>
+        ) : (
+          <>
         <Panel style={styles.chartPanel}>
           <Text style={styles.panelTitle}>Trabajos por tipo de servicio</Text>
           {rows.length === 0 ? (
@@ -126,6 +140,8 @@ export const ServiciosPorTipoScreen = () => {
             </Panel>
           ))}
         </View>
+          </>
+        )}
       </ScrollView>
     </View>
   )
@@ -150,6 +166,13 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 13,
     color: colors.rose,
+  },
+  rangePlaceholder: {
+    marginHorizontal: 20,
+    marginTop: 40,
+    textAlign: 'center',
+    fontSize: 13,
+    color: colors.ink500,
   },
   chartPanel: {
     marginHorizontal: 20,

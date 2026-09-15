@@ -22,10 +22,13 @@ type StatusFilter = 'all' | PaymentStatus
 // datos. La tabla ordenable/paginada de la web se vuelve una lista de
 // tarjetas tocables, mismo criterio que el resto de los módulos en mobile.
 //
-// No tiene botón de "agregar": los cobros se generan solos desde Horarios
-// (al marcar un trabajo como entregado, ver ScheduleActionModal) o se suben
-// por Excel desde la web — acá solo se consultan y se marca el invoice
-// number al subirlos a OPS (tocando el estatus de la tarjeta).
+// El botón "+" (en el ScreenHeader de FinanzasScreen) solo permite agregar
+// cobros FIJOS (propiedad + monto + fecha, sin unidad — ver
+// AddFixedChargeScreen.tsx); los cobros regulares se siguen generando
+// solos desde Horarios (al marcar un trabajo como entregado, ver
+// ScheduleActionModal) o se suben por Excel desde la web — acá se
+// consultan y se marca el invoice number al subirlos a OPS (tocando el
+// estatus de la tarjeta).
 export const CobrosScreen = () => {
   const [refreshKey, setRefreshKey] = useState(0)
   const [searchText, setSearchText] = useState('')
@@ -96,7 +99,7 @@ export const CobrosScreen = () => {
         <View style={styles.cardHeader}>
           <Text style={styles.cardTitle} numberOfLines={1}>
             {propertyMap.get(item.propertyId) ?? '—'}
-            {item.unitLabel ? ` · ${item.unitLabel}` : ''}
+            {item.isFixed ? ' · N/A' : item.unitLabel ? ` · ${item.unitLabel}` : ''}
           </Text>
           <TouchableOpacity onPress={() => setInvoiceCharge(item)} hitSlop={8}>
             <StatusPill status={item.status} />
@@ -106,6 +109,11 @@ export const CobrosScreen = () => {
           {(item.serviceTypeId ? serviceTypeMap.get(item.serviceTypeId) : undefined) ?? '—'} ·{' '}
           {item.generatedDate || '—'}
         </Text>
+        {item.description || item.notes ? (
+          <Text style={styles.cardNote} numberOfLines={2}>
+            {item.description || item.notes}
+          </Text>
+        ) : null}
         <View style={styles.cardFooter}>
           <Text style={styles.cardMeta} numberOfLines={1}>
             {item.invoiceNumber ? `Invoice #${item.invoiceNumber}` : 'Sin invoice #'}
@@ -300,6 +308,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.white,
+  },
+  cardNote: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.rose,
   },
   cardSubtitle: {
     marginTop: 4,

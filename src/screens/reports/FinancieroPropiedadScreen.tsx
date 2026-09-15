@@ -4,10 +4,12 @@ import type { RouteProp } from '@react-navigation/native'
 import { TrendingDown, TrendingUp, Wallet } from 'lucide-react-native'
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Panel } from '../../components/common/Panel'
+import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBar'
 import { SearchableSelect } from '../../components/common/SearchableSelect'
 import { StatCard } from '../../components/common/StatCard'
 import { StatusPill } from '../../components/common/StatusPill'
 import { fetchCharges, fetchEmployees, fetchProperties, fetchSchedules, fetchServiceTypes } from '../../lib/api'
+import { filterChargesByRange, filterSchedulesByRange, type DateRange } from '../../lib/dashboardMetrics'
 import { currency } from '../../lib/format'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../../navigation/RootNavigator'
@@ -25,6 +27,7 @@ type Route = RouteProp<RootStackParamList, 'FinancieroPropiedad'>
 export const FinancieroPropiedadScreen = () => {
   const route = useRoute<Route>()
   const [propertyId, setPropertyId] = useState(route.params?.propertyId ?? 'all')
+  const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
 
   const { data: properties, loading: loadingProperties, error: errorProperties } = useSupabaseQuery(fetchProperties, [])
   const {
@@ -60,19 +63,21 @@ export const FinancieroPropiedadScreen = () => {
   const serviceTypeName = (id: string) => serviceTypes?.find((s) => s.id === id)?.name ?? '—'
   const employeeName = (id: string) => employees?.find((e) => e.id === id)?.name ?? 'Sin asignar'
 
+  const range = useMemo(() => appliedRange ?? { start: '', end: '' }, [appliedRange])
+
   const filteredCharges = useMemo(
     () =>
-      (charges ?? [])
+      filterChargesByRange(charges ?? [], range)
         .filter((c) => propertyId === 'all' || c.propertyId === propertyId)
         .sort((a, b) => (b.generatedDate ?? '').localeCompare(a.generatedDate ?? '')),
-    [charges, propertyId],
+    [charges, propertyId, range],
   )
   const filteredSchedules = useMemo(
     () =>
-      (schedules ?? [])
+      filterSchedulesByRange(schedules ?? [], range)
         .filter((s) => propertyId === 'all' || s.propertyId === propertyId)
         .sort((a, b) => b.scheduledDate.localeCompare(a.scheduledDate)),
-    [schedules, propertyId],
+    [schedules, propertyId, range],
   )
 
   const totalRevenue = filteredCharges.reduce((sum, c) => sum + c.amount, 0)
@@ -108,6 +113,14 @@ export const FinancieroPropiedadScreen = () => {
           />
         </View>
 
+        <ReportDateRangeBar onGenerate={setAppliedRange} generated={appliedRange !== null} />
+
+        {!appliedRange ? (
+          <Text style={styles.rangePlaceholder}>
+            Elige un rango de fechas y dale &quot;Generar reporte&quot; para ver la información.
+          </Text>
+        ) : (
+          <>
         <View style={styles.statsGrid}>
           <StatCard label="Ingresos" value={currency(totalRevenue)} icon={TrendingUp} tone="good" />
           <StatCard label="Cobrado" value={currency(collected)} icon={Wallet} tone="good" />
@@ -160,6 +173,8 @@ export const FinancieroPropiedadScreen = () => {
             ))
           )}
         </Panel>
+          </>
+        )}
       </ScrollView>
     </View>
   )
@@ -188,6 +203,13 @@ const styles = StyleSheet.create({
   selectRow: {
     marginHorizontal: 20,
     marginTop: 16,
+  },
+  rangePlaceholder: {
+    marginHorizontal: 20,
+    marginTop: 40,
+    textAlign: 'center',
+    fontSize: 13,
+    color: colors.ink500,
   },
   statsGrid: {
     flexDirection: 'row',

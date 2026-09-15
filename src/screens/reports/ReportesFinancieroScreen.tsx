@@ -3,8 +3,8 @@ import { Banknote, Clock, DollarSign, Percent, TrendingDown, TrendingUp, Wallet 
 import { ActivityIndicator, Dimensions, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { LineChart } from 'react-native-chart-kit'
 import { DashboardPanel } from '../../components/dashboard/DashboardPanel'
-import { FilterCarousel } from '../../components/common/FilterCarousel'
 import { Panel } from '../../components/common/Panel'
+import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBar'
 import { RankingBars } from '../../components/dashboard/RankingBars'
 import { ServiceCategoryModal } from '../../components/dashboard/ServiceCategoryModal'
 import { SegmentedField } from '../../components/common/SegmentedField'
@@ -18,15 +18,13 @@ import {
   fetchServiceTypes,
 } from '../../lib/api'
 import {
-  computeDateRange,
   computeKpis,
   computeMonthlyFinancials,
   computePropertyProfitability,
   computeRevenueByCategory,
   computeRevenueByPeriod,
-  DASHBOARD_DATE_RANGE_OPTIONS,
   REVENUE_PERIOD_GRANULARITY_OPTIONS,
-  type DashboardDateRangeKey,
+  type DateRange,
   type RevenuePeriodGranularity,
 } from '../../lib/dashboardMetrics'
 import { currency } from '../../lib/format'
@@ -45,7 +43,7 @@ const percent = (value: number) => `${value.toFixed(1)}%`
 const chartConfig = {
   backgroundGradientFrom: colors.surfaceAlt,
   backgroundGradientTo: colors.surfaceAlt,
-  decimalPlaces: 0,
+  decimalPlaces: 2,
   color: () => colors.gold500,
   labelColor: () => colors.ink400,
   propsForDots: { r: '0' },
@@ -65,7 +63,7 @@ const compareChartConfig = {
 // como LineChart multi-serie — mismo recurso que ya usa DashboardScreen
 // (react-native-chart-kit no tiene barras agrupadas).
 export const ReportesFinancieroScreen = () => {
-  const [rangeKey, setRangeKey] = useState<DashboardDateRangeKey>('this_month')
+  const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
   const [periodGranularity, setPeriodGranularity] = useState<RevenuePeriodGranularity>('day')
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
 
@@ -126,7 +124,7 @@ export const ReportesFinancieroScreen = () => {
     refetchServiceTypes()
   }
 
-  const range = useMemo(() => computeDateRange(rangeKey), [rangeKey])
+  const range = useMemo(() => appliedRange ?? { start: '', end: '' }, [appliedRange])
 
   const kpis = useMemo(
     () => computeKpis(charges ?? [], payrollEntries ?? [], expenses ?? [], schedules ?? [], range),
@@ -166,7 +164,7 @@ export const ReportesFinancieroScreen = () => {
       { data: monthlyFinancials.map((m) => m.expenses), color: () => COLOR_ORANGE, strokeWidth: 2 },
       { data: monthlyFinancials.map((m) => m.labor), color: () => COLOR_AQUA, strokeWidth: 2 },
     ],
-    legend: ['Ingresos', 'Gastos', 'Mano de obra'],
+    legend: ['Ingresos', 'Gastos', 'Pago a empleados'],
   }
 
   if (loading) {
@@ -187,19 +185,19 @@ export const ReportesFinancieroScreen = () => {
       >
         {error ? <Text style={styles.errorText}>No se pudieron cargar los datos: {error}</Text> : null}
 
-        <FilterCarousel
-          label="Período"
-          options={DASHBOARD_DATE_RANGE_OPTIONS}
-          value={rangeKey}
-          onChange={setRangeKey}
-          style={styles.periodCarousel}
-        />
+        <ReportDateRangeBar onGenerate={setAppliedRange} generated={appliedRange !== null} />
 
+        {!appliedRange ? (
+          <Text style={styles.rangePlaceholder}>
+            Elige un rango de fechas y dale &quot;Generar reporte&quot; para ver la información.
+          </Text>
+        ) : (
+          <>
         <View style={styles.statsGrid}>
           <StatCard label="Ingresos" value={currency(kpis.revenue)} icon={DollarSign} />
           <StatCard label="Cobrado" value={currency(kpis.collected)} icon={Wallet} tone="good" />
           <StatCard label="Pendiente" value={currency(kpis.outstanding)} icon={Clock} tone="warn" />
-          <StatCard label="Mano de obra" value={currency(kpis.laborCost)} icon={Banknote} />
+          <StatCard label="Pago a empleados" value={currency(kpis.laborCost)} icon={Banknote} />
           <StatCard label="Gastos" value={currency(kpis.expenses)} icon={TrendingDown} />
           <StatCard
             label="Ganancia estimada"
@@ -244,7 +242,7 @@ export const ReportesFinancieroScreen = () => {
         </View>
 
         <View style={styles.panelWrap}>
-          <DashboardPanel title="Ingresos vs. gastos vs. mano de obra" subtitle="Últimos 12 meses">
+          <DashboardPanel title="Ingresos vs. gastos vs. pago a empleados" subtitle="Últimos 12 meses">
             <LineChart
               data={compareChartData}
               width={screenWidth - 64}
@@ -267,7 +265,7 @@ export const ReportesFinancieroScreen = () => {
               </View>
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: COLOR_AQUA }]} />
-                <Text style={styles.legendLabel}>Mano de obra</Text>
+                <Text style={styles.legendLabel}>Pago a empleados</Text>
               </View>
             </View>
           </DashboardPanel>
@@ -318,6 +316,8 @@ export const ReportesFinancieroScreen = () => {
             })
           )}
         </View>
+          </>
+        )}
       </ScrollView>
 
       <ServiceCategoryModal category={selectedCategory} onClose={() => setSelectedCategoryId(null)} />
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
   scroll: { paddingBottom: 32 },
   errorText: { marginHorizontal: 20, marginTop: 16, fontSize: 13, color: colors.rose },
-  periodCarousel: { marginTop: 16 },
+  rangePlaceholder: { marginHorizontal: 20, marginTop: 40, textAlign: 'center', fontSize: 13, color: colors.ink500 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 20, paddingTop: 16 },
   panelWrap: { marginHorizontal: 20, marginTop: 16 },
   granularityRow: { marginBottom: 12 },

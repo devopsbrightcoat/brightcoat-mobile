@@ -3,19 +3,17 @@ import { DollarSign, Percent, TrendingDown, TrendingUp } from 'lucide-react-nati
 import { ActivityIndicator, Dimensions, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { BarChart, LineChart } from 'react-native-chart-kit'
 import { DashboardPanel } from '../../components/dashboard/DashboardPanel'
-import { FilterCarousel } from '../../components/common/FilterCarousel'
+import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBar'
 import { SegmentedField } from '../../components/common/SegmentedField'
 import { StatCard } from '../../components/common/StatCard'
 import { fetchExpenses } from '../../lib/api'
 import {
-  computeDateRange,
   computeExpensesByPeriod,
   computeMonthlyFinancials,
-  DASHBOARD_DATE_RANGE_OPTIONS,
   filterExpensesByRange,
   previousPeriod,
   REVENUE_PERIOD_GRANULARITY_OPTIONS,
-  type DashboardDateRangeKey,
+  type DateRange,
   type RevenuePeriodGranularity,
 } from '../../lib/dashboardMetrics'
 import { currency } from '../../lib/format'
@@ -30,7 +28,7 @@ const percent = (value: number) => `${value.toFixed(1)}%`
 const lineChartConfig = {
   backgroundGradientFrom: colors.surfaceAlt,
   backgroundGradientTo: colors.surfaceAlt,
-  decimalPlaces: 0,
+  decimalPlaces: 2,
   color: () => COLOR_ORANGE,
   labelColor: () => colors.ink400,
   propsForDots: { r: '0' },
@@ -39,7 +37,7 @@ const lineChartConfig = {
 const barChartConfig = {
   backgroundGradientFrom: colors.surfaceAlt,
   backgroundGradientTo: colors.surfaceAlt,
-  decimalPlaces: 0,
+  decimalPlaces: 2,
   color: () => COLOR_ORANGE,
   labelColor: () => colors.ink400,
   barPercentage: 0.6,
@@ -52,12 +50,12 @@ const barChartConfig = {
 // la evolución por período y la comparación mensual que esa pestaña no
 // puede armar sola.
 export const ReportesGastosScreen = () => {
-  const [rangeKey, setRangeKey] = useState<DashboardDateRangeKey>('this_month')
+  const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
   const [granularity, setGranularity] = useState<RevenuePeriodGranularity>('day')
 
   const { data: expenses, loading, error, refreshing, refetch } = useSupabaseQuery(fetchExpenses, [])
 
-  const range = useMemo(() => computeDateRange(rangeKey), [rangeKey])
+  const range = useMemo(() => appliedRange ?? { start: '', end: '' }, [appliedRange])
 
   const periodExpenses = useMemo(() => filterExpensesByRange(expenses ?? [], range), [expenses, range])
   const total = useMemo(() => periodExpenses.reduce((sum, e) => sum + e.amount, 0), [periodExpenses])
@@ -105,14 +103,14 @@ export const ReportesGastosScreen = () => {
       >
         {error ? <Text style={styles.errorText}>No se pudieron cargar los gastos: {error}</Text> : null}
 
-        <FilterCarousel
-          label="Período"
-          options={DASHBOARD_DATE_RANGE_OPTIONS}
-          value={rangeKey}
-          onChange={setRangeKey}
-          style={styles.periodCarousel}
-        />
+        <ReportDateRangeBar onGenerate={setAppliedRange} generated={appliedRange !== null} />
 
+        {!appliedRange ? (
+          <Text style={styles.rangePlaceholder}>
+            Elige un rango de fechas y dale &quot;Generar reporte&quot; para ver la información.
+          </Text>
+        ) : (
+          <>
         <View style={styles.statsGrid}>
           <StatCard label="Total del período" value={currency(total)} icon={DollarSign} />
           <StatCard
@@ -173,6 +171,8 @@ export const ReportesGastosScreen = () => {
           El listado completo de gastos (factura, fecha, descripción y monto, con su propio filtro de fecha) está en
           Finanzas › Gastos.
         </Text>
+          </>
+        )}
       </ScrollView>
     </View>
   )
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
   scroll: { paddingBottom: 32 },
   errorText: { marginHorizontal: 20, marginTop: 16, fontSize: 13, color: colors.rose },
-  periodCarousel: { marginTop: 16 },
+  rangePlaceholder: { marginHorizontal: 20, marginTop: 40, textAlign: 'center', fontSize: 13, color: colors.ink500 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 20, paddingTop: 16 },
   panelWrap: { marginHorizontal: 20, marginTop: 16 },
   granularityRow: { marginBottom: 12 },

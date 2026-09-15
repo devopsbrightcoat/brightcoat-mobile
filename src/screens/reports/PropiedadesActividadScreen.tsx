@@ -3,10 +3,11 @@ import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Panel } from '../../components/common/Panel'
+import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBar'
 import { SegmentedField } from '../../components/common/SegmentedField'
 import { StatusPill } from '../../components/common/StatusPill'
 import { fetchProperties, fetchSchedules } from '../../lib/api'
-import { computePropertyActivity } from '../../lib/dashboardMetrics'
+import { computePropertyActivity, filterSchedulesByRange, type DateRange } from '../../lib/dashboardMetrics'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../../navigation/RootNavigator'
 import { colors } from '../../theme/colors'
@@ -27,6 +28,7 @@ const FILTER_OPTIONS: { value: FilterKey; label: string }[] = [
 export const PropiedadesActividadScreen = () => {
   const navigation = useNavigation<Nav>()
   const [filter, setFilter] = useState<FilterKey>('all')
+  const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
 
   const {
     data: schedules,
@@ -51,10 +53,13 @@ export const PropiedadesActividadScreen = () => {
     refetchProperties()
   }
 
+  const range = useMemo(() => appliedRange ?? { start: '', end: '' }, [appliedRange])
+  const rangedSchedules = useMemo(() => filterSchedulesByRange(schedules ?? [], range), [schedules, range])
+
   const rows = useMemo(() => {
-    const all = computePropertyActivity(schedules ?? [], properties ?? [])
+    const all = computePropertyActivity(rangedSchedules, properties ?? [])
     return filter === 'all' ? all : all.filter((r) => r.status === filter)
-  }, [schedules, properties, filter])
+  }, [rangedSchedules, properties, filter])
 
   if (loading) {
     return (
@@ -74,6 +79,14 @@ export const PropiedadesActividadScreen = () => {
       >
         {error ? <Text style={styles.errorText}>No se pudieron cargar las propiedades: {error}</Text> : null}
 
+        <ReportDateRangeBar onGenerate={setAppliedRange} generated={appliedRange !== null} />
+
+        {!appliedRange ? (
+          <Text style={styles.rangePlaceholder}>
+            Elige un rango de fechas y dale &quot;Generar reporte&quot; para ver la información.
+          </Text>
+        ) : (
+          <>
         <View style={styles.segmentRow}>
           <SegmentedField label="Mostrar" options={FILTER_OPTIONS} value={filter} onChange={setFilter} />
         </View>
@@ -108,6 +121,8 @@ export const PropiedadesActividadScreen = () => {
             ))
           )}
         </View>
+          </>
+        )}
       </ScrollView>
     </View>
   )
@@ -132,6 +147,13 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 13,
     color: colors.rose,
+  },
+  rangePlaceholder: {
+    marginHorizontal: 20,
+    marginTop: 40,
+    textAlign: 'center',
+    fontSize: 13,
+    color: colors.ink500,
   },
   segmentRow: {
     paddingHorizontal: 20,

@@ -34,7 +34,7 @@ export const ChargeDetailModal = ({ charge, propertyMap, serviceTypeMap, onClose
             <Text style={styles.fieldValueText}>{propertyMap.get(charge.propertyId) ?? '—'}</Text>
           </Field>
           <Field label="Apartamento">
-            <Text style={styles.fieldValueText}>{charge.unitLabel || '—'}</Text>
+            <Text style={styles.fieldValueText}>{charge.isFixed ? 'N/A' : charge.unitLabel || '—'}</Text>
           </Field>
           <Field label="Servicio">
             <Text style={styles.fieldValueText}>

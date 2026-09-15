@@ -1,18 +1,16 @@
 import React, { useMemo, useState } from 'react'
 import { Banknote, CheckCircle2, Clock, Users } from 'lucide-react-native'
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { FilterCarousel } from '../../components/common/FilterCarousel'
 import { Panel } from '../../components/common/Panel'
+import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBar'
 import { StatCard } from '../../components/common/StatCard'
 import { fetchEmployees, fetchPayrollEntries, fetchProperties } from '../../lib/api'
 import {
-  computeDateRange,
   computePayrollByEmployee,
   computePayrollByProperty,
   computePendingPayroll,
-  DASHBOARD_DATE_RANGE_OPTIONS,
   filterPayrollByRange,
-  type DashboardDateRangeKey,
+  type DateRange,
 } from '../../lib/dashboardMetrics'
 import { currency } from '../../lib/format'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
@@ -25,7 +23,7 @@ import { colors } from '../../theme/colors'
 // agregados que esa pantalla no arma sola: total pagado agrupado por
 // dimensión, y una vista dedicada de "trabajo hecho, pago sin definir".
 export const ReportesPlanillaScreen = () => {
-  const [rangeKey, setRangeKey] = useState<DashboardDateRangeKey>('this_month')
+  const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
 
   const {
     data: entries,
@@ -58,7 +56,7 @@ export const ReportesPlanillaScreen = () => {
     refetchEmployees()
   }
 
-  const range = useMemo(() => computeDateRange(rangeKey), [rangeKey])
+  const range = useMemo(() => appliedRange ?? { start: '', end: '' }, [appliedRange])
 
   const periodEntries = useMemo(() => filterPayrollByRange(entries ?? [], range), [entries, range])
   const totalPaid = useMemo(
@@ -99,14 +97,14 @@ export const ReportesPlanillaScreen = () => {
       >
         {error ? <Text style={styles.errorText}>No se pudieron cargar las planillas: {error}</Text> : null}
 
-        <FilterCarousel
-          label="Período"
-          options={DASHBOARD_DATE_RANGE_OPTIONS}
-          value={rangeKey}
-          onChange={setRangeKey}
-          style={styles.periodCarousel}
-        />
+        <ReportDateRangeBar onGenerate={setAppliedRange} generated={appliedRange !== null} />
 
+        {!appliedRange ? (
+          <Text style={styles.rangePlaceholder}>
+            Elige un rango de fechas y dale &quot;Generar reporte&quot; para ver la información.
+          </Text>
+        ) : (
+          <>
         <View style={styles.statsGrid}>
           <StatCard label="Total cobrado" value={currency(totalPaid)} icon={Banknote} tone="good" />
           <StatCard label="Planillas pagadas" value={String(paidCount)} icon={CheckCircle2} />
@@ -198,6 +196,8 @@ export const ReportesPlanillaScreen = () => {
           El listado completo por planilla individual (con desglose de ventas y ganancia, filtrable por propiedad,
           empleado o fecha) está en Finanzas › Planillas.
         </Text>
+          </>
+        )}
       </ScrollView>
     </View>
   )
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
   scroll: { paddingBottom: 32 },
   errorText: { marginHorizontal: 20, marginTop: 16, fontSize: 13, color: colors.rose },
-  periodCarousel: { marginTop: 16 },
+  rangePlaceholder: { marginHorizontal: 20, marginTop: 40, textAlign: 'center', fontSize: 13, color: colors.ink500 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 20, paddingTop: 16 },
   sectionTitle: {
     marginHorizontal: 20,
