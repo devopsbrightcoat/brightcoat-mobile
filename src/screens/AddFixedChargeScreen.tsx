@@ -13,19 +13,6 @@ import { colors } from '../theme/colors'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'AddFixedCharge'>
 
-// Único formulario que permite crear un cobro a mano desde Cobros — y solo
-// crea cobros FIJOS (ver createFixedCharge en lib/api.ts), siempre a
-// partir de un cobro fijo del catálogo (Configuración › Cobros fijos):
-// elegirlo es obligatorio y precarga propiedad (ya no se pide por
-// separado — Javier: "el cobro fijo jalaria la propiedad, no necesito
-// agregarla en el formulario") y monto (queda editable por si ese mes
-// varía) — su nombre pasa a la descripción del cobro creado. Mismos
-// campos que ops-web/src/components/cobros/AddFixedChargeModal.tsx, como
-// pantalla completa (no modal) — igual que AddExpenseScreen/AddPropertyScreen.
-// Sin campo de unidad ni de servicio: un cobro fijo no va amarrado a un
-// apartamento ni a un trabajo puntual — Cobros le muestra "N/A" en esa
-// columna. Los cobros "regulares" se siguen generando solo desde Horarios
-// o importándolos de Excel (eso se queda solo en la web).
 export const AddFixedChargeScreen = () => {
   const navigation = useNavigation<Nav>()
 
@@ -44,12 +31,6 @@ export const AddFixedChargeScreen = () => {
     ? (properties ?? []).find((p) => p.id === selectedTemplate.propertyId)?.name ?? '—'
     : null
 
-  // Elegir un cobro fijo precarga propiedad y monto — el monto queda
-  // editable por si ese mes varía (mismo criterio que "Gasto fijo" en
-  // AddExpenseScreen). El nombre de la plantilla no se guarda en ningún
-  // campo del formulario: se manda directo como description al crear el
-  // cobro (ver handleSave), y la propiedad se toma directo de la
-  // plantilla, sin campo propio en esta pantalla.
   const handleTemplateChange = (id: string) => {
     setTemplateId(id)
     const template = (templates ?? []).find((t) => t.id === id)

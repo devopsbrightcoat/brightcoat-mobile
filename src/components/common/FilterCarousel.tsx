@@ -13,9 +13,6 @@ type FilterCarouselProps<T extends string> = {
   options: Option<T>[]
   value: T
   onChange: (value: T) => void
-  // Ancho del chip — por defecto alcanza para etiquetas tipo "Últimos 12
-  // meses"; pasar uno más angosto/ancho según la longitud típica de las
-  // opciones de cada filtro.
   itemWidth?: number
   style?: ViewStyle
 }
@@ -23,16 +20,6 @@ type FilterCarouselProps<T extends string> = {
 const ITEM_GAP = 14
 const screenWidth = Dimensions.get('window').width
 
-// Selector tipo carrusel: la opción seleccionada queda centrada y
-// arrastrar hacia un lado avanza/retrocede una opción a la vez — mismo
-// mecanismo que el selector de semanas de Horarios (HorariosScreen.tsx,
-// weekCarousel/WEEK_SLOT_WIDTH): FlatList horizontal con snapToInterval +
-// disableIntervalMomentum (nada de scroll libre), padding lateral de
-// (screenWidth - slotWidth) / 2 para que el primer y último chip también
-// puedan centrarse, y onMomentumScrollEnd redondea el offset final al
-// índice más cercano. Reusable para cualquier filtro corto y ordenado
-// (rango de fecha, granularidad) donde arrastrar se sienta mejor que tocar
-// chips sueltos en fila.
 export function FilterCarousel<T extends string>({
   label,
   options,
@@ -47,9 +34,6 @@ export function FilterCarousel<T extends string>({
 
   const selectedIndex = useMemo(() => options.findIndex((o) => o.value === value), [options, value])
 
-  // Mantiene la opción seleccionada centrada: corre al tocar un chip
-  // directamente y al terminar de arrastrar (el handler de abajo ya deja
-  // el scroll ahí, esto solo confirma/corrige si hizo falta).
   useEffect(() => {
     if (selectedIndex < 0) return
     listRef.current?.scrollToOffset({ offset: selectedIndex * slotWidth, animated: true })

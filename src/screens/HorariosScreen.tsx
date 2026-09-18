@@ -42,25 +42,12 @@ type Nav = NativeStackNavigationProp<RootStackParamList>
 
 const today = new Date()
 
-// Ancho de "slot" del carrusel de semanas: WEEK_ITEM_WIDTH es el chip
-// visible, WEEK_ITEM_GAP el aire transparente alrededor. El slot completo
-// (WEEK_SLOT_WIDTH) es lo que usa snapToInterval, y el padding lateral del
-// FlatList (screenWidth - WEEK_SLOT_WIDTH) / 2 hace que el primer/último
-// slot también puedan quedar centrados — es el truco estándar de RN para
-// un carrusel centrado con "peek" de los vecinos a los lados.
 const WEEK_ITEM_WIDTH = 210
 const WEEK_ITEM_GAP = 14
 const WEEK_SLOT_WIDTH = WEEK_ITEM_WIDTH + WEEK_ITEM_GAP
 const screenWidth = Dimensions.get('window').width
 const weekListPadding = Math.max(0, (screenWidth - WEEK_SLOT_WIDTH) / 2)
 
-// Agenda semanal de servicios por propiedad y empleado — versión móvil de
-// ops-web/src/pages/Horarios.tsx. Antes vivía en TrabajosScreen.tsx con el
-// nombre "Trabajos" (heredado del placeholder de mocks que reemplazó la
-// Fase 2); se renombró a Horarios para que coincida con el nombre real del
-// módulo en el drawer y en ops-web. La tabla de la web se vuelve una lista
-// de tarjetas tocables; sin exportar a Excel (eso se queda solo en
-// ops-web, ver el plan).
 export const HorariosScreen = () => {
   const navigation = useNavigation<Nav>()
   const [refreshKey, setRefreshKey] = useState(0)
@@ -94,9 +81,6 @@ export const HorariosScreen = () => {
     refetch: refetchEmployees,
   } = useSupabaseQuery(fetchEmployees, [refreshKey])
 
-  // Arrastrar hacia abajo en cualquier parte de la agenda recarga los 4
-  // fetches a la vez (horarios + propiedades/servicios/empleados usados
-  // para los nombres) — mismo criterio que Cobros/Planillas.
   const refreshing = refreshingSchedules || refreshingProperties || refreshingServiceTypes || refreshingEmployees
   const handleRefresh = () => {
     refetchSchedules()
@@ -144,14 +128,8 @@ export const HorariosScreen = () => {
     setSelectedDateIso(toISODate(pickDateWithinWeek(week, today)))
   }
 
-  // Índice de la semana seleccionada dentro de `weeks` — se usa tanto para
-  // centrar el carrusel (efecto de abajo) como referencia visual.
   const selectedWeekIndex = weeks.findIndex((w) => toISODate(w.start) === toISODate(selectedWeek.start))
 
-  // Mantiene la semana seleccionada centrada bajo el mes: corre al tocar un
-  // chip, al cambiar de mes (chevrons), y al terminar de arrastrar el
-  // carrusel (el handler de abajo ya deja el scroll ahí, esto solo
-  // confirma/corrige si hizo falta).
   useEffect(() => {
     if (selectedWeekIndex < 0) return
     weekListRef.current?.scrollToOffset({ offset: selectedWeekIndex * WEEK_SLOT_WIDTH, animated: true })

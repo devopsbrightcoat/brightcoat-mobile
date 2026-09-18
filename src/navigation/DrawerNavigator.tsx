@@ -25,9 +25,6 @@ export type DrawerParamList = {
 
 const Drawer = createDrawerNavigator<DrawerParamList>()
 
-// Reemplaza la barra de tabs de abajo: el sidebar se abre con el botón de
-// hamburguesa que cada pantalla trae en su propio ScreenHeader — por eso
-// headerShown queda en false acá también, igual que tenía el TabNavigator.
 export const DrawerNavigator = () => {
   return (
     <Drawer.Navigator

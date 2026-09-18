@@ -10,13 +10,7 @@ export type Profile = {
   fullName: string | null
   email: string | null
   role: ProfileRole
-  // Toggle "Activar alertas" (Configuración -> pestaña Alertas) — si es
-  // false, los triggers de notifications no le generan alertas a este
-  // usuario. Ver 20260924000000_add_notifications.sql (ops-web).
   notificationsEnabled: boolean
-  // Roles cuya actividad este usuario quiere ver en sus alertas — ver
-  // 20260926000000_add_notify_roles.sql (ops-web). Vacío para quien nunca
-  // configuró nada (ej. staff, que no tiene esta pestaña).
   notifyRoles: ProfileRole[]
 }
 
@@ -26,10 +20,6 @@ type AuthContextValue = {
   loading: boolean
   signIn: (username: string, password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
-  // Vuelve a cargar el profile actual desde la base — usado por la pantalla
-  // "Mi perfil" (Configuración) tras guardar cambios, para que el nombre
-  // mostrado en el resto de la app (ej. el drawer) quede al día sin tener
-  // que cerrar sesión.
   refreshProfile: () => Promise<void>
 }
 
@@ -55,10 +45,6 @@ const loadProfile = async (userId: string): Promise<Profile | null> => {
   }
 }
 
-// Mismo AuthProvider que ops-web (src/auth/AuthProvider.tsx) — mismo login
-// por username -> correo sintético, mismo esquema de profiles. Solo cambia
-// dónde persiste la sesión (AsyncStorage vs. localStorage), y eso ya vive
-// dentro de src/lib/supabase.ts, así que este archivo no necesita saberlo.
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -67,11 +53,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let active = true
 
-    // Si AsyncStorage falla al leer la sesión guardada (típicamente porque
-    // el módulo nativo todavía no está enlazado tras agregar la dependencia
-    // — hace falta pod install + reconstruir la app, no solo recargar el
-    // bundle de JS), este catch evita que la pantalla se quede cargando
-    // para siempre: cae a "sin sesión" y muestra el Login.
     const initSession = async () => {
       try {
         const { data } = await supabase.auth.getSession()
@@ -113,8 +94,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     })
 
     if (error) {
-      // Supabase da el mismo mensaje genérico para "no existe" y "password
-      // incorrecto" — es lo correcto de cara al usuario (no revelar cuál).
       return { error: 'Usuario o contraseña incorrectos.' }
     }
 

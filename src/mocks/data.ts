@@ -1,8 +1,3 @@
-// ---------------------------------------------------------------------------
-// Datos mockeados — SOLO para construir la interfaz visualmente.
-// Mismo dataset que ops-web/src/mocks/data.ts, para que ambas apps muestren
-// el mismo negocio de ejemplo. No viene de Supabase todavía.
-// ---------------------------------------------------------------------------
 
 export type ClientType = 'residential' | 'multifamily' | 'property_manager'
 export type PropertyStatus = 'active' | 'inactive'
@@ -113,7 +108,6 @@ export const income: Income[] = [
   { id: 'i5', propertyId: 'p1', amount: 280, date: '2026-08-18', status: 'paid', clientReference: 'Riverside Apartments — Invoice 1046' },
 ]
 
-// Serie mensual para el gráfico de ingresos vs. gastos
 export const monthlyFinancials = [
   { month: 'Mar', income: 4200, expenses: 2100 },
   { month: 'Abr', income: 5100, expenses: 2800 },

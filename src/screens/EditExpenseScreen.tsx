@@ -15,10 +15,6 @@ import { colors } from '../theme/colors'
 type Nav = NativeStackNavigationProp<RootStackParamList, 'EditExpense'>
 type Route = RouteProp<RootStackParamList, 'EditExpense'>
 
-// Mismos campos y misma validación que ops-web EditExpenseModal.tsx, como
-// pantalla completa — igual que EditPropertyScreen/EditScheduleScreen. El
-// gasto llega por parámetro de navegación (snapshot al momento del tap en
-// ExpenseDetailModal → "Editar gasto").
 export const EditExpenseScreen = () => {
   const navigation = useNavigation<Nav>()
   const { params } = useRoute<Route>()

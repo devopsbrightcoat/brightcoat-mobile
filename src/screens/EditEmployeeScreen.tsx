@@ -15,9 +15,6 @@ import type { Employee } from '../types'
 type Nav = NativeStackNavigationProp<RootStackParamList, 'EditEmployee'>
 type Route = RouteProp<RootStackParamList, 'EditEmployee'>
 
-// Mismos campos y misma validación que ops-web EditEmployeeModal.tsx. El
-// empleado llega por parámetro de navegación (snapshot al momento del tap
-// en la lista) — igual que EditPropertyScreen.
 export const EditEmployeeScreen = () => {
   const navigation = useNavigation<Nav>()
   const { params } = useRoute<Route>()

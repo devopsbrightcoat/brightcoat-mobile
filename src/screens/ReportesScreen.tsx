@@ -94,11 +94,6 @@ const OPERATIONS_ITEMS: ReportItem[] = [
   },
 ]
 
-// Categoría "Operaciones y Propiedades" (móvil primero) se construyó
-// primero acá; Financiero/Cobros/Gastos/Planilla vivían solo en ops-web
-// hasta ahora — mismas agregaciones de dashboardMetrics.ts (ya portadas
-// acá), adaptadas a los patrones de UI de mobile: SegmentedField en vez de
-// <select>, tarjetas en vez de tabla ordenable.
 export const ReportesScreen = () => {
   const navigation = useNavigation<Nav>()
 

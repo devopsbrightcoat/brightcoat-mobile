@@ -13,10 +13,6 @@ import type { Employee } from '../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'AddEmployee'>
 
-// Mismos campos y misma validación que ops-web AddEmployeeModal.tsx, como
-// pantalla completa — igual que AddPropertyScreen. Solo el nombre es
-// obligatorio; la tarifa por hora es opcional pero, si se llena, debe ser
-// un número válido (mismo criterio que el resto de montos en la app).
 export const AddEmployeeScreen = () => {
   const navigation = useNavigation<Nav>()
   const [name, setName] = useState('')

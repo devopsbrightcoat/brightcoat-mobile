@@ -24,12 +24,6 @@ type PayrollEntryDetailModalProps = {
   onDelete: (entry: PayrollEntry) => void
 }
 
-// Vista de solo lectura de una planilla, con el desglose del servicio y los
-// cálculos de Pago (suma del desglose) y Ganancia (Cobro - Pago) — mismos
-// campos que PayrollEntryDetailModal.tsx en ops-web. Los botones "Editar" y
-// "Eliminar" viven adentro de este modal (mismo criterio que
-// ExpenseDetailModal) — Editar navega a EditPayrollEntryScreen, Eliminar
-// avisa al padre (PlanillasScreen), que muestra el ConfirmModal.
 export const PayrollEntryDetailModal = ({
   entry,
   propertyMap,
@@ -39,12 +33,7 @@ export const PayrollEntryDetailModal = ({
   onDelete,
 }: PayrollEntryDetailModalProps) => {
   const sales = entry ? entry.items.reduce((sum, item) => sum + item.amount, 0) : 0
-  // Ganancia = Cobro - Pago (antes era al revés, cuando "amount" era el pago
-  // al empleado en vez del cobro al cliente).
   const profit = entry && entry.amount != null ? entry.amount - sales : null
-  // Impuesto (8.25%) SUMADO sobre el Cobro, no extraído de adentro — ver
-  // taxOnAmount en lib/tax.ts. Solo aplica si se marcó el checkbox al
-  // agregar/editar la planilla.
   const tax = entry && entry.taxable && entry.amount != null ? taxOnAmount(entry.amount) : null
 
   return (

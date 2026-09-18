@@ -43,12 +43,6 @@ const barChartConfig = {
   barPercentage: 0.6,
 }
 
-// Reportes › Gastos — versión móvil de
-// ops-web/src/pages/reportes/ReportesGastos.tsx. El detalle de gastos
-// (factura, fecha, descripción, monto) ya está en la pestaña Gastos de
-// Finanzas, con su propio filtro de fecha — no se duplica acá. Esto agrega
-// la evolución por período y la comparación mensual que esa pestaña no
-// puede armar sola.
 export const ReportesGastosScreen = () => {
   const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
   const [granularity, setGranularity] = useState<RevenuePeriodGranularity>('day')

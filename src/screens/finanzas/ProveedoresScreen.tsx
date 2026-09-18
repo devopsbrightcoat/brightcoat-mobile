@@ -13,15 +13,6 @@ import type { Vendor } from '../../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
-// Tab "Proveedores" de FinanzasScreen — catálogo de proveedores (de dónde
-// sale cada compra registrada en Gastos, ver AddExpenseScreen/EditExpenseScreen).
-// A diferencia de "Gastos fijos" (ConfiguracionScreen, solo precarga el
-// formulario, sin vínculo), acá sí hay una relación real: expenses.vendor_id.
-// Mismo criterio de lista + trash-icon + ConfirmModal que la pestaña
-// "Gastos fijos", pero como tab propio de Finanzas (sin ScreenHeader propio
-// — el botón "+" vive en el header de FinanzasScreen, condicionado al tab
-// activo) en vez de vivir en Configuración, porque este catálogo se usa al
-// registrar gastos, no es una preferencia general de la empresa.
 export const ProveedoresScreen = () => {
   const navigation = useNavigation<Nav>()
   const [refreshKey, setRefreshKey] = useState(0)

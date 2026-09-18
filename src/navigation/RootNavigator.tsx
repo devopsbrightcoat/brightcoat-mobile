@@ -94,10 +94,6 @@ const screenOptions = {
   headerBackTitle: 'Atrás',
 }
 
-// Gate de autenticación: mientras se resuelve la sesión guardada se muestra
-// un spinner, sin sesión solo se registra Login, y con sesión se registra
-// el stack completo de la app. Mismo patrón que ops-web (App.tsx redirige
-// según AuthProvider), adaptado a react-navigation en vez de react-router.
 export const RootNavigator = () => {
   const { loading, session } = useAuth()
   usePushNotifications(session?.user.id)

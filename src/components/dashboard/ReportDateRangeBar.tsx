@@ -13,21 +13,6 @@ type ReportDateRangeBarProps = {
   generated: boolean
 }
 
-// Barra "Desde / Hasta + Generar reporte" que usan todas las pantallas de
-// Reportes — a pedido de Javier, el reporte ya no se calcula solo con un
-// período preseleccionado al entrar a la pantalla (como sigue haciendo el
-// FilterCarousel de DashboardScreen, que no cambia): acá primero se pide el
-// rango con el DatePicker nativo, "Generar reporte" se habilita recién
-// cuando Desde y Hasta están completos y Desde no es posterior a Hasta, y
-// el reporte no se recalcula solo con cambiar las fechas — hay que volver a
-// darle Generar reporte. Mismo comportamiento que
-// ops-web/src/components/dashboard/ReportDateRangeBar.tsx, adaptado acá al
-// DatePicker nativo en vez de <input type="date">.
-//
-// Modo "Por quincena" (a pedido de David — quincenas propias, no las de
-// calendario, ver lib/quincena.ts): en vez de tocar Desde/Hasta a mano, se
-// elige mes + 1ra/2da quincena con QuincenaPicker y eso precarga
-// Desde/Hasta — el resto del flujo sigue igual.
 export const ReportDateRangeBar = ({ onGenerate, generated }: ReportDateRangeBarProps) => {
   const [mode, setMode] = useState<'manual' | 'quincena'>('manual')
   const [from, setFrom] = useState('')

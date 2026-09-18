@@ -15,19 +15,6 @@ import { colors } from '../theme/colors'
 type Nav = NativeStackNavigationProp<RootStackParamList, 'EditSchedule'>
 type Route = RouteProp<RootStackParamList, 'EditSchedule'>
 
-// Mismos campos y misma validación que ops-web EditScheduleModal.tsx. El
-// horario llega por parámetro de navegación (snapshot al momento del tap
-// en la agenda) — igual que EditPropertyScreen recibe `property`. Si el
-// horario ya fue entregado, updateSchedule (lib/api.ts) rechaza el guardado
-// a nivel de base de datos ("ya fue entregado y cobrado"); el botón de
-// editar en HorariosScreen ya viene deshabilitado para ese caso, esto es
-// solo un respaldo.
-//
-// Los selects usan InlineSelect (react-native-element-dropdown por debajo)
-// en vez de SearchableSelect (que abría un modal de pantalla completa
-// arriba de esta pantalla) — mismo criterio que ScheduleFiltersModal y
-// AddScheduleScreen. `openField` coordina que solo uno esté abierto a la
-// vez.
 export const EditScheduleScreen = () => {
   const navigation = useNavigation<Nav>()
   const { params } = useRoute<Route>()

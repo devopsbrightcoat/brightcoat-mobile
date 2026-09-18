@@ -13,11 +13,6 @@ import { colors } from '../theme/colors'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'AddExpense'>
 
-// Mismos campos y misma validación que ops-web AddExpenseModal.tsx, como
-// pantalla completa (no modal) — igual que AddPropertyScreen/AddScheduleScreen.
-// Gastos es un módulo independiente (sin propiedad/empleado/servicio), así
-// que el formulario es más corto que el de Horarios. Sin "Cargar Excel"
-// (eso se queda solo en la web — ver ImportExpensesModal.tsx ahí).
 export const AddExpenseScreen = () => {
   const navigation = useNavigation<Nav>()
 
@@ -35,8 +30,6 @@ export const AddExpenseScreen = () => {
   const { data: vendors } = useSupabaseQuery(fetchVendors, [])
   const vendorOptions = (vendors ?? []).map((v) => ({ id: v.id, label: v.name }))
 
-  // Elegir un gasto fijo solo precarga monto y descripción — no queda
-  // ningún vínculo guardado entre el gasto y la plantilla usada.
   const handleTemplateChange = (id: string) => {
     setTemplateId(id)
     const template = (templates ?? []).find((t) => t.id === id)

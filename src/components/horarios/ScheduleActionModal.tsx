@@ -20,10 +20,6 @@ type ScheduleActionModalProps = {
   onSaved: () => void
 }
 
-// Cambia el estatus de un horario. Elegir "Entregado / Finalizado" no
-// guarda de una vez — pasa a un segundo paso para capturar el cobro (costo
-// + notas + extras), igual que ops-web ScheduleActionModal.tsx: un horario
-// entregado siempre necesita su cobro asociado en `charges`.
 export const ScheduleActionModal = ({ schedule, onClose, onSaved }: ScheduleActionModalProps) => {
   const [step, setStep] = useState<'status' | 'charge' | 'reschedule'>('status')
   const [totalCost, setTotalCost] = useState('')

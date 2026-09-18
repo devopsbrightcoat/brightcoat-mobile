@@ -13,8 +13,6 @@ import type { ClientType, PropertyStatus } from '../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'AddProperty'>
 
-// Mismos campos y misma validación que ops-web AddPropertyModal.tsx: solo
-// el nombre es obligatorio.
 export const AddPropertyScreen = () => {
   const navigation = useNavigation<Nav>()
   const [name, setName] = useState('')

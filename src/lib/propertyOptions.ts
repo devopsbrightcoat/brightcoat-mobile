@@ -1,8 +1,5 @@
 import type { ClientType, PropertyStatus } from '../types'
 
-// Mismas opciones/etiquetas que ops-web (Propiedades.tsx + AddPropertyModal/
-// EditPropertyModal) — centralizadas acá porque en móvil las usan tres
-// pantallas (lista, agregar, editar) en vez de una sola.
 export const CLIENT_TYPE_OPTIONS: { value: ClientType; label: string }[] = [
   { value: 'residential', label: 'Residencial' },
   { value: 'multifamily', label: 'Multifamiliar' },

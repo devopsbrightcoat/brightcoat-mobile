@@ -14,19 +14,9 @@ import { getErrorMessage } from '../../lib/errors'
 import { colors } from '../../theme/colors'
 import type { Charge } from '../../types'
 
-// Formato con centavos — a diferencia del resto de la app (montos enteros,
-// ver lib/format.ts), acá sí importan los centavos: es el monto real que
-// hay que remitir al estado.
 const currency = (value: number) =>
   value.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 })
 
-// Tab "Impuestos" de FinanzasScreen — mismo criterio que ops-web
-// (pages/Impuestos.tsx): agrupa por mes calendario los cobros ya "subidos a
-// OPS" (status='paid', los únicos con generatedDate real — un cobro
-// "pendiente por cobrar" todavía no genera obligación de impuesto) y le
-// SUMA el 8.25% sobre cada monto (ver taxOnAmount en lib/tax.ts) — el monto
-// no lo incluye. Cada mes se marca pagado/pendiente en bloque acá, o cobro
-// por cobro dentro de ImpuestosMonthDetailModal.
 export const ImpuestosScreen = () => {
   const [refreshKey, setRefreshKey] = useState(0)
   const [detailMonthKey, setDetailMonthKey] = useState<string | null>(null)
@@ -81,8 +71,6 @@ export const ImpuestosScreen = () => {
           key,
           label: formatMonthLabel(year, month - 1),
           charges: groupCharges,
-          // El impuesto ya no se extrae del cobro — se suma aparte, así que
-          // la base (lo cobrado sin impuesto) es el monto del cobro tal cual.
           totalBase: totalAmount,
           totalTax,
           paidTax,

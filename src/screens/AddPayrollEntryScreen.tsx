@@ -46,15 +46,6 @@ const SCHEDULE_STATUS_LABELS: Record<Schedule['status'], string> = {
   rescheduled: 'Reagendado',
 }
 
-// Mismos campos, misma validación y mismo orden/secciones que ops-web
-// AddPayrollEntryModal.tsx, como pantalla completa (no modal) — igual que
-// AddScheduleScreen. Tres secciones, igual que web: 1) Empleado (con el
-// buscador de horarios relacionados, colapsable, justo debajo) 2) Propiedad
-// — propiedad/unidad/fecha/servicio y 3) Pago — pago/notas/desglose. El
-// pago al empleado es opcional (se puede completar después, ver comentario
-// en types.ts sobre `amount` en PayrollEntry) y el desglose del servicio
-// (descripción + costo por línea) usa el mismo patrón de líneas dinámicas
-// que las "Extras" de ScheduleActionModal.
 export const AddPayrollEntryScreen = () => {
   const navigation = useNavigation<Nav>()
 
@@ -82,9 +73,6 @@ export const AddPayrollEntryScreen = () => {
   const propertyOptions = (properties ?? []).map((p) => ({ id: p.id, label: p.name }))
   const employeeOptions = (employees ?? []).map((e) => ({ id: e.id, label: e.name }))
 
-  // Igual que ops-web AddPayrollEntryModal.tsx: sin rango de fechas no se
-  // pide nada al servidor, y fetchSchedulesForEmployee ya excluye del lado
-  // del servidor los horarios que ya se usaron en otra planilla.
   const { data: schedules, loading: schedulesLoading } = useSupabaseQuery(
     () =>
       employeeId && scheduleFrom && scheduleTo
@@ -102,11 +90,6 @@ export const AddPayrollEntryScreen = () => {
     setScheduleOpen(true)
   }
 
-  // Igual que ops-web AddPayrollEntryModal.tsx: al elegir un horario, además
-  // de precargar Propiedad/Unidad/Fecha/Servicio, busca el cobro real de ese
-  // trabajo en Cobros y llena "Cobro" con el total ya cobrado. Si todavía no
-  // hay un cobro capturado para ese horario, se avisa y el campo queda
-  // manual.
   const handleScheduleSelect = async (id: string) => {
     setSelectedScheduleId(id)
     setChargeNotFound(false)

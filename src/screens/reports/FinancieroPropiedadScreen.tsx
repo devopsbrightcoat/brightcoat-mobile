@@ -17,13 +17,6 @@ import { colors } from '../../theme/colors'
 
 type Route = RouteProp<RootStackParamList, 'FinancieroPropiedad'>
 
-// Reportes › Historial financiero de propiedad — "vista de detalle que
-// combina ingresos, cobros y trabajos de una propiedad específica"
-// (catálogo). En este modelo "ingresos" y "cobros" son la misma tabla
-// (Charge: monto + estatus pagado/pendiente), así que se combinan en una
-// sola sección — y "trabajos" es Schedule. Llega con propertyId ya
-// seleccionado cuando se abre desde Actividad por propiedad, o se puede
-// elegir cualquier propiedad (o todas) desde acá directamente.
 export const FinancieroPropiedadScreen = () => {
   const route = useRoute<Route>()
   const [propertyId, setPropertyId] = useState(route.params?.propertyId ?? 'all')

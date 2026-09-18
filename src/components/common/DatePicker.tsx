@@ -7,8 +7,6 @@ import { colors } from '../../theme/colors'
 
 type DatePickerProps = {
   label: string
-  // Mismo formato "AAAA-MM-DD" que se guardaba antes a mano en el
-  // FormField de texto — el resto del formulario/validación no cambia.
   value: string
   onChange: (value: string) => void
   placeholder?: string
@@ -31,27 +29,6 @@ const formatDisplay = (value: string) => {
   return date ? date.toLocaleDateString('es-HN', { day: '2-digit', month: 'short', year: 'numeric' }) : value
 }
 
-// Selector de fecha con el picker nativo del sistema
-// (@react-native-community/datetimepicker) — reemplaza los campos de texto
-// libre "Fecha (AAAA-MM-DD)" que había antes en Horarios y Gastos. A
-// diferencia de InlineSelect/TimePicker (100% JS), esta librería SÍ es un
-// módulo nativo — hace falta `pod install` + rebuild nativo para instalarla,
-// no alcanza con `npm install` + reiniciar Metro.
-//
-// Android y iOS se comportan muy distinto acá, así que el componente toma
-// caminos separados:
-// - Android: `DateTimePickerAndroid.open(...)` abre el diálogo nativo del
-//   sistema de forma imperativa (sin necesidad de montar/desmontar nada) —
-//   es la forma recomendada por la librería en vez de renderizar
-//   <DateTimePicker> condicionalmente.
-// - iOS: no hay diálogo nativo separado — el picker (`display="spinner"`)
-//   se dibuja embebido, así que lo mostramos dentro de nuestro propio Modal
-//   (la hoja inferior que ya usa el resto de la app) con un botón "Listo"
-//   para confirmar, porque el spinner dispara onChange en cada scroll, no
-//   solo al confirmar.
-//
-// Sigue guardando y devolviendo el mismo string "AAAA-MM-DD" que antes, así
-// que no cambia nada del lado de la validación ni del guardado.
 export const DatePicker = ({ label, value, onChange, placeholder = 'Selecciona una fecha' }: DatePickerProps) => {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<Date>(() => parseIso(value) ?? new Date())

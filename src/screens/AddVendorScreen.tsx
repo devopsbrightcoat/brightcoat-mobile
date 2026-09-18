@@ -10,8 +10,6 @@ import { colors } from '../theme/colors'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'AddVendor'>
 
-// Mismos campos y misma validación que ops-web AddVendorModal.tsx, como
-// pantalla completa — igual que AddExpenseTemplateScreen.
 export const AddVendorScreen = () => {
   const navigation = useNavigation<Nav>()
   const [name, setName] = useState('')

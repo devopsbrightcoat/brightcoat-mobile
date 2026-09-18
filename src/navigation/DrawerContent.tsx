@@ -32,8 +32,6 @@ const items: { key: keyof DrawerParamList; label: string; icon: typeof LayoutDas
   { key: 'Horarios', label: 'Horarios', icon: Calendar },
   { key: 'Finanzas', label: 'Finanzas', icon: Banknote },
   { key: 'Planillas', label: 'Planillas', icon: Receipt },
-  // Sin esta pantalla para staff — ver ConfiguracionScreen.tsx (misma
-  // regla que la pestaña "Alertas" de Configuración).
   { key: 'Alertas', label: 'Alertas', icon: Bell, hiddenForStaff: true },
   { key: 'Reportes', label: 'Reportes', icon: LineChart },
   { key: 'Propiedades', label: 'Propiedades', icon: Building2 },
@@ -41,9 +39,6 @@ const items: { key: keyof DrawerParamList; label: string; icon: typeof LayoutDas
   { key: 'Configuracion', label: 'Configuración', icon: Settings },
 ]
 
-// Contenido del sidebar que se abre con el botón de hamburguesa. Reemplaza
-// tanto la barra de tabs de abajo como la pantalla "Más" — junta todas las
-// secciones en un solo menú, más el botón de cerrar sesión al final.
 export const DrawerContent = (props: DrawerContentComponentProps) => {
   const { profile, signOut } = useAuth()
   const activeRoute = props.state.routeNames[props.state.index]

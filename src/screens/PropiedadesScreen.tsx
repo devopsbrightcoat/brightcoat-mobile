@@ -16,10 +16,6 @@ import type { Property } from '../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
-// Mismo módulo que ops-web/src/pages/Propiedades.tsx: lista + búsqueda por
-// nombre, agregar y editar. La tabla ordenable de la web se vuelve una
-// lista de tarjetas tocables en móvil — más natural para tocar con el dedo
-// que una tabla con columnas.
 export const PropiedadesScreen = () => {
   const navigation = useNavigation<Nav>()
   const [refreshKey, setRefreshKey] = useState(0)
@@ -28,9 +24,6 @@ export const PropiedadesScreen = () => {
 
   const { data: properties, loading, error, refreshing, refetch } = useSupabaseQuery(fetchProperties, [refreshKey])
 
-  // Al volver de Agregar/Editar propiedad, refresca la lista — mismo efecto
-  // que el `onSaved={() => setRefreshKey((k) => k + 1)}` de la web, pero
-  // disparado por el foco de la pantalla en vez de un callback de modal.
   useFocusEffect(
     useCallback(() => {
       setRefreshKey((k) => k + 1)

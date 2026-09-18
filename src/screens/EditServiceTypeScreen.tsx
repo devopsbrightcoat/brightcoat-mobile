@@ -15,9 +15,6 @@ import type { ServiceCategory } from '../types'
 type Nav = NativeStackNavigationProp<RootStackParamList, 'EditServiceType'>
 type Route = RouteProp<RootStackParamList, 'EditServiceType'>
 
-// Mismos campos y misma validación que ops-web EditServiceTypeModal.tsx. El
-// tipo de servicio llega por parámetro de navegación (snapshot al momento
-// del tap en el catálogo) — igual que EditPropertyScreen.
 export const EditServiceTypeScreen = () => {
   const navigation = useNavigation<Nav>()
   const { params } = useRoute<Route>()

@@ -20,20 +20,6 @@ import type { PayrollEntry } from '../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
-// Ítem propio del menú (antes era la pestaña "Planillas" de FinanzasScreen —
-// se movió a su propio lugar, ver DrawerNavigator.tsx/DrawerContent.tsx).
-// Mismos datos y filtros que ops-web/src/pages/Planillas.tsx.
-// fetchPayrollEntries/createPayrollEntry/updatePayrollEntry ya existían en
-// lib/api.ts (portados junto con Horarios), así que este screen también es
-// puro UI. Venta y Ganancia no se guardan — se calculan acá igual que en
-// PayrollEntryDetailModal/web: Venta es la suma del desglose, Ganancia es
-// Venta - Pago (o "Pendiente" si el pago todavía no se define).
-//
-// Igual que Empleados/Propiedades: el botón "+" vive en el propio
-// ScreenHeader de este screen, tocar una tarjeta abre el detalle de solo
-// lectura (con botón "Editar planilla" adentro que navega a
-// EditPayrollEntryScreen), y useFocusEffect refresca la lista al volver de
-// Agregar/Editar.
 export const PlanillasScreen = () => {
   const navigation = useNavigation<Nav>()
   const [refreshKey, setRefreshKey] = useState(0)
@@ -101,8 +87,6 @@ export const PlanillasScreen = () => {
     for (const entry of filtered) {
       const entrySales = entry.items.reduce((sum, item) => sum + item.amount, 0)
       sales += entrySales
-      // Ganancia = Cobro - Pago (antes era al revés, cuando "amount" era el
-      // pago al empleado en vez del cobro al cliente).
       if (entry.amount != null) profit += entry.amount - entrySales
     }
     return { sales, profit }
@@ -118,12 +102,7 @@ export const PlanillasScreen = () => {
 
   const renderItem = ({ item }: { item: PayrollEntry }) => {
     const sales = item.items.reduce((sum, i) => sum + i.amount, 0)
-    // Ganancia = Cobro - Pago (antes era al revés, cuando "amount" era el
-    // pago al empleado en vez del cobro al cliente).
     const profit = item.amount == null ? null : item.amount - sales
-    // El impuesto (8.25%) se SUMA sobre el Cobro — Cobro + impuesto, no se
-    // extrae de adentro (ver taxOnAmount en lib/tax.ts). Solo aplica si se
-    // marcó el checkbox al agregar/editar la planilla.
     const tax = item.amount == null ? null : taxOnAmount(item.amount)
     return (
       <TouchableOpacity activeOpacity={0.75} onPress={() => setDetailEntry(item)}>

@@ -54,14 +54,6 @@ const compareChartConfig = {
   color: () => colors.ink400,
 }
 
-// Reportes › Financiero — versión móvil de
-// ops-web/src/pages/reportes/ReportesFinanciero.tsx. Reusa las mismas
-// agregaciones de dashboardMetrics.ts; la tabla ordenable "Rentabilidad
-// por propiedad" de la web se vuelve una lista de tarjetas (ya viene
-// ordenada por ganancia estimada desde computePropertyProfitability), y el
-// BarChart agrupado de "Ingresos vs. gastos vs. mano de obra" se resuelve
-// como LineChart multi-serie — mismo recurso que ya usa DashboardScreen
-// (react-native-chart-kit no tiene barras agrupadas).
 export const ReportesFinancieroScreen = () => {
   const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
   const [periodGranularity, setPeriodGranularity] = useState<RevenuePeriodGranularity>('day')

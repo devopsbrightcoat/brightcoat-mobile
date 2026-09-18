@@ -15,10 +15,6 @@ import type { ClientType, PropertyStatus } from '../types'
 type Nav = NativeStackNavigationProp<RootStackParamList, 'EditProperty'>
 type Route = RouteProp<RootStackParamList, 'EditProperty'>
 
-// Mismos campos y misma validación que ops-web EditPropertyModal.tsx. La
-// propiedad llega por parámetro de navegación (snapshot al momento del tap
-// en la lista) — igual que la web recibe `property` como prop desde el
-// estado de la página en vez de volver a pedirla.
 export const EditPropertyScreen = () => {
   const navigation = useNavigation<Nav>()
   const { params } = useRoute<Route>()

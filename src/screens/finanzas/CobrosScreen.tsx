@@ -16,20 +16,6 @@ import type { Charge, PaymentStatus } from '../../types'
 
 type StatusFilter = 'all' | PaymentStatus
 
-// Tab "Cobros" de FinanzasScreen — mismos datos y filtros que
-// ops-web/src/pages/Cobros.tsx. fetchCharges/fetchProperties/fetchServiceTypes
-// y updateChargeStatus ya existían en lib/api.ts (portados junto con
-// Horarios), así que este tab es puro UI: no hace falta tocar la capa de
-// datos. La tabla ordenable/paginada de la web se vuelve una lista de
-// tarjetas tocables, mismo criterio que el resto de los módulos en mobile.
-//
-// El botón "+" (en el ScreenHeader de FinanzasScreen) solo permite agregar
-// cobros FIJOS (propiedad + monto + fecha, sin unidad — ver
-// AddFixedChargeScreen.tsx); los cobros regulares se siguen generando
-// solos desde Horarios (al marcar un trabajo como entregado, ver
-// ScheduleActionModal) o se suben por Excel desde la web — acá se
-// consultan y se marca el invoice number al subirlos a OPS (tocando el
-// estatus de la tarjeta).
 export const CobrosScreen = () => {
   const [refreshKey, setRefreshKey] = useState(0)
   const [searchText, setSearchText] = useState('')

@@ -16,11 +16,6 @@ type ExpenseDetailModalProps = {
   expense: Expense | null
   vendors: Vendor[]
   onClose: () => void
-  // Web separa "ver" (fila -> detalle) de "editar" (botón aparte en la
-  // columna de acciones) — acá el botón vive adentro de este mismo modal en
-  // vez de en la tarjeta, para no sumarle un segundo touchable chico a cada
-  // fila. Navega a EditExpenseScreen (pantalla completa, mismo criterio que
-  // Propiedades/Horarios) y cierra este modal.
   onEdit: (expense: Expense) => void
 }
 

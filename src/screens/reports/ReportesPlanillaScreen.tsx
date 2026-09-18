@@ -16,12 +16,6 @@ import { currency } from '../../lib/format'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import { colors } from '../../theme/colors'
 
-// Reportes › Planilla — versión móvil de
-// ops-web/src/pages/reportes/ReportesPlanilla.tsx. Planillas.tsx (pestaña
-// de Finanzas) ya deja ver/filtrar planilla por propiedad, empleado y
-// fecha una por una — no se duplica acá. Esto agrega los dos reportes
-// agregados que esa pantalla no arma sola: total pagado agrupado por
-// dimensión, y una vista dedicada de "trabajo hecho, pago sin definir".
 export const ReportesPlanillaScreen = () => {
   const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
 

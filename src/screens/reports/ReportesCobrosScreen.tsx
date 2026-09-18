@@ -29,13 +29,6 @@ const DEFAULT_BUCKET_TONE = { bg: 'rgba(255,255,255,0.06)', text: colors.ink400 
 
 const SEVERE_BUCKETS = new Set(['61–90 días', '+90 días'])
 
-// Reportes › Cobros — versión móvil de
-// ops-web/src/pages/reportes/ReportesCobros.tsx. "Cobros pendientes",
-// "Cobros por propiedad" e "Historial de pagos" del catálogo ya están
-// cubiertos por la pestaña Cobros de Finanzas (búsqueda + filtros) — no se
-// duplican acá. Esto agrega lo que esa pestaña no tiene: filtro de fecha
-// con "Cobrado vs. pendiente" e "Invoices por período", más el drill-down
-// de antigüedad de cartera con detalle por cobro.
 export const ReportesCobrosScreen = () => {
   const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
   const [bucketFilter, setBucketFilter] = useState<string>('all')

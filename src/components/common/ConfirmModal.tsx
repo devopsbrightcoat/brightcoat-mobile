@@ -4,14 +4,6 @@ import { Modal } from './Modal'
 import { getErrorMessage } from '../../lib/errors'
 import { colors } from '../../theme/colors'
 
-// ---------------------------------------------------------------------------
-// Modal de confirmación genérico para acciones destructivas (eliminar).
-// Deshabilita los botones mientras la eliminación está en curso y muestra
-// el error real de la base de datos si falla (ej. restricción de llave
-// foránea), traducido a un mensaje claro por cada `delete*` de
-// src/lib/api.ts. Mismo componente que ops-web/src/components/common/ConfirmModal.tsx.
-// ---------------------------------------------------------------------------
-
 type ConfirmModalProps = {
   open: boolean
   onClose: () => void

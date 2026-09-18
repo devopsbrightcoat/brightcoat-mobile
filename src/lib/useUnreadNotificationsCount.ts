@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchNotifications } from './api'
 
-// Mismo criterio que ops-web (NotificationBell.tsx): sin realtime, un poll
-// simple alcanza para el tamaño de esta app. `enabled` en false (ej. rol
-// staff, que no tiene la pestaña de Alertas) evita hacer requests inútiles.
 const POLL_MS = 30000
 
 export const useUnreadNotificationsCount = (enabled: boolean): number => {

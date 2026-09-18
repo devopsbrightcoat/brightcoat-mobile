@@ -14,10 +14,6 @@ type SegmentedFieldProps<T extends string> = {
   onChange: (value: T) => void
 }
 
-// Selector de una lista corta de opciones (tipo de cliente, estado) como
-// chips tocables — no hay <select> nativo en RN y agregar un picker es otra
-// dependencia nativa que no hace falta para 2-3 opciones. Genérico en T para
-// reusarse con cualquier union de strings.
 export function SegmentedField<T extends string>({ label, options, value, onChange }: SegmentedFieldProps<T>) {
   return (
     <View style={styles.wrap}>

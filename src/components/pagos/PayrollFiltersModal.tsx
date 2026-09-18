@@ -21,10 +21,6 @@ type PayrollFiltersModalProps = {
   onDateToChange: (value: string) => void
 }
 
-// Filtros de Planillas — por propiedad, por empleado y por rango de fechas
-// (con el DatePicker nativo, mismo criterio que Gastos), mismos campos que
-// PayrollFiltersModal.tsx en ops-web. El searchbar
-// (propiedad/unidad/empleado/servicio) vive aparte, en PlanillasScreen.
 export const PayrollFiltersModal = ({
   open,
   onClose,

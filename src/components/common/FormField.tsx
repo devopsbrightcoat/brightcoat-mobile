@@ -7,10 +7,6 @@ type FormFieldProps = TextInputProps & {
   label: string
 }
 
-// Campo de texto reutilizable para los formularios de agregar/editar
-// (Propiedades por ahora, el resto de módulos lo va a reusar en las
-// siguientes fases). Mismo estilo visual que el resto de la app —
-// StyleSheet plano, sin librería de estilos.
 export const FormField = ({ label, style, ...inputProps }: FormFieldProps) => {
   return (
     <View style={styles.wrap}>

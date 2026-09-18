@@ -21,10 +21,6 @@ type SearchableSelectProps = {
   options: Option[]
   value: string
   onChange: (id: string) => void
-  // Con allLabel: funciona como filtro, con un renglón "Todas/Todos" que
-  // representa value === 'all' (Reportes, filtros de listas). Sin allLabel:
-  // funciona como select obligatorio de una entidad real — sin renglón
-  // "todas" — para formularios como Agregar/Editar horario.
   allLabel?: string
   placeholder?: string
   searchPlaceholder?: string

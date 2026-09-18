@@ -23,12 +23,6 @@ type ExpenseFiltersModalProps = {
   onVendorIdChange: (value: string) => void
 }
 
-// Filtros de Gastos — rango de fecha y rango de monto, mismos campos que
-// ExpenseFiltersModal.tsx en ops-web. Sin selects (Gastos no está ligado a
-// propiedad/empleado/servicio), así que son puros FormField de texto — las
-// fechas son "AAAA-MM-DD" a mano, mismo criterio que Horarios (sin
-// date-picker nativo, ver comentario en AddScheduleScreen). El searchbar
-// (factura/descripción) vive aparte, en GastosScreen.
 export const ExpenseFiltersModal = ({
   open,
   onClose,

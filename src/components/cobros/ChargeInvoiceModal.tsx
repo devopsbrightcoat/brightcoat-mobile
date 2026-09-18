@@ -12,11 +12,6 @@ type ChargeInvoiceModalProps = {
   onSaved: () => void
 }
 
-// Se abre al tocar el estatus de un cobro en CobrosScreen. Si el cobro está
-// pendiente, pide el invoice number y lo marca como pagado ("subido a OPS")
-// en un solo paso. Si ya está pagado, permite corregir el invoice number sin
-// cambiar el estatus — mismo comportamiento que ChargeInvoiceModal.tsx en
-// ops-web.
 export const ChargeInvoiceModal = ({ charge, onClose, onSaved }: ChargeInvoiceModalProps) => {
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [saving, setSaving] = useState(false)

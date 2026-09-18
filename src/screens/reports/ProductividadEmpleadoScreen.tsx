@@ -10,11 +10,6 @@ import { computeEmployeeActivity, filterSchedulesByRange, type DateRange } from 
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import { colors } from '../../theme/colors'
 
-// Reportes › Actividad por empleado — "distribución de la carga de trabajo
-// entre empleados" (catálogo). A diferencia de la Productividad del
-// Dashboard (solo cuenta "delivered"), acá se cuenta todo lo asignado —
-// pendiente, en proceso y completado — porque la carga de trabajo incluye
-// lo que todavía no se termina.
 export const ProductividadEmpleadoScreen = () => {
   const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
 

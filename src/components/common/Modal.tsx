@@ -18,35 +18,13 @@ type ModalProps = {
   onClose: () => void
   title: string
   children: React.ReactNode
-  // Alto mínimo de la hoja (ej. "60%") — por defecto se achica al tamaño
-  // del contenido. Útil en modales con contenido corto que igual conviene
-  // que ocupen más pantalla (ej. Filtros, para que no se sienta chico).
   minHeight?: DimensionValue
-  // Desactiva el scroll de ESTE ScrollView (el del cuerpo del modal) — se
-  // usa cuando adentro hay un InlineSelect abierto, ver comentario en
-  // ScheduleFiltersModal. Con los dos ScrollView activos a la vez (este y
-  // el de la lista de opciones), el gesto de arrastrar lo capturaba el de
-  // afuera y la lista interna no scrolleaba.
   scrollEnabled?: boolean
 }
 
-// Modal genérico tipo "hoja inferior" para Horarios y los módulos que le
-// siguen. Antes usaba `presentationStyle="pageSheet"` de RN, que en Android
-// esa prop no hace nada (solo aplica en iOS) — ahí el modal siempre cubre
-// toda la pantalla. Con un select anidado adentro (SearchableSelect abre su
-// propio modal) terminaba en dos hojas de pantalla completa una encima de
-// otra, tapando hasta la "x" de cerrar del panel de abajo. Ahora es una
-// hoja propia (`transparent` + fondo oscuro tocable para cerrar) limitada a
-// 75% de alto en cualquier plataforma, con esquinas redondeadas — se ve y
-// se comporta igual en iOS y Android.
 export const Modal = ({ open, onClose, title, children, minHeight, scrollEnabled = true }: ModalProps) => {
   return (
     <RNModal visible={open} transparent animationType="slide" onRequestClose={onClose}>
-      {/* behavior 'height' en Android (no undefined): este modal abre su
-          propia ventana nativa, separada de la Activity principal, así que
-          android:windowSoftInputMode="adjustResize" del manifest no lo
-          alcanza — sin esto el teclado tapa los campos de cualquier
-          formulario dentro de un modal en Android. */}
       <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={[styles.sheet, minHeight != null && { minHeight }]}>

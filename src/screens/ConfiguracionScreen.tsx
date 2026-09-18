@@ -30,8 +30,6 @@ const roleLabel: Record<string, string> = {
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'general', label: 'General' },
-  // Sin esta pestaña para staff — ver DrawerContent.tsx (misma regla que
-  // el ítem "Alertas" del drawer).
   { key: 'alertas', label: 'Alertas' },
   { key: 'servicios', label: 'Servicios' },
   { key: 'gastos_fijos', label: 'Gastos fijos' },
@@ -40,18 +38,9 @@ const TABS: { key: TabKey; label: string }[] = [
 
 const ALL_ROLES: ProfileRole[] = ['owner', 'admin', 'staff', 'finance']
 
-// Réplica de ops-web (ConfiguracionGeneral.tsx / ConfiguracionServicios.tsx
-// — dos pestañas separadas ahí) como un tab switcher, mismo criterio que
-// FinanzasScreen. "General" agrupa Datos de la empresa (company_settings,
-// tabla singleton) y Mi perfil (nombre/correo propios + cambio de
-// contraseña) — ver 20260920000000_add_company_settings.sql. La gestión de
-// cuentas de acceso (crear/editar otros usuarios) queda fuera a propósito:
-// requiere el API admin de Supabase, no es seguro exponerlo desde la app.
 export const ConfiguracionScreen = () => {
   const navigation = useNavigation<Nav>()
   const { profile, refreshProfile } = useAuth()
-  // Datos de la empresa: solo el owner puede editarlos — el resto de roles
-  // los ve, pero de solo lectura (sin inputs ni botón de guardar).
   const isOwner = profile?.role === 'owner'
   const visibleTabs = TABS.filter((t) => t.key !== 'alertas' || profile?.role !== 'staff')
   const [tab, setTab] = useState<TabKey>('general')
@@ -93,7 +82,6 @@ export const ConfiguracionScreen = () => {
     }, []),
   )
 
-  // --- Datos de la empresa ---------------------------------------------
   const { data: companySettings, loading: loadingCompany } = useSupabaseQuery(fetchCompanySettings, [])
   const [companyLoaded, setCompanyLoaded] = useState(false)
   const [address, setAddress] = useState('')
@@ -140,7 +128,6 @@ export const ConfiguracionScreen = () => {
     }
   }
 
-  // --- Mi perfil ---------------------------------------------------------
   const [profileLoaded, setProfileLoaded] = useState(false)
   const [fullName, setFullName] = useState('')
   const [contactEmail, setContactEmail] = useState('')
@@ -168,7 +155,6 @@ export const ConfiguracionScreen = () => {
     }
   }
 
-  // --- Alertas -------------------------------------------------------------
   const [savingAlertsToggle, setSavingAlertsToggle] = useState(false)
   const [savingAlertsRole, setSavingAlertsRole] = useState<ProfileRole | null>(null)
   const [alertsError, setAlertsError] = useState<string | null>(null)
@@ -203,7 +189,6 @@ export const ConfiguracionScreen = () => {
     }
   }
 
-  // --- Cambiar contraseña -------------------------------------------------
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [savingPassword, setSavingPassword] = useState(false)

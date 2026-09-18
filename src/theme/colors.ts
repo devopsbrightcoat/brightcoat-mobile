@@ -1,5 +1,3 @@
-// Same palette as ops-web (src/index.css) and the client-landing site,
-// taken from the BrightCoat logo.
 
 export const colors = {
   brand50: '#eef2fa',

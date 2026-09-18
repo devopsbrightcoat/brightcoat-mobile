@@ -26,11 +26,6 @@ type ChargeFiltersModalProps = {
   onDateToChange: (value: string) => void
 }
 
-// Filtros de Cobros — por propiedad, estatus y tipo de servicio. Aplican de
-// inmediato, mismo criterio que ScheduleFiltersModal. El searchbar
-// (propiedad/apartamento/descripción/invoice #) vive aparte, en
-// CobrosScreen — igual que en ops-web (Cobros.tsx tiene el buscador afuera
-// de ChargeFiltersModal).
 export const ChargeFiltersModal = ({
   open,
   onClose,

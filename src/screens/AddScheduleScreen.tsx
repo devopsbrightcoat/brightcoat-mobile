@@ -33,21 +33,6 @@ type Line = {
 
 const emptyLine = (key: number): Line => ({ key, unitLabel: '', serviceTypeId: '' })
 
-// Mismos campos y misma validación que ops-web AddScheduleModal.tsx, como
-// pantalla completa (no modal) — igual que AddPropertyScreen. Fecha es un
-// campo de texto simple (AAAA-MM-DD) en vez de un date picker nativo:
-// decisión explícita para el MVP de campo, evita sumar
-// @react-native-community/datetimepicker (otra dependencia nativa y otro
-// rebuild) — ops-web usa <input type="date"> porque el navegador ya trae
-// ese picker gratis, acá no hay equivalente sin instalar algo nuevo. Ya no
-// se captura hora — David pidió quitarla, se agenda solo por día.
-//
-// Los selects de Propiedad/Empleado/Servicio usan InlineSelect
-// (react-native-element-dropdown por debajo) en vez de SearchableSelect
-// (que abría un modal de pantalla completa arriba de esta pantalla) —
-// mismo criterio que se aplicó a ScheduleFiltersModal. `openField` coordina
-// que solo uno esté abierto a la vez, incluyendo el de cada unidad (llave
-// `service-<key>`).
 export const AddScheduleScreen = () => {
   const navigation = useNavigation<Nav>()
   const { params } = useRoute<Route>()

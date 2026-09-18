@@ -16,10 +16,6 @@ const timeAgo = (iso: string): string => {
   return `hace ${Math.floor(hours / 24)} d`
 }
 
-// Pantalla dedicada a la lista de alertas — equivalente móvil del dropdown
-// de la campanita en ops-web (NotificationBell.tsx). Se abre desde el
-// drawer y también al tocar una notificación push (ver
-// src/lib/pushNotifications.ts).
 export const AlertasScreen = () => {
   const navigation = useNavigation()
   const [refreshKey, setRefreshKey] = useState(0)
@@ -37,8 +33,6 @@ export const AlertasScreen = () => {
   }, [data])
 
   const list = items ?? data ?? []
-  // Todas las alertas mostradas acá están, por definición, sin leer — leer
-  // una la borra (ver api.ts), así que nunca se acumulan.
   const unreadCount = list.length
 
   const handlePress = (n: AppNotification) => {

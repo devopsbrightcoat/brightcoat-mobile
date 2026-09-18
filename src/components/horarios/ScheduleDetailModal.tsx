@@ -21,12 +21,6 @@ type ScheduleDetailModalProps = {
   onClose: () => void
 }
 
-// Vista de solo lectura del detalle de un horario — se abre al tocar
-// cualquier parte de una fila en HorariosScreen. Los botones de Estatus y
-// Editar dentro de la fila son TouchableOpacity independientes (el sistema
-// de responders de RN ya evita que su toque también dispare el de la fila),
-// igual que ScheduleDetailModal.tsx en ops-web evita el modal con
-// stopPropagation en el click.
 export const ScheduleDetailModal = ({
   schedule,
   propertyMap,

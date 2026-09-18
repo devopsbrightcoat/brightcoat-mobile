@@ -10,8 +10,6 @@ import { colors } from '../theme/colors'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'AddExpenseTemplate'>
 
-// Mismos campos y misma validación que ops-web AddExpenseTemplateModal.tsx,
-// como pantalla completa — igual que el resto de Add/Edit de la app.
 export const AddExpenseTemplateScreen = () => {
   const navigation = useNavigation<Nav>()
   const [name, setName] = useState('')

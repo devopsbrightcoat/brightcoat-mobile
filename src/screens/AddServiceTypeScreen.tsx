@@ -13,8 +13,6 @@ import type { ServiceCategory } from '../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'AddServiceType'>
 
-// Mismos campos y misma validación que ops-web AddServiceTypeModal.tsx,
-// como pantalla completa — igual que el resto de Add/Edit de la app.
 export const AddServiceTypeScreen = () => {
   const navigation = useNavigation<Nav>()
   const [name, setName] = useState('')

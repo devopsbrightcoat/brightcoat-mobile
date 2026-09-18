@@ -16,17 +16,6 @@ type ScheduleFiltersModalProps = {
   onEmployeeChange: (id: string) => void
 }
 
-// Filtros de la agenda del día en HorariosScreen — por propiedad y por
-// empleado. Los selects aplican de inmediato (mismo criterio que los
-// filtros de Gastos), igual que ScheduleFiltersModal.tsx en ops-web. Usa
-// InlineSelect (react-native-element-dropdown por debajo, panel siempre
-// centrado en pantalla — ver InlineSelect.tsx).
-//
-// `openField` coordina que solo un select esté abierto a la vez: cada uno
-// se controla pasándole `open`/`onOpenChange` con su propia "llave" — abrir
-// uno pone su llave acá, lo que automáticamente cierra cualquier otro (su
-// `open` deja de coincidir con `openField`). Agregar un filtro más el día
-// de mañana es solo sumarle su llave a este mismo estado.
 export const ScheduleFiltersModal = ({
   open,
   onClose,

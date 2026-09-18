@@ -15,10 +15,6 @@ import type { Employee } from '../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
-// Mismo módulo que ops-web/src/pages/Empleados.tsx: lista en tarjetas +
-// búsqueda por nombre, agregar y editar — mismo criterio ya usado en
-// Propiedades. La grilla de tarjetas de la web (con paginación) se vuelve
-// una sola lista scrolleable en móvil.
 export const EmpleadosScreen = () => {
   const navigation = useNavigation<Nav>()
   const [refreshKey, setRefreshKey] = useState(0)

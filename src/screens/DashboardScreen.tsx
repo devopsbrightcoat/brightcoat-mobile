@@ -57,9 +57,6 @@ import { QuincenaPicker } from '../components/dashboard/QuincenaPicker'
 
 const screenWidth = Dimensions.get('window').width
 
-// Misma paleta categórica validada (dataviz skill) que ops-web — azul,
-// naranja, aqua para las 3 series de Ingresos vs. gastos vs. mano de obra;
-// dorado de marca para la línea única de Tendencia de ingresos.
 const COLOR_GOLD = colors.gold400
 const COLOR_BLUE = '#3987e5'
 const COLOR_ORANGE = '#d95926'
@@ -67,10 +64,6 @@ const COLOR_AQUA = '#199e70'
 
 const percent = (value: number) => `${value.toFixed(1)}%`
 
-// react-native-chart-kit no tiene barras agrupadas (solo barra simple o
-// apilada) — a diferencia de ops-web (recharts), acá "Ingresos vs. gastos
-// vs. mano de obra" se resuelve como LineChart multi-serie, mismo recurso
-// que ya usaba este dashboard para ingresos vs. gastos con datos mock.
 const chartConfig = {
   backgroundGradientFrom: colors.surfaceAlt,
   backgroundGradientTo: colors.surfaceAlt,
@@ -221,7 +214,6 @@ export const DashboardScreen = () => {
         <ActivityIndicator style={styles.centered} color={colors.gold400} />
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
-          {/* KPIs */}
           <View style={styles.statsGrid}>
             <StatCard label="Ingresos" value={currency(kpis.revenue)} icon={DollarSign} hint={revenueHint} />
             <StatCard label="Cobrado" value={currency(kpis.collected)} icon={Wallet} tone="good" />
@@ -243,7 +235,6 @@ export const DashboardScreen = () => {
           </View>
 
           <View style={styles.panelsGroup}>
-            {/* Tendencia de ingresos */}
             <DashboardPanel title="Tendencia de ingresos" subtitle="Últimos 12 meses">
               <LineChart
                 data={revenueTrendData}
@@ -257,8 +248,7 @@ export const DashboardScreen = () => {
                 style={styles.chart}
               />
             </DashboardPanel>
-  
-            {/* Ingresos vs. gastos vs. pago a empleados */}
+
             <DashboardPanel title="Ingresos vs. gastos vs. pago a empleados" subtitle="Últimos 12 meses">
               <LineChart
                 data={financialsCompareData}
@@ -272,8 +262,7 @@ export const DashboardScreen = () => {
                 style={styles.chart}
               />
             </DashboardPanel>
-  
-            {/* Ingresos por servicio */}
+
             <DashboardPanel title="Ingresos por servicio" subtitle="Período seleccionado">
               <RankingBars
                 items={revenueByCategory.map((c) => ({ id: c.category ?? c.label, label: c.label, value: c.revenue }))}
@@ -283,8 +272,7 @@ export const DashboardScreen = () => {
                 onItemPress={(item) => setSelectedCategoryId(item.id)}
               />
             </DashboardPanel>
-  
-            {/* Ingresos por propiedad */}
+
             <DashboardPanel title="Ingresos por propiedad" subtitle="Top propiedades — período seleccionado">
               <RankingBars
                 items={revenueByProperty.map((p) => ({ id: p.propertyId, label: p.name, value: p.revenue }))}
@@ -293,8 +281,7 @@ export const DashboardScreen = () => {
                 emptyText="No hay cobros en este período."
               />
             </DashboardPanel>
-  
-            {/* Productividad de empleados */}
+
             <DashboardPanel title="Productividad de empleados" subtitle="Trabajos completados — período seleccionado">
               <RankingBars
                 items={employeeProductivity.map((e) => ({ id: e.employeeId, label: e.name, value: e.completedJobs }))}
@@ -303,8 +290,7 @@ export const DashboardScreen = () => {
                 emptyText="No hay trabajos completados en este período."
               />
             </DashboardPanel>
-  
-            {/* Trabajos de hoy */}
+
             <DashboardPanel title="Trabajos de hoy" subtitle="Programación del día" action={<CalendarDays size={16} color={colors.ink500} />}>
               {todaySchedules.length === 0 ? (
                 <Text style={styles.emptyText}>No hay trabajos programados para hoy.</Text>
@@ -324,8 +310,7 @@ export const DashboardScreen = () => {
                 </View>
               )}
             </DashboardPanel>
-  
-            {/* Trabajos atrasados */}
+
             <DashboardPanel title="Trabajos atrasados" subtitle="Fecha programada ya pasada" action={<CalendarClock size={16} color={colors.amber} />}>
               {overdueSchedules.length === 0 ? (
                 <Text style={styles.emptyText}>No hay trabajos atrasados.</Text>
@@ -348,8 +333,7 @@ export const DashboardScreen = () => {
                 </View>
               )}
             </DashboardPanel>
-  
-            {/* Antigüedad de cobros pendientes */}
+
             <DashboardPanel title="Antigüedad de cobros pendientes" subtitle="Días desde que se generó el cobro">
               <View style={styles.agingList}>
                 {outstandingAging.map((bucket) => (
@@ -362,8 +346,7 @@ export const DashboardScreen = () => {
                 ))}
               </View>
             </DashboardPanel>
-  
-            {/* Alertas */}
+
             <DashboardPanel title="Alertas" subtitle="Cosas que vale la pena revisar">
               {alerts.length === 0 ? (
                 <View style={styles.okRow}>

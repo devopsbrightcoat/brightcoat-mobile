@@ -5,18 +5,10 @@ import { colors } from '../../theme/colors'
 
 type TimePickerProps = {
   label: string
-  // Mismo formato "HH:MM" 24hr que se guardaba antes a mano en el
-  // TextInput — el resto del formulario (validación, guardado) no cambia,
-  // solo la UI muestra hora 12hr con AM/PM.
   value: string
   onChange: (value: string) => void
 }
 
-// Rueda chica a propósito — la versión anterior (34px x 3 filas) todavía se
-// veía grande al lado de los demás campos del formulario (que rondan los
-// 45px de alto en total, no por fila). 26px x 3 filas sigue dejando ver la
-// fila de arriba/abajo (necesario para que se entienda que es una rueda
-// deslizable) sin dominar el formulario.
 const ITEM_HEIGHT = 26
 const VISIBLE_ITEM_COUNT = 3
 
@@ -31,16 +23,12 @@ const PERIODS = [
 
 type Period = (typeof PERIODS)[number]['value']
 
-// Convierte el string guardado "HH:MM" (24hr) a hora 12hr + AM/PM para
-// mostrar en las ruedas.
 const to12h = (hour24: number): { hour12: number; period: Period } => {
   const period: Period = hour24 >= 12 ? 'PM' : 'AM'
   const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12
   return { hour12, period }
 }
 
-// Convierte hora 12hr + AM/PM de vuelta a 24hr para seguir guardando el
-// mismo formato "HH:MM" que usa el resto del formulario/validación.
 const to24h = (hour12: number, period: Period): number => {
   if (period === 'AM') return hour12 === 12 ? 0 : hour12
   return hour12 === 12 ? 12 : hour12 + 12
@@ -54,18 +42,6 @@ const parseTime = (value: string) => {
   return { hour12, minute, period }
 }
 
-// Selector de hora con tres ruedas (hora 12hr / minuto / AM-PM), usando
-// @quidone/react-native-wheel-picker — reemplaza el campo de texto libre
-// "Hora (HH:MM)" que había antes en Agregar/Editar horario. Se eligió esta
-// librería en particular porque es 100% JS (no depende de módulos nativos
-// como @react-native-community/datetimepicker), así que no hace falta pod
-// install ni rebuild nativo para instalarla — mismo criterio que se usó
-// para el select de Propiedad/Empleado/Servicio (ver InlineSelect.tsx).
-//
-// Sigue guardando y devolviendo el mismo string "HH:MM" (24hr) que antes,
-// así que no cambia nada del lado de la validación ni del guardado en
-// AddScheduleScreen/EditScheduleScreen — la conversión a/desde 12hr+AM/PM
-// es solo de presentación (to12h/to24h arriba).
 export const TimePicker = ({ label, value, onChange }: TimePickerProps) => {
   const { hour12, minute, period } = useMemo(() => parseTime(value), [value])
 

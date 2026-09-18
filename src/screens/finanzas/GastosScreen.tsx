@@ -16,17 +16,6 @@ import type { Expense, Vendor } from '../../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
-// Tab "Gastos" de FinanzasScreen — mismos datos y filtros que
-// ops-web/src/pages/Gastos.tsx. fetchExpenses/createExpense/updateExpense ya
-// existían en lib/api.ts (portados junto con Horarios). Sin "Cargar Excel" —
-// eso se queda solo en la web (ver ImportExpensesModal.tsx ahí).
-//
-// A diferencia de Cobros (sin creación manual), Gastos sí tiene CRUD
-// completo: el botón "+" vive en el ScreenHeader de FinanzasScreen (ver
-// `right` ahí, condicionado al tab activo) y abre AddExpenseScreen; tocar
-// una tarjeta abre el detalle de solo lectura, que a su vez tiene un botón
-// "Editar gasto" que navega a EditExpenseScreen — mismo criterio de
-// pantalla completa (no modal) que Propiedades/Horarios.
 export const GastosScreen = () => {
   const navigation = useNavigation<Nav>()
   const [refreshKey, setRefreshKey] = useState(0)
@@ -43,8 +32,6 @@ export const GastosScreen = () => {
   const { data: vendors } = useSupabaseQuery(fetchVendors, [refreshKey])
   const vendorMap = new Map((vendors ?? []).map((v: Vendor) => [v.id, v.name]))
 
-  // Al volver de Agregar/Editar gasto, refresca la lista — mismo efecto que
-  // PropiedadesScreen.
   useFocusEffect(
     useCallback(() => {
       setRefreshKey((k) => k + 1)

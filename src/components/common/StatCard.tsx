@@ -12,10 +12,6 @@ type StatCardProps = {
   icon: LucideIcon
   tone?: Tone
   hint?: string
-  // 'compact' reduce padding/tamaños para usarse como tira de resumen
-  // arriba de una lista (ej. CobrosScreen) — ahí la lista es lo importante
-  // y las tarjetas de resumen no deberían competirle protagonismo. El
-  // tamaño 'default' (Dashboard) no cambia.
   size?: Size
 }
 

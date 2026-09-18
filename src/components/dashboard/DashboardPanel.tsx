@@ -10,9 +10,6 @@ type DashboardPanelProps = PropsWithChildren<{
   action?: ReactNode
 }>
 
-// Réplica de DashboardPanel.tsx (ops-web) — misma tarjeta genérica para las
-// gráficas y bloques del Dashboard, con título/subtítulo y un slot de
-// acción a la derecha (ej. el ícono de calendario en "Trabajos de hoy").
 export const DashboardPanel = ({ title, subtitle, action, children }: DashboardPanelProps) => {
   return (
     <Panel style={styles.panel}>

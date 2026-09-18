@@ -20,11 +20,6 @@ type ChargeDetailModalProps = {
   onClose: () => void
 }
 
-// Vista de solo lectura de un cobro — se abre al tocar cualquier parte de
-// una tarjeta en CobrosScreen (el estatus, adentro de la misma tarjeta, abre
-// en cambio ChargeInvoiceModal — su propio TouchableOpacity no dispara este
-// modal, mismo criterio que ScheduleDetailModal/HorariosScreen). Mismos
-// campos que ChargeDetailModal.tsx en ops-web.
 export const ChargeDetailModal = ({ charge, propertyMap, serviceTypeMap, onClose }: ChargeDetailModalProps) => {
   return (
     <Modal open={charge !== null} onClose={onClose} title="Detalle del cobro">

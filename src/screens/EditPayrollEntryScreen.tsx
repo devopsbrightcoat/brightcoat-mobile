@@ -31,11 +31,6 @@ type ItemLine = { key: number; description: string; amount: string }
 
 const emptyItem = (key: number): ItemLine => ({ key, description: '', amount: '' })
 
-// Mismos campos y misma validación que AddPayrollEntryScreen, como pantalla
-// completa — igual que EditExpenseScreen/EditScheduleScreen. La planilla
-// llega por parámetro de navegación (snapshot al momento del tap en
-// PayrollEntryDetailModal → "Editar planilla"), incluyendo su desglose ya
-// cargado en líneas editables.
 export const EditPayrollEntryScreen = () => {
   const navigation = useNavigation<Nav>()
   const { params } = useRoute<Route>()

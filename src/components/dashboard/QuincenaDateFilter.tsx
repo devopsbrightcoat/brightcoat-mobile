@@ -5,14 +5,6 @@ import { SelectField } from '../common/SelectField'
 import { QuincenaPicker } from './QuincenaPicker'
 import { getQuincenaForDate, getQuincenaRange, type QuincenaKey } from '../../lib/quincena'
 
-// Filtro de fecha "Rango manual / Por quincena" para los paneles de
-// filtros de Finanzas (Cobros, Gastos, Planillas) — mismo modo quincena
-// que ReportDateRangeBar en Reportes y DashboardScreen (quincenas al
-// estilo de David, ver lib/quincena.ts), pero sin botón "Generar": acá los
-// filtros aplican de inmediato (mismo criterio que ya tenían
-// dateFrom/dateTo en estos paneles), así que elegir una quincena solo
-// precarga Fecha desde/hasta y el filtro ya queda aplicado. Mismo
-// componente que ops-web/src/components/dashboard/QuincenaDateFilter.tsx.
 type QuincenaDateFilterProps = {
   dateFrom: string
   dateTo: string

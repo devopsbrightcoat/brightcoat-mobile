@@ -12,9 +12,6 @@ import { colors } from '../theme/colors'
 type Nav = NativeStackNavigationProp<RootStackParamList, 'EditVendor'>
 type Route = RouteProp<RootStackParamList, 'EditVendor'>
 
-// Mismos campos y misma validación que ops-web EditVendorModal.tsx. El
-// proveedor llega por parámetro de navegación (snapshot al momento del tap
-// en el catálogo) — igual que EditExpenseTemplateScreen.
 export const EditVendorScreen = () => {
   const navigation = useNavigation<Nav>()
   const { params } = useRoute<Route>()

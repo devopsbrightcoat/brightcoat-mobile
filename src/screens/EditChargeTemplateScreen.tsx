@@ -14,9 +14,6 @@ import { colors } from '../theme/colors'
 type Nav = NativeStackNavigationProp<RootStackParamList, 'EditChargeTemplate'>
 type Route = RouteProp<RootStackParamList, 'EditChargeTemplate'>
 
-// Mismos campos y misma validación que ops-web EditChargeTemplateModal.tsx.
-// La plantilla llega por parámetro de navegación (snapshot al momento del
-// tap en el catálogo) — igual que EditExpenseTemplateScreen.
 export const EditChargeTemplateScreen = () => {
   const navigation = useNavigation<Nav>()
   const { params } = useRoute<Route>()

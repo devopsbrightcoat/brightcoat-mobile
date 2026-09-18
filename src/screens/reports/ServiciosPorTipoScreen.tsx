@@ -10,11 +10,6 @@ import { colors } from '../../theme/colors'
 
 const screenWidth = Dimensions.get('window').width
 
-// Reportes › Servicios realizados — "cantidad de trabajos por tipo de
-// servicio, con desglose por propiedad" (catálogo). A diferencia de
-// "Ingresos por tipo de servicio" del Dashboard (que suma $ de cobros),
-// acá se cuentan trabajos (Schedule) — no hay monto en Schedule, eso vive
-// en Charge.
 export const ServiciosPorTipoScreen = () => {
   const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
 

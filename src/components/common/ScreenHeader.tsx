@@ -8,11 +8,7 @@ type ScreenHeaderProps = {
   title: string
   subtitle?: string
   showLogo?: boolean
-  // Si se pasa, muestra el botón de hamburguesa a la izquierda que abre el
-  // sidebar — normalmente navigation.dispatch(DrawerActions.openDrawer()).
   onMenuPress?: () => void
-  // Slot a la derecha del header para una acción propia de la pantalla
-  // (por ejemplo el "+" de agregar en Propiedades).
   right?: React.ReactNode
 }
 

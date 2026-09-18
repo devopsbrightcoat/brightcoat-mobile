@@ -9,9 +9,6 @@ type ServiceCategoryModalProps = {
   onClose: () => void
 }
 
-// Réplica de ServiceCategoryModal.tsx (ops-web) — desglose por tipo de
-// servicio dentro de una categoría, al tocar una barra de "Ingresos por
-// categoría".
 export const ServiceCategoryModal = ({ category, onClose }: ServiceCategoryModalProps) => {
   return (
     <Modal open={category !== null} onClose={onClose} title={category ? `Ingresos — ${category.label}` : ''}>

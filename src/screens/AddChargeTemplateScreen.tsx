@@ -12,8 +12,6 @@ import { colors } from '../theme/colors'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'AddChargeTemplate'>
 
-// Mismos campos y misma validación que ops-web AddChargeTemplateModal.tsx,
-// como pantalla completa — igual que el resto de Add/Edit de la app.
 export const AddChargeTemplateScreen = () => {
   const navigation = useNavigation<Nav>()
   const [propertyId, setPropertyId] = useState('')

@@ -21,10 +21,6 @@ const FILTER_OPTIONS: { value: FilterKey; label: string }[] = [
   { value: 'inactive', label: 'Inactivas' },
 ]
 
-// Reportes › Actividad por propiedad — ranking por cantidad de trabajos
-// (todo el historial), con el filtro de activas/inactivas que pide el
-// catálogo. Cada fila navega a "Historial financiero de propiedad" con esa
-// propiedad ya seleccionada.
 export const PropiedadesActividadScreen = () => {
   const navigation = useNavigation<Nav>()
   const [filter, setFilter] = useState<FilterKey>('all')

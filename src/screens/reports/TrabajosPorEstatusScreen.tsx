@@ -34,13 +34,6 @@ const GRANULARITY_OPTIONS: { value: ScheduleActivityGranularity; label: string }
   { value: 'month', label: 'Mes' },
 ]
 
-// Reportes › Trabajos por estatus — categoría "Operaciones y Propiedades"
-// (móvil primero) de la hoja de ruta. Completados/cancelados/pendientes se
-// leen del status de Schedule; "atrasados" reutiliza
-// computeOverdueSchedules (ya existía para el Dashboard). La evolución
-// semanal/mensual es la cantidad de trabajos agendados por período — un
-// desglose por estatus en el tiempo no entra bien en un LineChart de
-// react-native-chart-kit (no tiene multi-serie apilada utilizable acá).
 export const TrabajosPorEstatusScreen = () => {
   const [granularity, setGranularity] = useState<ScheduleActivityGranularity>('week')
   const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
@@ -50,11 +43,6 @@ export const TrabajosPorEstatusScreen = () => {
   const rangedSchedules = useMemo(() => filterSchedulesByRange(schedules ?? [], range), [schedules, range])
 
   const breakdown = useMemo(() => computeScheduleStatusBreakdown(rangedSchedules), [rangedSchedules])
-  // Atrasados es "a día de hoy", no del rango seleccionado — igual que la
-  // antigüedad de cartera en Reportes · Cobros (web y móvil) y "Atrasados"
-  // en ReportesOperaciones.tsx (web): un trabajo atrasado lo sigue estando
-  // sin importar qué período estés revisando, así que se calcula sobre
-  // TODOS los horarios sin filtrar por el rango elegido arriba.
   const overdueCount = useMemo(() => computeOverdueSchedules(schedules ?? []).length, [schedules])
   const activity = useMemo(() => computeScheduleActivity(rangedSchedules, granularity), [rangedSchedules, granularity])
 

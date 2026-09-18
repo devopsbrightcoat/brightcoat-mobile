@@ -1,11 +1,3 @@
-// ---------------------------------------------------------------------------
-// Queries reales a Supabase. Cada fetch* mapea las filas (snake_case) a los
-// tipos de la app (src/types.ts, camelCase). Idéntico a ops-web/src/lib/api.ts
-// — se porta literal, la única diferencia entre las dos apps está en
-// src/lib/supabase.ts (AsyncStorage en vez de localStorage). Todavía no
-// todas las pantallas de esta app usan todas estas funciones, pero se
-// portan completas de una vez para no repetir este trabajo en cada fase.
-// ---------------------------------------------------------------------------
 
 import type { ProfileRole } from '../auth/AuthProvider'
 import type { AppNotification, Charge, ChargeTemplate, CompanySettings, Employee, Expense, ExpenseTemplate, PayrollEntry, Property, Schedule, ServiceType, Vendor } from '../types'
@@ -68,10 +60,6 @@ export const updateServiceType = async (
   if (error) throw error
 }
 
-// `charges.service_type_id` es SET NULL (un cobro puede quedar sin tipo de
-// servicio si se borra), pero `schedules.service_type_id` es RESTRICT — si
-// el tipo de servicio tiene horarios asociados, Postgres rechaza el delete
-// con 23503, que traducimos a un mensaje claro.
 export const deleteServiceType = async (id: string): Promise<void> => {
   const { error } = await supabase.from('service_types').delete().eq('id', id)
   if (error) {
@@ -148,11 +136,6 @@ export const updateExpense = async (
   if (error) throw error
 }
 
-// ---------------------------------------------------------------------------
-// "Gastos fijos" — catálogo de plantillas para Agregar gasto (ver comentario
-// en types.ts). Tabla propia expense_templates, sin relación hacia expenses.
-// ---------------------------------------------------------------------------
-
 const mapExpenseTemplate = (row: ExpenseTemplateRow): ExpenseTemplate => ({
   id: row.id,
   name: row.name,
@@ -199,12 +182,6 @@ export const deleteExpenseTemplate = async (id: string): Promise<void> => {
   if (error) throw error
 }
 
-// ---------------------------------------------------------------------------
-// Proveedores — catálogo de proveedores (ver comentario en types.ts). A
-// diferencia de expense_templates, sí tiene una relación real: expenses.vendor_id
-// (on delete set null — borrar un proveedor no borra el gasto, solo lo desliga).
-// ---------------------------------------------------------------------------
-
 const mapVendor = (row: VendorRow): Vendor => ({
   id: row.id,
   name: row.name,
@@ -236,19 +213,6 @@ export const deleteVendor = async (id: string): Promise<void> => {
   const { error } = await supabase.from('vendors').delete().eq('id', id)
   if (error) throw error
 }
-
-// ---------------------------------------------------------------------------
-// Planillas — pago de mano de obra por trabajo completo (propiedad + unidad
-// + empleado + servicio, todos obligatorios). Tabla propia (payroll_entries)
-// desde 20260917000000_split_expenses_payroll.sql, separada de expenses (que
-// ahora es un módulo independiente de facturas/gastos). El desglose del
-// servicio vive en payroll_entry_items — ver
-// 20260918000000_payroll_service_breakdown.sql. "Cobro" (amount,
-// autocompletado desde `charges` al elegir un horario), "Pago" (suma del
-// desglose) y "Ganancia" (Cobro - Pago) se calculan en la UI, no se
-// guardan — salvo `taxable`, que sí se guarda (no todos los servicios
-// llevan impuesto). Mismo criterio que ops-web.
-// ---------------------------------------------------------------------------
 
 const mapPayrollEntry = (row: PayrollEntryRow): PayrollEntry => ({
   id: row.id,
@@ -325,9 +289,6 @@ export const createPayrollEntry = async (data: PayrollEntryInput): Promise<void>
   await insertPayrollEntryItems(entry.id as string, data.items)
 }
 
-// El desglose se reemplaza completo en cada edición — más simple que
-// diffear filas individuales, y en la práctica siempre se edita como un
-// conjunto (se agregan/quitan líneas junto con el resto del formulario).
 export const updatePayrollEntry = async (id: string, data: PayrollEntryInput): Promise<void> => {
   const { error } = await supabase
     .from('payroll_entries')
@@ -350,13 +311,6 @@ export const updatePayrollEntry = async (id: string, data: PayrollEntryInput): P
   await insertPayrollEntryItems(id, data.items)
 }
 
-// Pedido de Javier: poder borrar una planilla por si se cometió un error.
-// El desglose (payroll_entry_items) se borra solo por "on delete cascade".
-// Si la planilla estaba ligada a un horario (schedule_id), ese horario
-// vuelve a aparecer disponible en el selector "Horario relacionado" de
-// inmediato — fetchSchedulesForEmployee excluye por lo que hay en
-// payroll_entries en el momento de la consulta, así que no hace falta
-// tocar `schedules` para nada.
 export const deletePayrollEntry = async (id: string): Promise<void> => {
   const { error } = await supabase.from('payroll_entries').delete().eq('id', id)
   if (error) throw error
@@ -387,12 +341,6 @@ export const fetchCharges = async (): Promise<Charge[]> => {
   return ((data ?? []) as ChargeRow[]).map(mapCharge)
 }
 
-// "Cobro fijo" — único caso donde Cobros permite crear un cobro a mano (ver
-// AddFixedChargeScreen.tsx). Nunca lleva unit_label ni service_type_id, así
-// que nunca choca con el índice único charges_unique_identity (que solo
-// aplica cuando ambos están presentes) — no hace falta ningún chequeo de
-// duplicados acá. Queda siempre en status='pending', igual que cualquier
-// cobro recién capturado.
 export const createFixedCharge = async (data: {
   propertyId: string
   amount: number
@@ -409,12 +357,6 @@ export const createFixedCharge = async (data: {
   })
   if (error) throw error
 }
-
-// ---------------------------------------------------------------------------
-// "Cobros fijos" — catálogo de plantillas OBLIGATORIO para "Agregar cobro
-// fijo" en Cobros (ver comentario en types.ts). Tabla propia
-// charge_templates, sin relación hacia charges.
-// ---------------------------------------------------------------------------
 
 const mapChargeTemplate = (row: ChargeTemplateRow): ChargeTemplate => ({
   id: row.id,
@@ -458,16 +400,6 @@ export const deleteChargeTemplate = async (id: string): Promise<void> => {
   if (error) throw error
 }
 
-// Usado por el selector "Horario relacionado" en AddPayrollEntryScreen para
-// autocompletar el campo "Cobro" con el total real cobrado por ese trabajo.
-// `charges` no tiene una columna schedule_id — se identifica con el mismo
-// criterio que usa el índice único charges_unique_identity
-// (20260912000000_unify_charges.sql): propiedad + unidad + tipo de servicio
-// + fecha. El filtro de unit_label se hace en JS (no en la consulta) porque
-// en `charges` puede venir como null o como '' según el origen del cobro, y
-// acá se quiere tratar ambos como "sin unidad". Si no hay un cobro
-// capturado todavía para ese horario, devuelve null y el campo se completa
-// a mano. Idéntico a ops-web/src/lib/api.ts.
 export const fetchChargeForSchedule = async (
   propertyId: string,
   unitLabel: string | undefined,
@@ -486,11 +418,6 @@ export const fetchChargeForSchedule = async (
   return match ? mapCharge(match) : null
 }
 
-// Marca un cobro como pagado/subido a OPS junto con su invoice number — ver
-// ChargeInvoiceModal.tsx en ops-web. El invoice number se captura en el
-// mismo paso que el cambio de estatus para no dejar un cobro "pagado" sin
-// invoice number asociado; también permite corregir el invoice number de un
-// cobro que ya está pagado (el estatus se reenvía sin cambios en ese caso).
 export const updateChargeStatus = async (
   id: string,
   data: { status: Charge['status']; invoiceNumber?: string },
@@ -502,10 +429,6 @@ export const updateChargeStatus = async (
   if (error) throw error
 }
 
-// Marca (o desmarca) el impuesto de ventas de uno o varios cobros como
-// remitido al estado — ver screens/finanzas/ImpuestosScreen.tsx. `ids`
-// puede ser un solo cobro (toggle individual) o todos los de un mes
-// (botón en bloque).
 export const updateChargesTaxPaid = async (ids: string[], taxPaid: boolean): Promise<void> => {
   const { error } = await supabase
     .from('charges')
@@ -514,18 +437,6 @@ export const updateChargesTaxPaid = async (ids: string[], taxPaid: boolean): Pro
   if (error) throw error
 }
 
-// Borra un cobro. Si coincide con un horario 'delivered' bajo el mismo
-// criterio que usa charges_unique_identity (propiedad + unidad + tipo de
-// servicio + fecha — ver createScheduleCharge, mismo criterio que
-// ops-web/src/lib/api.ts updateCharge/deleteCharge), el horario se
-// "desliga" del cobro que se está borrando. Como no hay una relación real
-// en la base (el match siempre fue implícito por esos 4 campos),
-// desligarlo es devolverle su estatus a 'pending': dejar de estar
-// 'delivered' es justo lo que hace que vuelva a aparecer como pendiente
-// de cobro en Horarios. No se toca ninguna planilla generada a partir de
-// ese horario (payroll_entries.schedule_id) — su columna "Cobro" es solo
-// un valor copiado una vez al elegir el horario, sin referencia viva, así
-// que se queda exactamente como estaba.
 export const deleteCharge = async (id: string): Promise<void> => {
   const { data: existing, error: fetchError } = await supabase
     .from('charges')
@@ -537,9 +448,6 @@ export const deleteCharge = async (id: string): Promise<void> => {
   const { error } = await supabase.from('charges').delete().eq('id', id)
   if (error) throw error
 
-  // Cobros de Excel o fijos nunca traen service_type_id/generated_date a
-  // la vez, así que nunca pudieron emparejar un horario — no hay nada más
-  // que hacer.
   if (!existing.service_type_id || !existing.generated_date) return
 
   const { data: schedules, error: schedError } = await supabase
@@ -558,12 +466,6 @@ export const deleteCharge = async (id: string): Promise<void> => {
   const { error: statusError } = await supabase.from('schedules').update({ status: 'pending' }).eq('id', match.id)
   if (statusError) throw statusError
 }
-
-// ---------------------------------------------------------------------------
-// Updates — usados por los formularios de edición (Propiedades, Empleados).
-// Cada uno mapea el patch en camelCase de la app a las columnas snake_case
-// reales de Supabase.
-// ---------------------------------------------------------------------------
 
 export const updateProperty = async (
   id: string,
@@ -636,9 +538,6 @@ export const createEmployee = async (data: {
   if (error) throw error
 }
 
-// Un empleado con horarios o planillas asociadas está protegido por
-// RESTRICT en esas dos tablas — Postgres rechaza el delete con 23503, que
-// traducimos a un mensaje claro en vez del error crudo de Postgres.
 export const deleteEmployee = async (id: string): Promise<void> => {
   const { error } = await supabase.from('employees').delete().eq('id', id)
   if (error) {
@@ -666,9 +565,6 @@ export const createProperty = async (data: {
   if (error) throw error
 }
 
-// Una propiedad con horarios, cobros o planillas asociadas está protegida
-// por RESTRICT en esas tres tablas — Postgres rechaza el delete con 23503,
-// que traducimos a un mensaje claro en vez del error crudo de Postgres.
 export const deleteProperty = async (id: string): Promise<void> => {
   const { error } = await supabase.from('properties').delete().eq('id', id)
   if (error) {
@@ -678,12 +574,6 @@ export const deleteProperty = async (id: string): Promise<void> => {
     throw error
   }
 }
-
-// ---------------------------------------------------------------------------
-// Horarios — scheduler semanal de servicios (ver ops-web/src/pages/Horarios.tsx).
-// El cobro de un horario finalizado se guarda directamente en `charges` (ver
-// createScheduleCharge más abajo y 20260912000000_unify_charges.sql).
-// ---------------------------------------------------------------------------
 
 const mapSchedule = (row: ScheduleRow): Schedule => ({
   id: row.id,
@@ -706,12 +596,6 @@ export const fetchSchedules = async (): Promise<Schedule[]> => {
   return ((data ?? []) as ScheduleRow[]).map(mapSchedule)
 }
 
-// Usado por el selector de "Horario relacionado" en AddPayrollEntryScreen —
-// a propósito NO es fetchSchedules() + filtro en el cliente: se acota por
-// empleado y rango de fechas directo en la consulta (igual que ops-web) y
-// excluye los horarios que ya se convirtieron en una planilla (ver
-// payroll_entries.schedule_id), para no ofrecer de nuevo un horario ya
-// pagado.
 export const fetchSchedulesForEmployee = async (
   employeeId: string,
   dateFrom: string,
@@ -758,11 +642,6 @@ export const createSchedules = async (
   if (error) throw error
 }
 
-// Un horario ya entregado (delivered) siempre tiene un cobro asociado en
-// `charges` — permitir editarlo después dejaría el cobro ya generado
-// desincronizado de la propiedad/unidad/servicio/fecha real del horario. El
-// filtro `.neq('status', 'delivered')` bloquea el update a nivel de base de
-// datos (no solo en la UI).
 export const updateSchedule = async (
   id: string,
   patch: {
@@ -800,13 +679,6 @@ export const updateScheduleStatus = async (id: string, status: Schedule['status'
   if (error) throw error
 }
 
-// Reagendar: el horario viejo se queda como registro histórico con status
-// 'rescheduled' (bloqueado — no se puede editar, eliminar ni volver a
-// cambiar de estatus, ver updateSchedule/deleteSchedule) y apunta al
-// horario nuevo vía rescheduled_to_id. El horario nuevo es una copia con
-// la fecha nueva y el resto de los datos (propiedad/unidad/servicio/
-// empleado) igual, arrancando en 'pending' — ver
-// 20260922000000_schedule_reschedule.sql.
 export const rescheduleSchedule = async (id: string, newDate: string): Promise<void> => {
   const { data: schedule, error: fetchError } = await supabase
     .from('schedules')
@@ -842,13 +714,6 @@ export const rescheduleSchedule = async (id: string, newDate: string): Promise<v
   if (updateError) throw updateError
 }
 
-// Igual que updateSchedule: un horario ya entregado tiene un cobro
-// asociado en `charges` — borrarlo dejaría ese cobro huérfano de su
-// horario de origen. Un horario reagendado se conserva como registro
-// histórico (ver rescheduleSchedule). El filtro `.neq('status', ...)`
-// bloquea el delete a nivel de base de datos: si ya está entregado o
-// reagendado, ninguna fila hace match y `.single()` lanza PGRST116, que
-// traducimos a un mensaje claro.
 export const deleteSchedule = async (id: string): Promise<void> => {
   const { error } = await supabase
     .from('schedules')
@@ -866,10 +731,6 @@ export const deleteSchedule = async (id: string): Promise<void> => {
   }
 }
 
-// Crea (o reutiliza) el cobro de un horario finalizado directamente en
-// `charges` — ver 20260912000000_unify_charges.sql. Un cobro queda
-// identificado de forma única por propiedad + unidad + tipo de servicio +
-// fecha (constraint `charges_unique_identity`).
 export const createScheduleCharge = async (
   scheduleId: string,
   data: { totalCost: number; notes: string; extras: { description: string; amount: number }[] },
@@ -881,9 +742,6 @@ export const createScheduleCharge = async (
     .single()
   if (scheduleError) throw scheduleError
 
-  // El "costo de servicio total" ya es el monto final a cobrar — los
-  // extras son solo un desglose de qué compone ese total (pedido de
-  // David: no deben sumarse aparte, es solo un desglose del precio).
   const amount = data.totalCost
 
   const { error } = await supabase.from('charges').insert({
@@ -906,14 +764,6 @@ export const createScheduleCharge = async (
   const { error: statusError } = await supabase.from('schedules').update({ status: 'delivered' }).eq('id', scheduleId)
   if (statusError) throw statusError
 }
-
-// ---------------------------------------------------------------------------
-// Configuración general — company_settings es una tabla singleton (ver
-// 20260920000000_add_company_settings.sql): siempre hay exactamente una
-// fila, sembrada por la migración, así que fetchCompanySettings nunca
-// debería devolver null en la práctica — el tipo se deja nullable solo por
-// si la fila fuera borrada a mano.
-// ---------------------------------------------------------------------------
 
 const mapCompanySettings = (row: CompanySettingsRow): CompanySettings => ({
   id: row.id,
@@ -953,13 +803,6 @@ export const updateCompanySettings = async (
   if (error) throw error
 }
 
-// ---------------------------------------------------------------------------
-// Mi perfil — cada usuario edita su propio nombre y correo de contacto
-// (policy `profiles_update_own`) y puede cambiar su propia contraseña.
-// Username y role NO se exponen para editar acá: el username es el login y
-// el role se asigna a mano por un admin (ver auth_and_rls.sql).
-// ---------------------------------------------------------------------------
-
 export const updateOwnProfile = async (id: string, patch: { fullName: string; email: string }): Promise<void> => {
   const { error } = await supabase
     .from('profiles')
@@ -983,13 +826,6 @@ export const updateNotifyRoles = async (id: string, roles: ProfileRole[]): Promi
   if (error) throw error
 }
 
-// ---------------------------------------------------------------------------
-// Alertas entre usuarios — igual que ops-web/src/lib/api.ts. Las filas las
-// crean únicamente los triggers de la base; acá solo leemos las propias
-// (RLS: notifications_select_own) y marcamos como leídas (RLS:
-// notifications_update_own).
-// ---------------------------------------------------------------------------
-
 const mapNotification = (row: NotificationRow): AppNotification => ({
   id: row.id,
   actorId: row.actor_id ?? undefined,
@@ -1010,9 +846,6 @@ export const fetchNotifications = async (): Promise<AppNotification[]> => {
   return ((data ?? []) as NotificationRow[]).map(mapNotification)
 }
 
-// Leer una alerta la borra de una vez — no se quiere que se acumulen
-// (requiere la policy notifications_delete_own, ver
-// 20260929000000_add_notifications_delete_policy.sql).
 export const markNotificationRead = async (id: string): Promise<void> => {
   const { error } = await supabase.from('notifications').delete().eq('id', id)
   if (error) throw error
@@ -1022,13 +855,6 @@ export const markAllNotificationsRead = async (): Promise<void> => {
   const { error } = await supabase.from('notifications').delete().not('id', 'is', null)
   if (error) throw error
 }
-
-// ---------------------------------------------------------------------------
-// Push notifications nativas (Android/FCM) — ver src/lib/pushNotifications.ts
-// y 20260927000000_add_device_tokens.sql. onConflict: 'token' porque el
-// mismo token puede reaparecer (reinstalación, refresh) para el mismo o
-// incluso otro profile en el mismo teléfono.
-// ---------------------------------------------------------------------------
 
 export const registerDeviceToken = async (
   profileId: string,

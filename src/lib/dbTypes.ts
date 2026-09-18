@@ -1,9 +1,3 @@
-// ---------------------------------------------------------------------------
-// Forma cruda de las filas tal como las devuelve Supabase (snake_case),
-// según supabase/migrations. Solo se usan dentro de src/lib/api.ts para
-// mapear a los tipos de la app (src/types.ts, camelCase). Idéntico a
-// ops-web/src/lib/dbTypes.ts.
-// ---------------------------------------------------------------------------
 
 export type PropertyRow = {
   id: string

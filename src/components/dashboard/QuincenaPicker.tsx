@@ -6,12 +6,6 @@ import { formatMonthLabel } from '../../lib/scheduleDates'
 import { formatQuincenaRangeLabel, listRecentMonths, type QuincenaHalf, type QuincenaKey } from '../../lib/quincena'
 import { colors } from '../../theme/colors'
 
-// Selector "mes + 1ra/2da quincena" — quincenas al estilo de David, no las
-// de calendario (ver lib/quincena.ts). Se usa tanto en el filtro del
-// Dashboard como en ReportDateRangeBar, así que vive como componente
-// propio en vez de duplicarse. Mismo componente que
-// ops-web/src/components/dashboard/QuincenaPicker.tsx, adaptado a
-// InlineSelect/SegmentedField nativos en vez de <select>/botones web.
 type QuincenaPickerProps = {
   value: QuincenaKey
   onChange: (key: QuincenaKey) => void

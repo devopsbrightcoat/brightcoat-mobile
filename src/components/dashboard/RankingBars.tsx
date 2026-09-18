@@ -13,17 +13,9 @@ type RankingBarsProps = {
   formatValue: (value: number) => string
   color: string
   emptyText: string
-  // Cuando se pasa, cada fila se vuelve tocable (ej. "Ingresos por
-  // categoría" abre el desglose por tipo de servicio) — opcional y
-  // retrocompatible: sin esta prop las filas quedan exactamente igual que
-  // antes, no tocables.
   onItemPress?: (item: RankingBarsItem) => void
 }
 
-// Réplica de RankingBars.tsx (ops-web) — barras horizontales con el valor
-// directamente etiquetado, para los "top N" del Dashboard (Ingresos por
-// servicio/propiedad, Productividad de empleados). Mismo criterio que ahí:
-// más legible que una gráfica de barras cuando los nombres son largos.
 export const RankingBars = ({ items, formatValue, color, emptyText, onItemPress }: RankingBarsProps) => {
   if (items.length === 0) {
     return <Text style={styles.empty}>{emptyText}</Text>

@@ -21,24 +21,6 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 'proveedores', label: 'Proveedores' },
 ]
 
-// Réplica de ops-web (Cobros.tsx / Gastos.tsx — páginas separadas ahí) como
-// un solo tab switcher acá, igual que ya tenía este
-// screen (antes con datos mock, "Gastos"/"Ingresos"). Cada tab es su propia
-// pantalla en screens/finanzas/ — no un ScrollView compartido — porque cada
-// una necesita su propia lista scrolleable (FlatList), y anidar un
-// scrolleable dentro de otro es justo el bug que se arregló en Horarios (ver
-// InlineSelect.tsx): un ScrollView acá arriba capturaría el gesto de scroll
-// antes de que le llegue a la lista de cada tab.
-//
-// El botón "+" de agregar (cuando aplica) vive en el ScreenHeader en vez de
-// dentro de cada tab, condicionado al tab activo — mismo lugar que usa
-// Propiedades para el suyo. Cobros solo permite agregar cobros FIJOS a mano
-// (ver AddFixedChargeScreen.tsx) — los cobros regulares se siguen
-// generando solos desde Horarios o se suben por Excel en la web.
-//
-// Las pestañas de Finanzas (Cobros, Gastos, Impuestos, Proveedores) ya
-// están completas — Planillas se movió a su propio ítem del menú, ver
-// screens/PlanillasScreen.tsx.
 export const FinanzasScreen = () => {
   const navigation = useNavigation<Nav>()
   const [tab, setTab] = useState<TabKey>('cobros')
