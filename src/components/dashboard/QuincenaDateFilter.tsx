@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { DatePicker } from '../common/DatePicker'
-import { SegmentedField } from '../common/SegmentedField'
+import { SelectField } from '../common/SelectField'
 import { QuincenaPicker } from './QuincenaPicker'
 import { getQuincenaForDate, getQuincenaRange, type QuincenaKey } from '../../lib/quincena'
 
@@ -33,16 +33,17 @@ export const QuincenaDateFilter = ({ dateFrom, dateTo, onDateFromChange, onDateT
 
   return (
     <View style={styles.wrap}>
-      <SegmentedField
+      <SelectField
         label="Tipo de filtro"
         value={mode}
         onChange={(next) => {
-          setMode(next)
-          if (next === 'quincena') applyQuincena(quincena)
+          const nextMode = next as 'manual' | 'quincena'
+          setMode(nextMode)
+          if (nextMode === 'quincena') applyQuincena(quincena)
         }}
         options={[
-          { value: 'manual', label: 'Rango manual' },
-          { value: 'quincena', label: 'Por quincena' },
+          { id: 'manual', label: 'Rango manual' },
+          { id: 'quincena', label: 'Por quincena' },
         ]}
       />
 

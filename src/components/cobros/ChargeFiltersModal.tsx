@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity } from 'react-native'
 import { InlineSelect } from '../common/InlineSelect'
 import { Modal } from '../common/Modal'
-import { SegmentedField } from '../common/SegmentedField'
+import { SelectField } from '../common/SelectField'
 import { QuincenaDateFilter } from '../dashboard/QuincenaDateFilter'
 import { colors } from '../../theme/colors'
 import type { PaymentStatus, Property, ServiceType } from '../../types'
@@ -60,14 +60,14 @@ export const ChargeFiltersModal = ({
 
   return (
     <Modal open={open} onClose={onClose} title="Filtros" minHeight="60%">
-      <SegmentedField
+      <SelectField
         label="Estatus"
         value={status}
-        onChange={onStatusChange}
+        onChange={(next) => onStatusChange(next as StatusFilter)}
+        allLabel="Todos"
         options={[
-          { value: 'all', label: 'Todos' },
-          { value: 'paid', label: 'Subidos a OPS' },
-          { value: 'pending', label: 'Pendientes' },
+          { id: 'paid', label: 'Subidos a OPS' },
+          { id: 'pending', label: 'Pendientes' },
         ]}
       />
 

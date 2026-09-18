@@ -6,16 +6,19 @@ import {
   CalendarClock,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Clock,
   DollarSign,
   Percent,
+  SlidersHorizontal,
   TrendingDown,
   TrendingUp,
   Wallet,
 } from 'lucide-react-native'
-import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { LineChart } from 'react-native-chart-kit'
-import { SegmentedField } from '../components/common/SegmentedField'
+import { SelectField } from '../components/common/SelectField'
 import { StatCard } from '../components/common/StatCard'
 import { StatusPill } from '../components/common/StatusPill'
 import { DashboardPanel } from '../components/dashboard/DashboardPanel'
@@ -81,6 +84,7 @@ export const DashboardScreen = () => {
   const navigation = useNavigation()
   const [rangeSelection, setRangeSelection] = useState<DashboardDateRangeSelection>({ kind: 'preset', key: 'this_month' })
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
+  const [filtersExpanded, setFiltersExpanded] = useState(false)
 
   const { data: charges, loading: loadingCharges, error: errorCharges } = useSupabaseQuery(fetchCharges, [])
   const { data: expenses, loading: loadingExpenses, error: errorExpenses } = useSupabaseQuery(fetchExpenses, [])
@@ -171,32 +175,44 @@ export const DashboardScreen = () => {
       />
 
       <View style={styles.filterRow}>
-        <SegmentedField
-          label="Tipo de filtro"
-          options={[
-            { value: 'preset', label: 'Preset' },
-            { value: 'quincena', label: 'Quincena' },
-          ]}
-          value={rangeSelection.kind}
-          onChange={(kind) =>
-            setRangeSelection(
-              kind === 'preset' ? { kind: 'preset', key: 'this_month' } : { kind: 'quincena', quincena: getQuincenaForDate() },
-            )
-          }
-        />
-        {rangeSelection.kind === 'preset' ? (
-          <SegmentedField
-            label="Período"
-            options={DASHBOARD_DATE_RANGE_OPTIONS}
-            value={rangeSelection.key}
-            onChange={(key: DashboardDateRangeKey) => setRangeSelection({ kind: 'preset', key })}
-          />
-        ) : (
-          <QuincenaPicker
-            value={rangeSelection.quincena}
-            onChange={(quincena) => setRangeSelection({ kind: 'quincena', quincena })}
-          />
-        )}
+        <TouchableOpacity style={styles.filterToggle} activeOpacity={0.7} onPress={() => setFiltersExpanded((prev) => !prev)}>
+          <View style={styles.filterToggleLeft}>
+            <SlidersHorizontal size={14} color={colors.ink300} />
+            <Text style={styles.filterToggleText}>Filtros</Text>
+          </View>
+          {filtersExpanded ? <ChevronUp size={16} color={colors.ink400} /> : <ChevronDown size={16} color={colors.ink400} />}
+        </TouchableOpacity>
+
+        {filtersExpanded ? (
+          <View style={styles.filterFields}>
+            <SelectField
+              label="Tipo de filtro"
+              options={[
+                { id: 'preset', label: 'Preset' },
+                { id: 'quincena', label: 'Quincena' },
+              ]}
+              value={rangeSelection.kind}
+              onChange={(kind) =>
+                setRangeSelection(
+                  kind === 'preset' ? { kind: 'preset', key: 'this_month' } : { kind: 'quincena', quincena: getQuincenaForDate() },
+                )
+              }
+            />
+            {rangeSelection.kind === 'preset' ? (
+              <SelectField
+                label="Período"
+                options={DASHBOARD_DATE_RANGE_OPTIONS.map((option) => ({ id: option.value, label: option.label }))}
+                value={rangeSelection.key}
+                onChange={(key) => setRangeSelection({ kind: 'preset', key: key as DashboardDateRangeKey })}
+              />
+            ) : (
+              <QuincenaPicker
+                value={rangeSelection.quincena}
+                onChange={(quincena) => setRangeSelection({ kind: 'quincena', quincena })}
+              />
+            )}
+          </View>
+        ) : null}
       </View>
 
       {error ? (
@@ -385,6 +401,31 @@ const styles = StyleSheet.create({
   filterRow: {
     paddingHorizontal: 20,
     paddingTop: 16,
+  },
+  filterToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: colors.surfaceAlt,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  filterToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  filterToggleText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.white,
+  },
+  filterFields: {
+    gap: 12,
+    marginTop: 12,
   },
   scroll: {
     paddingBottom: 32,
