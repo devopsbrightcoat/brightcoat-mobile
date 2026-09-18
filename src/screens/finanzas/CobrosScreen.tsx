@@ -1,13 +1,14 @@
 import React, { useMemo, useState } from 'react'
-import { Clock, DollarSign, Filter, Search } from 'lucide-react-native'
+import { Clock, DollarSign, Filter, Search, Trash2 } from 'lucide-react-native'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { ChargeDetailModal } from '../../components/cobros/ChargeDetailModal'
 import { ChargeFiltersModal } from '../../components/cobros/ChargeFiltersModal'
 import { ChargeInvoiceModal } from '../../components/cobros/ChargeInvoiceModal'
+import { ConfirmModal } from '../../components/common/ConfirmModal'
 import { Panel } from '../../components/common/Panel'
 import { StatCard } from '../../components/common/StatCard'
 import { StatusPill } from '../../components/common/StatusPill'
-import { fetchCharges, fetchProperties, fetchServiceTypes } from '../../lib/api'
+import { deleteCharge, fetchCharges, fetchProperties, fetchServiceTypes } from '../../lib/api'
 import { currency } from '../../lib/format'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import { colors } from '../../theme/colors'
@@ -38,6 +39,7 @@ export const CobrosScreen = () => {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [detailCharge, setDetailCharge] = useState<Charge | null>(null)
   const [invoiceCharge, setInvoiceCharge] = useState<Charge | null>(null)
+  const [deletingCharge, setDeletingCharge] = useState<Charge | null>(null)
 
   const {
     data: charges,
@@ -101,9 +103,20 @@ export const CobrosScreen = () => {
             {propertyMap.get(item.propertyId) ?? '—'}
             {item.isFixed ? ' · N/A' : item.unitLabel ? ` · ${item.unitLabel}` : ''}
           </Text>
-          <TouchableOpacity onPress={() => setInvoiceCharge(item)} hitSlop={8}>
-            <StatusPill status={item.status} />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity onPress={() => setInvoiceCharge(item)} hitSlop={8}>
+              <StatusPill status={item.status} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation()
+                setDeletingCharge(item)
+              }}
+              hitSlop={8}
+            >
+              <Trash2 size={15} color={colors.rose} />
+            </TouchableOpacity>
+          </View>
         </View>
         <Text style={styles.cardSubtitle} numberOfLines={1}>
           {(item.serviceTypeId ? serviceTypeMap.get(item.serviceTypeId) : undefined) ?? '—'} ·{' '}
@@ -206,6 +219,22 @@ export const CobrosScreen = () => {
         onStatusChange={setStatus}
         onServiceTypeChange={setServiceTypeId}
       />
+
+      <ConfirmModal
+        open={deletingCharge !== null}
+        onClose={() => setDeletingCharge(null)}
+        title="Eliminar cobro"
+        message={
+          deletingCharge?.serviceTypeId && deletingCharge?.generatedDate
+            ? 'Este cobro puede venir de un horario ya entregado. Si es así, el horario vuelve a quedar pendiente de cobro. ¿Eliminar de todas formas? Esta acción no se puede deshacer.'
+            : '¿Eliminar este cobro? Esta acción no se puede deshacer.'
+        }
+        onConfirm={async () => {
+          if (!deletingCharge) return
+          await deleteCharge(deletingCharge.id)
+          setRefreshKey((k) => k + 1)
+        }}
+      />
     </View>
   )
 }
@@ -302,6 +331,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   cardTitle: {
     flex: 1,
