@@ -3,9 +3,9 @@ import { useRoute } from '@react-navigation/native'
 import type { RouteProp } from '@react-navigation/native'
 import { TrendingDown, TrendingUp, Wallet } from 'lucide-react-native'
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { InlineSelect } from '../../components/common/InlineSelect'
 import { Panel } from '../../components/common/Panel'
 import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBar'
-import { SearchableSelect } from '../../components/common/SearchableSelect'
 import { StatCard } from '../../components/common/StatCard'
 import { StatusPill } from '../../components/common/StatusPill'
 import { useReferenceData } from '../../contexts/ReferenceDataContext'
@@ -92,8 +92,7 @@ export const FinancieroPropiedadScreen = () => {
         {error ? <Text style={styles.errorText}>No se pudieron cargar los datos: {error}</Text> : null}
 
         <View style={styles.selectRow}>
-          <SearchableSelect
-            title="Seleccionar propiedad"
+          <InlineSelect
             options={propertyOptions}
             value={propertyId}
             onChange={setPropertyId}

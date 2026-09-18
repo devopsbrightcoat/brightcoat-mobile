@@ -6,12 +6,15 @@ import { colors } from '../../theme/colors'
 type Tone = 'default' | 'good' | 'warn'
 type Size = 'default' | 'compact'
 
+type HintTone = 'default' | 'warn'
+
 type StatCardProps = {
   label: string
   value: string
   icon: LucideIcon
   tone?: Tone
   hint?: string
+  hintTone?: HintTone
   size?: Size
 }
 
@@ -21,8 +24,14 @@ const toneStyles: Record<Tone, { bg: string; icon: string }> = {
   warn: { bg: 'rgba(251,191,36,0.1)', icon: colors.amber },
 }
 
-export const StatCard = ({ label, value, icon: Icon, tone = 'default', hint, size = 'default' }: StatCardProps) => {
+const hintToneStyles: Record<HintTone, { color: string; fontWeight: '400' | '700' }> = {
+  default: { color: colors.ink500, fontWeight: '400' },
+  warn: { color: colors.amber, fontWeight: '700' },
+}
+
+export const StatCard = ({ label, value, icon: Icon, tone = 'default', hint, hintTone = 'default', size = 'default' }: StatCardProps) => {
   const toneStyle = toneStyles[tone]
+  const hintStyle = hintToneStyles[hintTone]
   const compact = size === 'compact'
 
   return (
@@ -38,7 +47,7 @@ export const StatCard = ({ label, value, icon: Icon, tone = 'default', hint, siz
       <Text style={[styles.value, compact && styles.valueCompact]} numberOfLines={1}>
         {value}
       </Text>
-      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
+      {hint ? <Text style={[styles.hint, hintStyle]}>{hint}</Text> : null}
     </View>
   )
 }
