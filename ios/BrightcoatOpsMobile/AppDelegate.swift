@@ -9,6 +9,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
+  var launchOptions: [UIApplication.LaunchOptionsKey: Any]?
 
   func application(
     _ application: UIApplication,
@@ -20,16 +21,31 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     reactNativeDelegate = delegate
     reactNativeFactory = factory
+    self.launchOptions = launchOptions
 
-    window = UIWindow(frame: UIScreen.main.bounds)
-
-    factory.startReactNative(
-      withModuleName: "Brightcoat Manager",
-      in: window,
-      launchOptions: launchOptions
-    )
+    // La ventana ya NO se crea aqui: desde iOS 27 / Xcode 27 el SDK exige
+    // el ciclo de vida basado en UIScene. AppDelegate solo prepara React
+    // Native; SceneDelegate (abajo) crea la ventana a partir de la escena
+    // y arranca React Native dentro de ella.
 
     return true
+  }
+
+  // MARK: - UIScene lifecycle
+  //
+  // Obligatorio desde iOS 27 / Xcode 27 — sin esto la app truena al abrir
+  // con "UIScene life cycle is required for apps built with this SDK".
+  func application(
+    _ application: UIApplication,
+    configurationForConnecting connectingSceneSession: UISceneSession,
+    options: UIScene.ConnectionOptions
+  ) -> UISceneConfiguration {
+    let configuration = UISceneConfiguration(
+      name: "Default Configuration",
+      sessionRole: connectingSceneSession.role
+    )
+    configuration.delegateClass = SceneDelegate.self
+    return configuration
   }
 }
 
@@ -44,5 +60,32 @@ class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
 #else
     Bundle.main.url(forResource: "main", withExtension: "jsbundle")
 #endif
+  }
+}
+
+// La ventana se crea DESDE la UIWindowScene (no en AppDelegate) — asi lo
+// exige el nuevo ciclo de vida de iOS 27. Usa el mismo reactNativeFactory
+// que ya preparo AppDelegate en didFinishLaunchingWithOptions.
+class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+  var window: UIWindow?
+
+  func scene(
+    _ scene: UIScene,
+    willConnectTo session: UISceneSession,
+    options connectionOptions: UIScene.ConnectionOptions
+  ) {
+    guard let windowScene = scene as? UIWindowScene else { return }
+    guard let appDelegate = UIApplication.shared.delegate as? AppDelegate,
+          let factory = appDelegate.reactNativeFactory
+    else { return }
+
+    let window = UIWindow(windowScene: windowScene)
+    self.window = window
+
+    factory.startReactNative(
+      withModuleName: "Brightcoat Manager",
+      in: window,
+      launchOptions: appDelegate.launchOptions
+    )
   }
 }

@@ -3,6 +3,7 @@ import { StyleSheet, Text, TouchableOpacity } from 'react-native'
 import { InlineSelect } from '../common/InlineSelect'
 import { Modal } from '../common/Modal'
 import { SegmentedField } from '../common/SegmentedField'
+import { QuincenaDateFilter } from '../dashboard/QuincenaDateFilter'
 import { colors } from '../../theme/colors'
 import type { PaymentStatus, Property, ServiceType } from '../../types'
 
@@ -16,9 +17,13 @@ type ChargeFiltersModalProps = {
   propertyId: string
   status: StatusFilter
   serviceTypeId: string
+  dateFrom: string
+  dateTo: string
   onPropertyChange: (id: string) => void
   onStatusChange: (status: StatusFilter) => void
   onServiceTypeChange: (id: string) => void
+  onDateFromChange: (value: string) => void
+  onDateToChange: (value: string) => void
 }
 
 // Filtros de Cobros — por propiedad, estatus y tipo de servicio. Aplican de
@@ -34,9 +39,13 @@ export const ChargeFiltersModal = ({
   propertyId,
   status,
   serviceTypeId,
+  dateFrom,
+  dateTo,
   onPropertyChange,
   onStatusChange,
   onServiceTypeChange,
+  onDateFromChange,
+  onDateToChange,
 }: ChargeFiltersModalProps) => {
   const [openField, setOpenField] = useState<string | null>(null)
 
@@ -44,7 +53,7 @@ export const ChargeFiltersModal = ({
     if (!open) setOpenField(null)
   }, [open])
 
-  const hasFilters = propertyId !== 'all' || status !== 'all' || serviceTypeId !== 'all'
+  const hasFilters = propertyId !== 'all' || status !== 'all' || serviceTypeId !== 'all' || Boolean(dateFrom) || Boolean(dateTo)
 
   const propertyOptions = properties.map((p) => ({ id: p.id, label: p.name }))
   const serviceTypeOptions = serviceTypes.map((t) => ({ id: t.id, label: t.name }))
@@ -82,6 +91,8 @@ export const ChargeFiltersModal = ({
         onOpenChange={(next) => setOpenField(next ? 'serviceType' : null)}
       />
 
+      <QuincenaDateFilter dateFrom={dateFrom} dateTo={dateTo} onDateFromChange={onDateFromChange} onDateToChange={onDateToChange} />
+
       <TouchableOpacity
         style={[styles.clearButton, !hasFilters && styles.clearButtonDisabled]}
         activeOpacity={0.7}
@@ -90,6 +101,8 @@ export const ChargeFiltersModal = ({
           onPropertyChange('all')
           onStatusChange('all')
           onServiceTypeChange('all')
+          onDateFromChange('')
+          onDateToChange('')
         }}
       >
         <Text style={[styles.clearButtonText, !hasFilters && styles.clearButtonTextDisabled]}>Limpiar filtros</Text>

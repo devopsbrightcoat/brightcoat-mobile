@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { DatePicker } from '../common/DatePicker'
+import { StyleSheet, Text, TouchableOpacity } from 'react-native'
 import { InlineSelect } from '../common/InlineSelect'
 import { Modal } from '../common/Modal'
+import { QuincenaDateFilter } from '../dashboard/QuincenaDateFilter'
 import { colors } from '../../theme/colors'
 import type { Employee, Property } from '../../types'
 
@@ -72,14 +72,7 @@ export const PayrollFiltersModal = ({
         onOpenChange={(next) => setOpenField(next ? 'employee' : null)}
       />
 
-      <View style={styles.row}>
-        <View style={styles.half}>
-          <DatePicker label="Fecha desde" value={dateFrom} onChange={onDateFromChange} placeholder="Sin mínimo" />
-        </View>
-        <View style={styles.half}>
-          <DatePicker label="Fecha hasta" value={dateTo} onChange={onDateToChange} placeholder="Sin máximo" />
-        </View>
-      </View>
+      <QuincenaDateFilter dateFrom={dateFrom} dateTo={dateTo} onDateFromChange={onDateFromChange} onDateToChange={onDateToChange} />
 
       <TouchableOpacity
         style={[styles.clearButton, !hasFilters && styles.clearButtonDisabled]}
@@ -99,13 +92,6 @@ export const PayrollFiltersModal = ({
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  half: {
-    flex: 1,
-  },
   clearButton: {
     alignItems: 'center',
     borderRadius: 10,

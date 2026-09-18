@@ -36,6 +36,8 @@ export const CobrosScreen = () => {
   const [propertyId, setPropertyId] = useState('all')
   const [status, setStatus] = useState<StatusFilter>('all')
   const [serviceTypeId, setServiceTypeId] = useState('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [detailCharge, setDetailCharge] = useState<Charge | null>(null)
   const [invoiceCharge, setInvoiceCharge] = useState<Charge | null>(null)
@@ -70,6 +72,8 @@ export const CobrosScreen = () => {
       if (propertyId !== 'all' && c.propertyId !== propertyId) return false
       if (status !== 'all' && c.status !== status) return false
       if (serviceTypeId !== 'all' && c.serviceTypeId !== serviceTypeId) return false
+      if (dateFrom && (!c.generatedDate || c.generatedDate < dateFrom)) return false
+      if (dateTo && (!c.generatedDate || c.generatedDate > dateTo)) return false
       if (q) {
         const propertyName = propertyMap.get(c.propertyId) ?? ''
         const haystack = [propertyName, c.unitLabel, c.description, c.notes, c.responsible, c.invoiceNumber]
@@ -80,10 +84,14 @@ export const CobrosScreen = () => {
       }
       return true
     })
-  }, [charges, propertyMap, propertyId, status, serviceTypeId, searchText])
+  }, [charges, propertyMap, propertyId, status, serviceTypeId, dateFrom, dateTo, searchText])
 
   const activeFilterCount =
-    (propertyId !== 'all' ? 1 : 0) + (status !== 'all' ? 1 : 0) + (serviceTypeId !== 'all' ? 1 : 0)
+    (propertyId !== 'all' ? 1 : 0) +
+    (status !== 'all' ? 1 : 0) +
+    (serviceTypeId !== 'all' ? 1 : 0) +
+    (dateFrom ? 1 : 0) +
+    (dateTo ? 1 : 0)
   const totalPaid = (charges ?? []).filter((c) => c.status === 'paid').reduce((sum, c) => sum + c.amount, 0)
   const totalPending = (charges ?? []).filter((c) => c.status === 'pending').reduce((sum, c) => sum + c.amount, 0)
 
@@ -215,9 +223,13 @@ export const CobrosScreen = () => {
         propertyId={propertyId}
         status={status}
         serviceTypeId={serviceTypeId}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
         onPropertyChange={setPropertyId}
         onStatusChange={setStatus}
         onServiceTypeChange={setServiceTypeId}
+        onDateFromChange={setDateFrom}
+        onDateToChange={setDateTo}
       />
 
       <ConfirmModal

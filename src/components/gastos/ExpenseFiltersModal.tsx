@@ -1,9 +1,9 @@
 import React from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { DatePicker } from '../common/DatePicker'
 import { FormField } from '../common/FormField'
 import { InlineSelect } from '../common/InlineSelect'
 import { Modal } from '../common/Modal'
+import { QuincenaDateFilter } from '../dashboard/QuincenaDateFilter'
 import { colors } from '../../theme/colors'
 import type { Vendor } from '../../types'
 
@@ -49,14 +49,7 @@ export const ExpenseFiltersModal = ({
 
   return (
     <Modal open={open} onClose={onClose} title="Filtros" minHeight="55%">
-      <View style={styles.row}>
-        <View style={styles.half}>
-          <DatePicker label="Fecha desde" value={dateFrom} onChange={onDateFromChange} placeholder="Sin mínimo" />
-        </View>
-        <View style={styles.half}>
-          <DatePicker label="Fecha hasta" value={dateTo} onChange={onDateToChange} placeholder="Sin máximo" />
-        </View>
-      </View>
+      <QuincenaDateFilter dateFrom={dateFrom} dateTo={dateTo} onDateFromChange={onDateFromChange} onDateToChange={onDateToChange} />
 
       <View style={styles.row}>
         <View style={styles.half}>

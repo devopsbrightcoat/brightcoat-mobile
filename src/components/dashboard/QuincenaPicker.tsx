@@ -1,0 +1,62 @@
+import React from 'react'
+import { StyleSheet, Text, View } from 'react-native'
+import { InlineSelect } from '../common/InlineSelect'
+import { SegmentedField } from '../common/SegmentedField'
+import { formatMonthLabel } from '../../lib/scheduleDates'
+import { formatQuincenaRangeLabel, listRecentMonths, type QuincenaHalf, type QuincenaKey } from '../../lib/quincena'
+import { colors } from '../../theme/colors'
+
+// Selector "mes + 1ra/2da quincena" — quincenas al estilo de David, no las
+// de calendario (ver lib/quincena.ts). Se usa tanto en el filtro del
+// Dashboard como en ReportDateRangeBar, así que vive como componente
+// propio en vez de duplicarse. Mismo componente que
+// ops-web/src/components/dashboard/QuincenaPicker.tsx, adaptado a
+// InlineSelect/SegmentedField nativos en vez de <select>/botones web.
+type QuincenaPickerProps = {
+  value: QuincenaKey
+  onChange: (key: QuincenaKey) => void
+  monthsBack?: number
+}
+
+export const QuincenaPicker = ({ value, onChange, monthsBack = 24 }: QuincenaPickerProps) => {
+  const months = listRecentMonths(monthsBack)
+  const monthOptions = months.map((m) => ({ id: `${m.year}-${m.month}`, label: formatMonthLabel(m.year, m.month - 1) }))
+  const monthKey = `${value.year}-${value.month}`
+
+  const handleMonthChange = (id: string) => {
+    const [year, month] = id.split('-').map(Number)
+    onChange({ year, month, half: value.half })
+  }
+
+  return (
+    <View style={styles.wrap}>
+      <InlineSelect
+        options={monthOptions}
+        value={monthKey}
+        onChange={handleMonthChange}
+        placeholder="Seleccionar mes…"
+        searchPlaceholder="Buscar…"
+      />
+      <SegmentedField<`${QuincenaHalf}`>
+        label="Quincena"
+        options={[
+          { value: '1', label: '1ra quincena' },
+          { value: '2', label: '2da quincena' },
+        ]}
+        value={String(value.half) as `${QuincenaHalf}`}
+        onChange={(v) => onChange({ ...value, half: Number(v) as QuincenaHalf })}
+      />
+      <Text style={styles.rangeLabel}>{formatQuincenaRangeLabel(value)}</Text>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  wrap: {
+    gap: 10,
+  },
+  rangeLabel: {
+    fontSize: 11,
+    color: colors.ink500,
+  },
+})

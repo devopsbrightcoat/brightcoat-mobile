@@ -2,7 +2,10 @@ import { useState } from 'react'
 import { Search } from 'lucide-react-native'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { DatePicker } from '../common/DatePicker'
+import { SegmentedField } from '../common/SegmentedField'
+import { QuincenaPicker } from './QuincenaPicker'
 import type { DateRange } from '../../lib/dashboardMetrics'
+import { getQuincenaForDate, getQuincenaRange, type QuincenaKey } from '../../lib/quincena'
 import { colors } from '../../theme/colors'
 
 type ReportDateRangeBarProps = {
@@ -20,23 +23,60 @@ type ReportDateRangeBarProps = {
 // darle Generar reporte. Mismo comportamiento que
 // ops-web/src/components/dashboard/ReportDateRangeBar.tsx, adaptado acá al
 // DatePicker nativo en vez de <input type="date">.
+//
+// Modo "Por quincena" (a pedido de David — quincenas propias, no las de
+// calendario, ver lib/quincena.ts): en vez de tocar Desde/Hasta a mano, se
+// elige mes + 1ra/2da quincena con QuincenaPicker y eso precarga
+// Desde/Hasta — el resto del flujo sigue igual.
 export const ReportDateRangeBar = ({ onGenerate, generated }: ReportDateRangeBarProps) => {
+  const [mode, setMode] = useState<'manual' | 'quincena'>('manual')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
+  const [quincena, setQuincena] = useState<QuincenaKey>(() => getQuincenaForDate())
 
   const invalidOrder = !!from && !!to && from > to
   const canGenerate = !!from && !!to && !invalidOrder
 
+  const handleModeChange = (next: 'manual' | 'quincena') => {
+    setMode(next)
+    if (next === 'quincena') {
+      const range = getQuincenaRange(quincena)
+      setFrom(range.start)
+      setTo(range.end)
+    }
+  }
+
+  const handleQuincenaChange = (key: QuincenaKey) => {
+    setQuincena(key)
+    const range = getQuincenaRange(key)
+    setFrom(range.start)
+    setTo(range.end)
+  }
+
   return (
     <View style={styles.wrap}>
-      <View style={styles.dateRow}>
-        <View style={styles.dateField}>
-          <DatePicker label="Desde" value={from} onChange={setFrom} />
+      <SegmentedField
+        label="Tipo de filtro"
+        options={[
+          { value: 'manual', label: 'Rango manual' },
+          { value: 'quincena', label: 'Por quincena' },
+        ]}
+        value={mode}
+        onChange={handleModeChange}
+      />
+
+      {mode === 'manual' ? (
+        <View style={styles.dateRow}>
+          <View style={styles.dateField}>
+            <DatePicker label="Desde" value={from} onChange={setFrom} />
+          </View>
+          <View style={styles.dateField}>
+            <DatePicker label="Hasta" value={to} onChange={setTo} />
+          </View>
         </View>
-        <View style={styles.dateField}>
-          <DatePicker label="Hasta" value={to} onChange={setTo} />
-        </View>
-      </View>
+      ) : (
+        <QuincenaPicker value={quincena} onChange={handleQuincenaChange} />
+      )}
 
       <TouchableOpacity
         style={[styles.button, !canGenerate && styles.buttonDisabled]}

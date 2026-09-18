@@ -44,10 +44,13 @@ import {
   computeTodaySchedules,
   DASHBOARD_DATE_RANGE_OPTIONS,
   type DashboardDateRangeKey,
+  type DashboardDateRangeSelection,
 } from '../lib/dashboardMetrics'
 import { currency } from '../lib/format'
+import { getQuincenaForDate } from '../lib/quincena'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import { colors } from '../theme/colors'
+import { QuincenaPicker } from '../components/dashboard/QuincenaPicker'
 
 const screenWidth = Dimensions.get('window').width
 
@@ -76,7 +79,7 @@ const chartConfig = {
 
 export const DashboardScreen = () => {
   const navigation = useNavigation()
-  const [rangeKey, setRangeKey] = useState<DashboardDateRangeKey>('this_month')
+  const [rangeSelection, setRangeSelection] = useState<DashboardDateRangeSelection>({ kind: 'preset', key: 'this_month' })
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
 
   const { data: charges, loading: loadingCharges, error: errorCharges } = useSupabaseQuery(fetchCharges, [])
@@ -91,7 +94,7 @@ export const DashboardScreen = () => {
     loadingCharges || loadingExpenses || loadingPayroll || loadingSchedules || loadingProperties || loadingEmployees || loadingServiceTypes
   const error = errorCharges ?? errorExpenses ?? errorPayroll ?? errorSchedules ?? errorProperties ?? errorEmployees ?? errorServiceTypes
 
-  const range = useMemo(() => computeDateRange(rangeKey), [rangeKey])
+  const range = useMemo(() => computeDateRange(rangeSelection), [rangeSelection])
 
   const kpis = useMemo(
     () => computeKpis(charges ?? [], payrollEntries ?? [], expenses ?? [], schedules ?? [], range),
@@ -168,7 +171,32 @@ export const DashboardScreen = () => {
       />
 
       <View style={styles.filterRow}>
-        <SegmentedField label="Período" options={DASHBOARD_DATE_RANGE_OPTIONS} value={rangeKey} onChange={setRangeKey} />
+        <SegmentedField
+          label="Tipo de filtro"
+          options={[
+            { value: 'preset', label: 'Preset' },
+            { value: 'quincena', label: 'Quincena' },
+          ]}
+          value={rangeSelection.kind}
+          onChange={(kind) =>
+            setRangeSelection(
+              kind === 'preset' ? { kind: 'preset', key: 'this_month' } : { kind: 'quincena', quincena: getQuincenaForDate() },
+            )
+          }
+        />
+        {rangeSelection.kind === 'preset' ? (
+          <SegmentedField
+            label="Período"
+            options={DASHBOARD_DATE_RANGE_OPTIONS}
+            value={rangeSelection.key}
+            onChange={(key: DashboardDateRangeKey) => setRangeSelection({ kind: 'preset', key })}
+          />
+        ) : (
+          <QuincenaPicker
+            value={rangeSelection.quincena}
+            onChange={(quincena) => setRangeSelection({ kind: 'quincena', quincena })}
+          />
+        )}
       </View>
 
       {error ? (
