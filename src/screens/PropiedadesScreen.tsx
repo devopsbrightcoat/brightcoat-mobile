@@ -7,9 +7,9 @@ import { ConfirmModal } from '../components/common/ConfirmModal'
 import { Panel } from '../components/common/Panel'
 import { ScreenHeader } from '../components/common/ScreenHeader'
 import { StatusPill } from '../components/common/StatusPill'
-import { deleteProperty, fetchProperties } from '../lib/api'
+import { useReferenceData } from '../contexts/ReferenceDataContext'
+import { deleteProperty } from '../lib/api'
 import { clientTypeLabels } from '../lib/propertyOptions'
-import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import { colors } from '../theme/colors'
 import type { Property } from '../types'
@@ -18,16 +18,21 @@ type Nav = NativeStackNavigationProp<RootStackParamList>
 
 export const PropiedadesScreen = () => {
   const navigation = useNavigation<Nav>()
-  const [refreshKey, setRefreshKey] = useState(0)
   const [searchText, setSearchText] = useState('')
   const [deletingProperty, setDeletingProperty] = useState<Property | null>(null)
 
-  const { data: properties, loading, error, refreshing, refetch } = useSupabaseQuery(fetchProperties, [refreshKey])
+  const {
+    properties,
+    loadingProperties: loading,
+    errorProperties: error,
+    refreshingProperties: refreshing,
+    refetchProperties: refetch,
+  } = useReferenceData()
 
   useFocusEffect(
     useCallback(() => {
-      setRefreshKey((k) => k + 1)
-    }, []),
+      refetch()
+    }, [refetch]),
   )
 
   const filtered = useMemo(() => {
@@ -127,7 +132,7 @@ export const PropiedadesScreen = () => {
         onConfirm={async () => {
           if (!deletingProperty) return
           await deleteProperty(deletingProperty.id)
-          setRefreshKey((k) => k + 1)
+          refetch()
         }}
       />
     </View>

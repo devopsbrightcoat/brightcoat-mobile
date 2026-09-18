@@ -8,7 +8,8 @@ import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBa
 import { SearchableSelect } from '../../components/common/SearchableSelect'
 import { StatCard } from '../../components/common/StatCard'
 import { StatusPill } from '../../components/common/StatusPill'
-import { fetchCharges, fetchEmployees, fetchProperties, fetchSchedules, fetchServiceTypes } from '../../lib/api'
+import { useReferenceData } from '../../contexts/ReferenceDataContext'
+import { fetchCharges, fetchSchedules } from '../../lib/api'
 import { filterChargesByRange, filterSchedulesByRange, type DateRange } from '../../lib/dashboardMetrics'
 import { currency } from '../../lib/format'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
@@ -22,7 +23,7 @@ export const FinancieroPropiedadScreen = () => {
   const [propertyId, setPropertyId] = useState(route.params?.propertyId ?? 'all')
   const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
 
-  const { data: properties, loading: loadingProperties, error: errorProperties } = useSupabaseQuery(fetchProperties, [])
+  const { properties, loadingProperties, errorProperties, serviceTypes, loadingServiceTypes, errorServiceTypes, employees, loadingEmployees, errorEmployees } = useReferenceData()
   const {
     data: charges,
     loading: loadingCharges,
@@ -37,11 +38,6 @@ export const FinancieroPropiedadScreen = () => {
     refreshing: refreshingSchedules,
     refetch: refetchSchedules,
   } = useSupabaseQuery(fetchSchedules, [])
-  const { data: serviceTypes, loading: loadingServiceTypes, error: errorServiceTypes } = useSupabaseQuery(
-    fetchServiceTypes,
-    [],
-  )
-  const { data: employees, loading: loadingEmployees, error: errorEmployees } = useSupabaseQuery(fetchEmployees, [])
 
   const loading = loadingProperties || loadingCharges || loadingSchedules || loadingServiceTypes || loadingEmployees
   const error = errorProperties ?? errorCharges ?? errorSchedules ?? errorServiceTypes ?? errorEmployees

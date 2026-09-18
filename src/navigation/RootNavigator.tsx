@@ -4,6 +4,7 @@ import type { NavigatorScreenParams } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { ActivityIndicator, StyleSheet, View } from 'react-native'
 import { useAuth } from '../auth/AuthProvider'
+import { ReferenceDataProvider } from '../contexts/ReferenceDataContext'
 import { usePushNotifications } from '../lib/pushNotifications'
 import { colors } from '../theme/colors'
 import type { ChargeTemplate, Employee, Expense, ExpenseTemplate, PayrollEntry, Property, Schedule, ServiceType, Vendor } from '../types'
@@ -109,6 +110,7 @@ export const RootNavigator = () => {
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
         </Stack.Navigator>
       ) : (
+        <ReferenceDataProvider>
         <Stack.Navigator screenOptions={screenOptions}>
           <Stack.Screen name="Tabs" component={DrawerNavigator} options={{ headerShown: false }} />
           <Stack.Screen name="AddProperty" component={AddPropertyScreen} options={{ title: 'Agregar propiedad' }} />
@@ -212,6 +214,7 @@ export const RootNavigator = () => {
             options={{ title: 'Actividad por propiedad' }}
           />
         </Stack.Navigator>
+        </ReferenceDataProvider>
       )}
     </NavigationContainer>
   )

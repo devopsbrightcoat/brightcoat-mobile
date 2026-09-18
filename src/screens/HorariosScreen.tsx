@@ -20,7 +20,8 @@ import { StatusPill } from '../components/common/StatusPill'
 import { ScheduleActionModal } from '../components/horarios/ScheduleActionModal'
 import { ScheduleDetailModal } from '../components/horarios/ScheduleDetailModal'
 import { ScheduleFiltersModal } from '../components/horarios/ScheduleFiltersModal'
-import { deleteSchedule, fetchEmployees, fetchProperties, fetchSchedules, fetchServiceTypes } from '../lib/api'
+import { useReferenceData } from '../contexts/ReferenceDataContext'
+import { deleteSchedule, fetchSchedules } from '../lib/api'
 import {
   DAY_LABELS,
   addDays,
@@ -66,20 +67,16 @@ export const HorariosScreen = () => {
     refetch: refetchSchedules,
   } = useSupabaseQuery(fetchSchedules, [refreshKey])
   const {
-    data: properties,
-    refreshing: refreshingProperties,
-    refetch: refetchProperties,
-  } = useSupabaseQuery(fetchProperties, [refreshKey])
-  const {
-    data: serviceTypes,
-    refreshing: refreshingServiceTypes,
-    refetch: refetchServiceTypes,
-  } = useSupabaseQuery(fetchServiceTypes, [refreshKey])
-  const {
-    data: employees,
-    refreshing: refreshingEmployees,
-    refetch: refetchEmployees,
-  } = useSupabaseQuery(fetchEmployees, [refreshKey])
+    properties,
+    refreshingProperties,
+    refetchProperties,
+    serviceTypes,
+    refreshingServiceTypes,
+    refetchServiceTypes,
+    employees,
+    refreshingEmployees,
+    refetchEmployees,
+  } = useReferenceData()
 
   const refreshing = refreshingSchedules || refreshingProperties || refreshingServiceTypes || refreshingEmployees
   const handleRefresh = () => {

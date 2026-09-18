@@ -5,7 +5,8 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, Touchable
 import { DatePicker } from '../components/common/DatePicker'
 import { FormField } from '../components/common/FormField'
 import { InlineSelect } from '../components/common/InlineSelect'
-import { createFixedCharge, fetchChargeTemplates, fetchProperties } from '../lib/api'
+import { useReferenceData } from '../contexts/ReferenceDataContext'
+import { createFixedCharge, fetchChargeTemplates } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
@@ -22,7 +23,7 @@ export const AddFixedChargeScreen = () => {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const { data: properties } = useSupabaseQuery(fetchProperties, [])
+  const { properties } = useReferenceData()
   const { data: templates } = useSupabaseQuery(fetchChargeTemplates, [])
   const templateOptions = (templates ?? []).map((t) => ({ id: t.id, label: t.name }))
 

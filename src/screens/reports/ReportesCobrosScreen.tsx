@@ -6,7 +6,8 @@ import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBa
 import { SegmentedField } from '../../components/common/SegmentedField'
 import { StatCard } from '../../components/common/StatCard'
 import { StatusPill } from '../../components/common/StatusPill'
-import { fetchCharges, fetchProperties } from '../../lib/api'
+import { useReferenceData } from '../../contexts/ReferenceDataContext'
+import { fetchCharges } from '../../lib/api'
 import {
   computeAgingDetail,
   computeOutstandingAging,
@@ -40,13 +41,7 @@ export const ReportesCobrosScreen = () => {
     refreshing: refreshingCharges,
     refetch: refetchCharges,
   } = useSupabaseQuery(fetchCharges, [])
-  const {
-    data: properties,
-    loading: loadingProperties,
-    error: errorProperties,
-    refreshing: refreshingProperties,
-    refetch: refetchProperties,
-  } = useSupabaseQuery(fetchProperties, [])
+  const { properties, loadingProperties, errorProperties, refreshingProperties, refetchProperties } = useReferenceData()
 
   const loading = loadingCharges || loadingProperties
   const error = errorCharges ?? errorProperties

@@ -8,7 +8,8 @@ import { ConfirmModal } from '../../components/common/ConfirmModal'
 import { Panel } from '../../components/common/Panel'
 import { StatCard } from '../../components/common/StatCard'
 import { StatusPill } from '../../components/common/StatusPill'
-import { deleteCharge, fetchCharges, fetchProperties, fetchServiceTypes } from '../../lib/api'
+import { useReferenceData } from '../../contexts/ReferenceDataContext'
+import { deleteCharge, fetchCharges } from '../../lib/api'
 import { currency } from '../../lib/format'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import { colors } from '../../theme/colors'
@@ -35,19 +36,20 @@ export const CobrosScreen = () => {
     error,
     refreshing: refreshingCharges,
     refetch: refetchCharges,
-  } = useSupabaseQuery(fetchCharges, [refreshKey])
+  } = useSupabaseQuery(
+    () => fetchCharges(dateFrom || undefined, dateTo || undefined),
+    [refreshKey, dateFrom, dateTo],
+  )
   const {
-    data: properties,
-    loading: loadingProperties,
-    refreshing: refreshingProperties,
-    refetch: refetchProperties,
-  } = useSupabaseQuery(fetchProperties, [refreshKey])
-  const {
-    data: serviceTypes,
-    loading: loadingServiceTypes,
-    refreshing: refreshingServiceTypes,
-    refetch: refetchServiceTypes,
-  } = useSupabaseQuery(fetchServiceTypes, [refreshKey])
+    properties,
+    loadingProperties,
+    refreshingProperties,
+    refetchProperties,
+    serviceTypes,
+    loadingServiceTypes,
+    refreshingServiceTypes,
+    refetchServiceTypes,
+  } = useReferenceData()
 
   const propertyMap = useMemo(() => new Map((properties ?? []).map((p) => [p.id, p.name])), [properties])
   const serviceTypeMap = useMemo(() => new Map((serviceTypes ?? []).map((t) => [t.id, t.name])), [serviceTypes])
@@ -58,8 +60,6 @@ export const CobrosScreen = () => {
       if (propertyId !== 'all' && c.propertyId !== propertyId) return false
       if (status !== 'all' && c.status !== status) return false
       if (serviceTypeId !== 'all' && c.serviceTypeId !== serviceTypeId) return false
-      if (dateFrom && (!c.generatedDate || c.generatedDate < dateFrom)) return false
-      if (dateTo && (!c.generatedDate || c.generatedDate > dateTo)) return false
       if (q) {
         const propertyName = propertyMap.get(c.propertyId) ?? ''
         const haystack = [propertyName, c.unitLabel, c.description, c.notes, c.responsible, c.invoiceNumber]
@@ -70,7 +70,7 @@ export const CobrosScreen = () => {
       }
       return true
     })
-  }, [charges, propertyMap, propertyId, status, serviceTypeId, dateFrom, dateTo, searchText])
+  }, [charges, propertyMap, propertyId, status, serviceTypeId, searchText])
 
   const activeFilterCount =
     (propertyId !== 'all' ? 1 : 0) +

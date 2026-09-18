@@ -5,7 +5,8 @@ import { Panel } from '../../components/common/Panel'
 import { RankingBars } from '../../components/dashboard/RankingBars'
 import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBar'
 import { StatusPill } from '../../components/common/StatusPill'
-import { fetchEmployees, fetchSchedules } from '../../lib/api'
+import { useReferenceData } from '../../contexts/ReferenceDataContext'
+import { fetchSchedules } from '../../lib/api'
 import { computeEmployeeActivity, filterSchedulesByRange, type DateRange } from '../../lib/dashboardMetrics'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import { colors } from '../../theme/colors'
@@ -20,13 +21,7 @@ export const ProductividadEmpleadoScreen = () => {
     refreshing: refreshingSchedules,
     refetch: refetchSchedules,
   } = useSupabaseQuery(fetchSchedules, [])
-  const {
-    data: employees,
-    loading: loadingEmployees,
-    error: errorEmployees,
-    refreshing: refreshingEmployees,
-    refetch: refetchEmployees,
-  } = useSupabaseQuery(fetchEmployees, [])
+  const { employees, loadingEmployees, errorEmployees, refreshingEmployees, refetchEmployees } = useReferenceData()
 
   const loading = loadingSchedules || loadingEmployees
   const error = errorSchedules ?? errorEmployees

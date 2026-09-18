@@ -28,9 +28,12 @@ export const GastosScreen = () => {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [detailExpense, setDetailExpense] = useState<Expense | null>(null)
 
-  const { data: expenses, loading, error, refreshing, refetch } = useSupabaseQuery(fetchExpenses, [refreshKey])
+  const { data: expenses, loading, error, refreshing, refetch } = useSupabaseQuery(
+    () => fetchExpenses(dateFrom || undefined, dateTo || undefined),
+    [refreshKey, dateFrom, dateTo],
+  )
   const { data: vendors } = useSupabaseQuery(fetchVendors, [refreshKey])
-  const vendorMap = new Map((vendors ?? []).map((v: Vendor) => [v.id, v.name]))
+  const vendorMap = useMemo(() => new Map((vendors ?? []).map((v: Vendor) => [v.id, v.name])), [vendors])
 
   useFocusEffect(
     useCallback(() => {
@@ -48,14 +51,12 @@ export const GastosScreen = () => {
         const matchesDescription = (e.description ?? '').toLowerCase().includes(q)
         if (!matchesInvoice && !matchesDescription) return false
       }
-      if (dateFrom && e.date < dateFrom) return false
-      if (dateTo && e.date > dateTo) return false
       if (min != null && !Number.isNaN(min) && e.amount < min) return false
       if (max != null && !Number.isNaN(max) && e.amount > max) return false
       if (vendorId && e.vendorId !== vendorId) return false
       return true
     })
-  }, [expenses, searchText, dateFrom, dateTo, amountMin, amountMax, vendorId])
+  }, [expenses, searchText, amountMin, amountMax, vendorId])
 
   const activeFilterCount = [dateFrom, dateTo, amountMin, amountMax, vendorId].filter(Boolean).length
   const totalAmount = filtered.reduce((sum, e) => sum + e.amount, 0)

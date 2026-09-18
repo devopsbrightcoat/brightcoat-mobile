@@ -9,7 +9,8 @@ import { PayrollEntryDetailModal } from '../components/pagos/PayrollEntryDetailM
 import { PayrollFiltersModal } from '../components/pagos/PayrollFiltersModal'
 import { Panel } from '../components/common/Panel'
 import { StatCard } from '../components/common/StatCard'
-import { deletePayrollEntry, fetchEmployees, fetchPayrollEntries, fetchProperties } from '../lib/api'
+import { useReferenceData } from '../contexts/ReferenceDataContext'
+import { deletePayrollEntry, fetchPayrollEntries } from '../lib/api'
 import { formatFullDate } from '../lib/scheduleDates'
 import { currency } from '../lib/format'
 import { taxOnAmount, SALES_TAX_RATE } from '../lib/tax'
@@ -38,19 +39,20 @@ export const PlanillasScreen = () => {
     error,
     refreshing: refreshingEntries,
     refetch: refetchEntries,
-  } = useSupabaseQuery(fetchPayrollEntries, [refreshKey])
+  } = useSupabaseQuery(
+    () => fetchPayrollEntries(dateFrom || undefined, dateTo || undefined),
+    [refreshKey, dateFrom, dateTo],
+  )
   const {
-    data: properties,
-    loading: loadingProperties,
-    refreshing: refreshingProperties,
-    refetch: refetchProperties,
-  } = useSupabaseQuery(fetchProperties, [refreshKey])
-  const {
-    data: employees,
-    loading: loadingEmployees,
-    refreshing: refreshingEmployees,
-    refetch: refetchEmployees,
-  } = useSupabaseQuery(fetchEmployees, [refreshKey])
+    properties,
+    loadingProperties,
+    refreshingProperties,
+    refetchProperties,
+    employees,
+    loadingEmployees,
+    refreshingEmployees,
+    refetchEmployees,
+  } = useReferenceData()
 
   const propertyMap = useMemo(() => new Map((properties ?? []).map((p) => [p.id, p.name])), [properties])
   const employeeMap = useMemo(() => new Map((employees ?? []).map((e) => [e.id, e.name])), [employees])
@@ -66,8 +68,6 @@ export const PlanillasScreen = () => {
     return (entries ?? []).filter((entry) => {
       if (propertyId !== 'all' && entry.propertyId !== propertyId) return false
       if (employeeId !== 'all' && entry.employeeId !== employeeId) return false
-      if (dateFrom && entry.date < dateFrom) return false
-      if (dateTo && entry.date > dateTo) return false
       if (q) {
         const propertyName = propertyMap.get(entry.propertyId) ?? ''
         const employeeName = employeeMap.get(entry.employeeId) ?? ''
@@ -76,7 +76,7 @@ export const PlanillasScreen = () => {
       }
       return true
     })
-  }, [entries, propertyMap, employeeMap, propertyId, employeeId, dateFrom, dateTo, searchText])
+  }, [entries, propertyMap, employeeMap, propertyId, employeeId, searchText])
 
   const activeFilterCount =
     (propertyId !== 'all' ? 1 : 0) + (employeeId !== 'all' ? 1 : 0) + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0)

@@ -7,8 +7,8 @@ import { ConfirmModal } from '../components/common/ConfirmModal'
 import { Panel } from '../components/common/Panel'
 import { ScreenHeader } from '../components/common/ScreenHeader'
 import { StatusPill } from '../components/common/StatusPill'
-import { deleteEmployee, fetchEmployees } from '../lib/api'
-import { useSupabaseQuery } from '../lib/useSupabaseQuery'
+import { useReferenceData } from '../contexts/ReferenceDataContext'
+import { deleteEmployee } from '../lib/api'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import { colors } from '../theme/colors'
 import type { Employee } from '../types'
@@ -17,16 +17,21 @@ type Nav = NativeStackNavigationProp<RootStackParamList>
 
 export const EmpleadosScreen = () => {
   const navigation = useNavigation<Nav>()
-  const [refreshKey, setRefreshKey] = useState(0)
   const [searchText, setSearchText] = useState('')
   const [deletingEmployee, setDeletingEmployee] = useState<Employee | null>(null)
 
-  const { data: employees, loading, error, refreshing, refetch } = useSupabaseQuery(fetchEmployees, [refreshKey])
+  const {
+    employees,
+    loadingEmployees: loading,
+    errorEmployees: error,
+    refreshingEmployees: refreshing,
+    refetchEmployees: refetch,
+  } = useReferenceData()
 
   useFocusEffect(
     useCallback(() => {
-      setRefreshKey((k) => k + 1)
-    }, []),
+      refetch()
+    }, [refetch]),
   )
 
   const filtered = useMemo(() => {
@@ -145,7 +150,7 @@ export const EmpleadosScreen = () => {
         onConfirm={async () => {
           if (!deletingEmployee) return
           await deleteEmployee(deletingEmployee.id)
-          setRefreshKey((k) => k + 1)
+          refetch()
         }}
       />
     </View>

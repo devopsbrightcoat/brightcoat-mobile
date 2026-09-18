@@ -6,7 +6,8 @@ import { Panel } from '../../components/common/Panel'
 import { StatCard } from '../../components/common/StatCard'
 import { StatusPill } from '../../components/common/StatusPill'
 import { ImpuestosMonthDetailModal, type MonthGroup } from '../../components/impuestos/ImpuestosMonthDetailModal'
-import { fetchCharges, fetchProperties, updateChargesTaxPaid } from '../../lib/api'
+import { useReferenceData } from '../../contexts/ReferenceDataContext'
+import { fetchCharges, updateChargesTaxPaid } from '../../lib/api'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import { formatMonthLabel, parseISODate } from '../../lib/scheduleDates'
 import { taxOnAmount, SALES_TAX_RATE } from '../../lib/tax'
@@ -30,12 +31,7 @@ export const ImpuestosScreen = () => {
     refreshing: refreshingCharges,
     refetch: refetchCharges,
   } = useSupabaseQuery(fetchCharges, [refreshKey])
-  const {
-    data: properties,
-    loading: loadingProperties,
-    refreshing: refreshingProperties,
-    refetch: refetchProperties,
-  } = useSupabaseQuery(fetchProperties, [refreshKey])
+  const { properties, loadingProperties, refreshingProperties, refetchProperties } = useReferenceData()
 
   useFocusEffect(
     useCallback(() => {

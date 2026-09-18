@@ -3,7 +3,8 @@ import { ActivityIndicator, Dimensions, RefreshControl, ScrollView, StyleSheet, 
 import { BarChart } from 'react-native-chart-kit'
 import { Panel } from '../../components/common/Panel'
 import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBar'
-import { fetchProperties, fetchSchedules, fetchServiceTypes } from '../../lib/api'
+import { useReferenceData } from '../../contexts/ReferenceDataContext'
+import { fetchSchedules } from '../../lib/api'
 import { computeServiceTypeActivity, filterSchedulesByRange, type DateRange } from '../../lib/dashboardMetrics'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import { colors } from '../../theme/colors'
@@ -21,19 +22,17 @@ export const ServiciosPorTipoScreen = () => {
     refetch: refetchSchedules,
   } = useSupabaseQuery(fetchSchedules, [])
   const {
-    data: serviceTypes,
-    loading: loadingServiceTypes,
-    error: errorServiceTypes,
-    refreshing: refreshingServiceTypes,
-    refetch: refetchServiceTypes,
-  } = useSupabaseQuery(fetchServiceTypes, [])
-  const {
-    data: properties,
-    loading: loadingProperties,
-    error: errorProperties,
-    refreshing: refreshingProperties,
-    refetch: refetchProperties,
-  } = useSupabaseQuery(fetchProperties, [])
+    serviceTypes,
+    loadingServiceTypes,
+    errorServiceTypes,
+    refreshingServiceTypes,
+    refetchServiceTypes,
+    properties,
+    loadingProperties,
+    errorProperties,
+    refreshingProperties,
+    refetchProperties,
+  } = useReferenceData()
 
   const loading = loadingSchedules || loadingServiceTypes || loadingProperties
   const error = errorSchedules ?? errorServiceTypes ?? errorProperties

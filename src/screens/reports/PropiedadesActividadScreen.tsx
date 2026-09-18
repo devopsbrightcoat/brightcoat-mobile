@@ -6,7 +6,8 @@ import { Panel } from '../../components/common/Panel'
 import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBar'
 import { SegmentedField } from '../../components/common/SegmentedField'
 import { StatusPill } from '../../components/common/StatusPill'
-import { fetchProperties, fetchSchedules } from '../../lib/api'
+import { useReferenceData } from '../../contexts/ReferenceDataContext'
+import { fetchSchedules } from '../../lib/api'
 import { computePropertyActivity, filterSchedulesByRange, type DateRange } from '../../lib/dashboardMetrics'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../../navigation/RootNavigator'
@@ -33,13 +34,7 @@ export const PropiedadesActividadScreen = () => {
     refreshing: refreshingSchedules,
     refetch: refetchSchedules,
   } = useSupabaseQuery(fetchSchedules, [])
-  const {
-    data: properties,
-    loading: loadingProperties,
-    error: errorProperties,
-    refreshing: refreshingProperties,
-    refetch: refetchProperties,
-  } = useSupabaseQuery(fetchProperties, [])
+  const { properties, loadingProperties, errorProperties, refreshingProperties, refetchProperties } = useReferenceData()
 
   const loading = loadingSchedules || loadingProperties
   const error = errorSchedules ?? errorProperties

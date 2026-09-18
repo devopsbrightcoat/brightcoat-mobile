@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Check, Plus, Trash2 } from 'lucide-react-native'
@@ -9,7 +9,8 @@ import { Panel } from '../components/common/Panel'
 import { ScreenHeader } from '../components/common/ScreenHeader'
 import { useAuth } from '../auth/AuthProvider'
 import type { ProfileRole } from '../auth/AuthProvider'
-import { deleteChargeTemplate, deleteExpenseTemplate, deleteServiceType, fetchChargeTemplates, fetchCompanySettings, fetchExpenseTemplates, fetchProperties, fetchServiceTypes, updateCompanySettings, updateNotificationsEnabled, updateNotifyRoles, updateOwnPassword, updateOwnProfile } from '../lib/api'
+import { useReferenceData } from '../contexts/ReferenceDataContext'
+import { deleteChargeTemplate, deleteExpenseTemplate, deleteServiceType, fetchChargeTemplates, fetchCompanySettings, fetchExpenseTemplates, updateCompanySettings, updateNotificationsEnabled, updateNotifyRoles, updateOwnPassword, updateOwnProfile } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import { currency } from '../lib/format'
 import { serviceCategoryLabels } from '../lib/serviceTypeOptions'
@@ -50,12 +51,13 @@ export const ConfiguracionScreen = () => {
   const [deletingChargeTemplate, setDeletingChargeTemplate] = useState<ChargeTemplate | null>(null)
 
   const {
-    data: serviceTypes,
-    loading: loadingServiceTypes,
-    error: errorServiceTypes,
-    refreshing: refreshingServiceTypes,
-    refetch: refetchServiceTypes,
-  } = useSupabaseQuery(fetchServiceTypes, [refreshKey])
+    serviceTypes,
+    loadingServiceTypes,
+    errorServiceTypes,
+    refreshingServiceTypes,
+    refetchServiceTypes,
+    properties: chargeTemplateProperties,
+  } = useReferenceData()
 
   const {
     data: expenseTemplates,
@@ -73,13 +75,16 @@ export const ConfiguracionScreen = () => {
     refetch: refetchChargeTemplates,
   } = useSupabaseQuery(fetchChargeTemplates, [refreshKey])
 
-  const { data: chargeTemplateProperties } = useSupabaseQuery(fetchProperties, [refreshKey])
-  const chargeTemplatePropertyNameById = new Map((chargeTemplateProperties ?? []).map((p) => [p.id, p.name]))
+  const chargeTemplatePropertyNameById = useMemo(
+    () => new Map((chargeTemplateProperties ?? []).map((p) => [p.id, p.name])),
+    [chargeTemplateProperties],
+  )
 
   useFocusEffect(
     useCallback(() => {
       setRefreshKey((k) => k + 1)
-    }, []),
+      refetchServiceTypes()
+    }, [refetchServiceTypes]),
   )
 
   const { data: companySettings, loading: loadingCompany } = useSupabaseQuery(fetchCompanySettings, [])
@@ -641,7 +646,7 @@ export const ConfiguracionScreen = () => {
         onConfirm={async () => {
           if (!deletingServiceType) return
           await deleteServiceType(deletingServiceType.id)
-          setRefreshKey((k) => k + 1)
+          refetchServiceTypes()
         }}
       />
 
@@ -653,7 +658,7 @@ export const ConfiguracionScreen = () => {
         onConfirm={async () => {
           if (!deletingExpenseTemplate) return
           await deleteExpenseTemplate(deletingExpenseTemplate.id)
-          setRefreshKey((k) => k + 1)
+          refetchExpenseTemplates()
         }}
       />
 
@@ -665,7 +670,7 @@ export const ConfiguracionScreen = () => {
         onConfirm={async () => {
           if (!deletingChargeTemplate) return
           await deleteChargeTemplate(deletingChargeTemplate.id)
-          setRefreshKey((k) => k + 1)
+          refetchChargeTemplates()
         }}
       />
     </View>

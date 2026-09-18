@@ -15,14 +15,8 @@ import {
 import { DatePicker } from '../components/common/DatePicker'
 import { FormField } from '../components/common/FormField'
 import { InlineSelect } from '../components/common/InlineSelect'
-import {
-  createPayrollEntry,
-  fetchChargeForSchedule,
-  fetchEmployees,
-  fetchProperties,
-  fetchSchedulesForEmployee,
-  fetchServiceTypes,
-} from '../lib/api'
+import { useReferenceData } from '../contexts/ReferenceDataContext'
+import { createPayrollEntry, fetchChargeForSchedule, fetchSchedulesForEmployee } from '../lib/api'
 import { currency } from '../lib/format'
 import { getErrorMessage } from '../lib/errors'
 import { formatFullDate } from '../lib/scheduleDates'
@@ -49,8 +43,7 @@ const SCHEDULE_STATUS_LABELS: Record<Schedule['status'], string> = {
 export const AddPayrollEntryScreen = () => {
   const navigation = useNavigation<Nav>()
 
-  const { data: properties, loading: loadingProperties } = useSupabaseQuery(fetchProperties, [])
-  const { data: employees, loading: loadingEmployees } = useSupabaseQuery(fetchEmployees, [])
+  const { properties, loadingProperties, employees, loadingEmployees, serviceTypes } = useReferenceData()
 
   const [propertyId, setPropertyId] = useState('')
   const [unitLabel, setUnitLabel] = useState('')
@@ -80,7 +73,6 @@ export const AddPayrollEntryScreen = () => {
         : Promise.resolve([]),
     [employeeId, scheduleFrom, scheduleTo],
   )
-  const { data: serviceTypes } = useSupabaseQuery(fetchServiceTypes, [])
   const employeeSchedules = schedules ?? []
 
   const handleEmployeeChange = (id: string) => {

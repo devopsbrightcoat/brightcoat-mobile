@@ -16,11 +16,11 @@ import {
 import { DatePicker } from '../components/common/DatePicker'
 import { FormField } from '../components/common/FormField'
 import { InlineSelect } from '../components/common/InlineSelect'
-import { fetchEmployees, fetchProperties, updatePayrollEntry } from '../lib/api'
+import { useReferenceData } from '../contexts/ReferenceDataContext'
+import { updatePayrollEntry } from '../lib/api'
 import { currency } from '../lib/format'
 import { getErrorMessage } from '../lib/errors'
 import { SALES_TAX_RATE } from '../lib/tax'
-import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import { colors } from '../theme/colors'
 
@@ -36,8 +36,7 @@ export const EditPayrollEntryScreen = () => {
   const { params } = useRoute<Route>()
   const { entry } = params
 
-  const { data: properties, loading: loadingProperties } = useSupabaseQuery(fetchProperties, [])
-  const { data: employees, loading: loadingEmployees } = useSupabaseQuery(fetchEmployees, [])
+  const { properties, loadingProperties, employees, loadingEmployees } = useReferenceData()
 
   const [propertyId, setPropertyId] = useState(entry.propertyId)
   const [unitLabel, setUnitLabel] = useState(entry.unitLabel ?? '')

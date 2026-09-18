@@ -5,9 +5,9 @@ import type { RouteProp } from '@react-navigation/native'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { FormField } from '../components/common/FormField'
 import { InlineSelect } from '../components/common/InlineSelect'
-import { fetchProperties, updateChargeTemplate } from '../lib/api'
+import { useReferenceData } from '../contexts/ReferenceDataContext'
+import { updateChargeTemplate } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
-import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import { colors } from '../theme/colors'
 
@@ -25,7 +25,7 @@ export const EditChargeTemplateScreen = () => {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const { data: properties } = useSupabaseQuery(fetchProperties, [])
+  const { properties } = useReferenceData()
   const propertyOptions = (properties ?? []).map((p) => ({ id: p.id, label: p.name }))
 
   const handleSave = async () => {

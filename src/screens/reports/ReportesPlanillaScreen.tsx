@@ -4,7 +4,8 @@ import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View }
 import { Panel } from '../../components/common/Panel'
 import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBar'
 import { StatCard } from '../../components/common/StatCard'
-import { fetchEmployees, fetchPayrollEntries, fetchProperties } from '../../lib/api'
+import { useReferenceData } from '../../contexts/ReferenceDataContext'
+import { fetchPayrollEntries } from '../../lib/api'
 import {
   computePayrollByEmployee,
   computePayrollByProperty,
@@ -27,19 +28,17 @@ export const ReportesPlanillaScreen = () => {
     refetch: refetchEntries,
   } = useSupabaseQuery(fetchPayrollEntries, [])
   const {
-    data: properties,
-    loading: loadingProperties,
-    error: errorProperties,
-    refreshing: refreshingProperties,
-    refetch: refetchProperties,
-  } = useSupabaseQuery(fetchProperties, [])
-  const {
-    data: employees,
-    loading: loadingEmployees,
-    error: errorEmployees,
-    refreshing: refreshingEmployees,
-    refetch: refetchEmployees,
-  } = useSupabaseQuery(fetchEmployees, [])
+    properties,
+    loadingProperties,
+    errorProperties,
+    refreshingProperties,
+    refetchProperties,
+    employees,
+    loadingEmployees,
+    errorEmployees,
+    refreshingEmployees,
+    refetchEmployees,
+  } = useReferenceData()
 
   const loading = loadingEntries || loadingProperties || loadingEmployees
   const error = errorEntries ?? errorProperties ?? errorEmployees

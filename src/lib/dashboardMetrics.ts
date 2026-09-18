@@ -13,6 +13,19 @@ export const DASHBOARD_DATE_RANGE_OPTIONS: { value: DashboardDateRangeKey; label
 
 export type DateRange = { start: string; end: string }
 
+// Ventana que el Dashboard le pide al servidor (en vez de traer todo el
+// historial de charges/expenses/payroll/schedules). computeMonthlyFinancials
+// necesita hasta 12 meses hacia atrás desde HOY sin importar el filtro de UI
+// seleccionado (ver más abajo), así que 14 meses da colchón de sobra. Mismo
+// componente que ops-web/src/lib/dashboardMetrics.ts.
+export const DASHBOARD_FETCH_WINDOW_MONTHS = 14
+
+export const computeDashboardFetchWindowStart = (): string => {
+  const now = new Date()
+  const start = new Date(now.getFullYear(), now.getMonth() - DASHBOARD_FETCH_WINDOW_MONTHS, now.getDate())
+  return toISODate(start)
+}
+
 const startOfMonth = (year: number, month: number) => new Date(year, month, 1)
 const endOfMonth = (year: number, month: number) => new Date(year, month + 1, 0)
 

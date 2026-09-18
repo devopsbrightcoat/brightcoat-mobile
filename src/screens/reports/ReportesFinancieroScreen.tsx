@@ -9,14 +9,8 @@ import { RankingBars } from '../../components/dashboard/RankingBars'
 import { ServiceCategoryModal } from '../../components/dashboard/ServiceCategoryModal'
 import { SegmentedField } from '../../components/common/SegmentedField'
 import { StatCard } from '../../components/common/StatCard'
-import {
-  fetchCharges,
-  fetchExpenses,
-  fetchPayrollEntries,
-  fetchProperties,
-  fetchSchedules,
-  fetchServiceTypes,
-} from '../../lib/api'
+import { useReferenceData } from '../../contexts/ReferenceDataContext'
+import { fetchCharges, fetchExpenses, fetchPayrollEntries, fetchSchedules } from '../../lib/api'
 import {
   computeKpis,
   computeMonthlyFinancials,
@@ -88,19 +82,17 @@ export const ReportesFinancieroScreen = () => {
     refetch: refetchSchedules,
   } = useSupabaseQuery(fetchSchedules, [])
   const {
-    data: properties,
-    loading: loadingProperties,
-    error: errorProperties,
-    refreshing: refreshingProperties,
-    refetch: refetchProperties,
-  } = useSupabaseQuery(fetchProperties, [])
-  const {
-    data: serviceTypes,
-    loading: loadingServiceTypes,
-    error: errorServiceTypes,
-    refreshing: refreshingServiceTypes,
-    refetch: refetchServiceTypes,
-  } = useSupabaseQuery(fetchServiceTypes, [])
+    properties,
+    loadingProperties,
+    errorProperties,
+    refreshingProperties,
+    refetchProperties,
+    serviceTypes,
+    loadingServiceTypes,
+    errorServiceTypes,
+    refreshingServiceTypes,
+    refetchServiceTypes,
+  } = useReferenceData()
 
   const loading =
     loadingCharges || loadingExpenses || loadingPayroll || loadingSchedules || loadingProperties || loadingServiceTypes

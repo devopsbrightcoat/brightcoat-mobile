@@ -16,9 +16,9 @@ import {
 import { DatePicker } from '../components/common/DatePicker'
 import { FormField } from '../components/common/FormField'
 import { InlineSelect } from '../components/common/InlineSelect'
-import { createSchedules, fetchEmployees, fetchProperties, fetchServiceTypes } from '../lib/api'
+import { useReferenceData } from '../contexts/ReferenceDataContext'
+import { createSchedules } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
-import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import { colors } from '../theme/colors'
 
@@ -37,9 +37,7 @@ export const AddScheduleScreen = () => {
   const navigation = useNavigation<Nav>()
   const { params } = useRoute<Route>()
 
-  const { data: properties, loading: loadingProperties } = useSupabaseQuery(fetchProperties, [])
-  const { data: serviceTypes, loading: loadingServiceTypes } = useSupabaseQuery(fetchServiceTypes, [])
-  const { data: employees, loading: loadingEmployees } = useSupabaseQuery(fetchEmployees, [])
+  const { properties, loadingProperties, serviceTypes, loadingServiceTypes, employees, loadingEmployees } = useReferenceData()
 
   const [propertyId, setPropertyId] = useState('')
   const [employeeId, setEmployeeId] = useState('')
