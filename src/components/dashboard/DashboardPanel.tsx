@@ -9,16 +9,17 @@ type DashboardPanelProps = PropsWithChildren<{
   title: string
   subtitle?: string
   action?: ReactNode
+  titleTone?: 'default' | 'danger'
 }>
 
-export const DashboardPanel = ({ title, subtitle, action, children }: DashboardPanelProps) => {
+export const DashboardPanel = ({ title, subtitle, action, children, titleTone = 'default' }: DashboardPanelProps) => {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
   return (
     <Panel style={styles.panel}>
       <View style={styles.header}>
         <View style={styles.titleGroup}>
-          <Text style={styles.title}>{title}</Text>
+          <Text style={[styles.title, titleTone === 'danger' && { color: colors.rose }]}>{title}</Text>
           {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
         </View>
         {action}

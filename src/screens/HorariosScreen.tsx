@@ -277,6 +277,12 @@ export const HorariosScreen = () => {
             <View style={styles.list}>
               {dayRows.map((row) => {
                 const locked = row.status === 'delivered' || row.status === 'rescheduled'
+                // El botón de estatus sí debe seguir habilitado para un
+                // horario ya entregado (no de cobro fijo) — es la única
+                // forma de reabrirlo y corregir el monto del cobro. Un
+                // horario de cobro fijo ya entregado no tiene cobro que
+                // corregir, y uno reagendado queda completamente cerrado.
+                const statusLocked = row.status === 'rescheduled' || (row.status === 'delivered' && row.isFixedCharge)
                 return (
                   <TouchableOpacity key={row.id} activeOpacity={0.8} onPress={() => setDetailSchedule(row)}>
                     <Panel style={styles.card}>
@@ -286,10 +292,10 @@ export const HorariosScreen = () => {
                           {row.unitLabel ? ` · ${row.unitLabel}` : ''}
                         </Text>
                         <TouchableOpacity
-                          disabled={locked}
+                          disabled={statusLocked}
                           activeOpacity={0.7}
                           onPress={() => setActionSchedule(row)}
-                          style={locked ? styles.statusButtonDisabled : undefined}
+                          style={statusLocked ? styles.statusButtonDisabled : undefined}
                         >
                           <StatusPill status={row.status} />
                         </TouchableOpacity>

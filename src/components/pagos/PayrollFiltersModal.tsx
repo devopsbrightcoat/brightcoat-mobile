@@ -5,18 +5,15 @@ import { Modal } from '../common/Modal'
 import { QuincenaDateFilter } from '../dashboard/QuincenaDateFilter'
 import { useTheme } from '../../theme/ThemeContext'
 import type { ThemeColors } from '../../theme/colors'
-import type { Employee, Property } from '../../types'
+import type { Employee } from '../../types'
 
 type PayrollFiltersModalProps = {
   open: boolean
   onClose: () => void
-  properties: Property[]
   employees: Employee[]
-  propertyId: string
   employeeId: string
   dateFrom: string
   dateTo: string
-  onPropertyChange: (id: string) => void
   onEmployeeChange: (id: string) => void
   onDateFromChange: (value: string) => void
   onDateToChange: (value: string) => void
@@ -25,13 +22,10 @@ type PayrollFiltersModalProps = {
 export const PayrollFiltersModal = ({
   open,
   onClose,
-  properties,
   employees,
-  propertyId,
   employeeId,
   dateFrom,
   dateTo,
-  onPropertyChange,
   onEmployeeChange,
   onDateFromChange,
   onDateToChange,
@@ -44,23 +38,12 @@ export const PayrollFiltersModal = ({
     if (!open) setOpenField(null)
   }, [open])
 
-  const hasFilters = propertyId !== 'all' || employeeId !== 'all' || Boolean(dateFrom) || Boolean(dateTo)
+  const hasFilters = employeeId !== 'all' || Boolean(dateFrom) || Boolean(dateTo)
 
-  const propertyOptions = properties.map((p) => ({ id: p.id, label: p.name }))
   const employeeOptions = employees.map((e) => ({ id: e.id, label: e.name }))
 
   return (
     <Modal open={open} onClose={onClose} title="Filtros" minHeight="65%">
-      <InlineSelect
-        options={propertyOptions}
-        value={propertyId}
-        onChange={onPropertyChange}
-        allLabel="Todas las propiedades"
-        searchPlaceholder="Buscar propiedad..."
-        open={openField === 'property'}
-        onOpenChange={(next) => setOpenField(next ? 'property' : null)}
-      />
-
       <InlineSelect
         options={employeeOptions}
         value={employeeId}
@@ -78,7 +61,6 @@ export const PayrollFiltersModal = ({
         activeOpacity={0.7}
         disabled={!hasFilters}
         onPress={() => {
-          onPropertyChange('all')
           onEmployeeChange('all')
           onDateFromChange('')
           onDateToChange('')

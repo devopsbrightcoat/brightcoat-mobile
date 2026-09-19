@@ -41,22 +41,17 @@ export const ScheduleActionModal = ({ schedule, onClose, onSaved }: ScheduleActi
     setExtras([])
     setNewDate('')
     setError(null)
-  }, [schedule])
 
-  const handlePickStatus = async (status: ScheduleStatus) => {
-    if (!schedule) return
-    // Un servicio de cobro fijo (ej. limpieza de oficina mensual) se marca
-    // "Entregado" directo, igual que Pendiente/En proceso/Cancelado — sin
-    // pedir costo ni crear un cobro, porque el cobro real ya se captura a
-    // mano en Cobros como cobro fijo recurrente.
-    if (status === 'delivered' && !schedule.isFixedCharge) {
-      if (schedule.status === 'delivered') {
-        // Ya estaba entregado y cobrado — se precarga el cobro existente
-        // para editarlo en vez de partir de un formulario en blanco.
-        setSaving(true)
-        setError(null)
-        try {
-          const existing = await fetchChargeByScheduleId(schedule.id)
+    // Un horario ya entregado (y con un cobro real, no de cobro fijo) no
+    // tiene nada más que cambiar de estatus — lo único que tiene sentido es
+    // corregir el monto del cobro. En vez de mostrar la lista de estatus
+    // (donde "Entregado" ya no debería volver a elegirse), vamos directo a
+    // editar el cobro existente, precargado.
+    if (schedule && schedule.status === 'delivered' && !schedule.isFixedCharge) {
+      setStep('charge')
+      setSaving(true)
+      fetchChargeByScheduleId(schedule.id)
+        .then((existing) => {
           if (existing) {
             setTotalCost(String(existing.amount))
             setNotes(existing.notes ?? '')
@@ -68,12 +63,21 @@ export const ScheduleActionModal = ({ schedule, onClose, onSaved }: ScheduleActi
               })),
             )
           }
-        } catch (err) {
+        })
+        .catch((err) => {
           setError(getErrorMessage(err, 'No se pudo cargar el cobro existente — puedes capturarlo de nuevo.'))
-        } finally {
-          setSaving(false)
-        }
-      }
+        })
+        .finally(() => setSaving(false))
+    }
+  }, [schedule])
+
+  const handlePickStatus = async (status: ScheduleStatus) => {
+    if (!schedule) return
+    // Un servicio de cobro fijo (ej. limpieza de oficina mensual) se marca
+    // "Entregado" directo, igual que Pendiente/En proceso/Cancelado — sin
+    // pedir costo ni crear un cobro, porque el cobro real ya se captura a
+    // mano en Cobros como cobro fijo recurrente.
+    if (status === 'delivered' && !schedule.isFixedCharge) {
       setStep('charge')
       return
     }
@@ -255,8 +259,12 @@ export const ScheduleActionModal = ({ schedule, onClose, onSaved }: ScheduleActi
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.7} onPress={() => setStep('status')}>
-            <Text style={styles.secondaryButtonText}>Atrás</Text>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            activeOpacity={0.7}
+            onPress={() => (schedule?.status === 'delivered' ? onClose() : setStep('status'))}
+          >
+            <Text style={styles.secondaryButtonText}>{schedule?.status === 'delivered' ? 'Cancelar' : 'Atrás'}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.primaryButton, saving && styles.buttonDisabled]}

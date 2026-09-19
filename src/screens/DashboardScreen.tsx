@@ -257,22 +257,24 @@ export const DashboardScreen = () => {
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
           <View style={styles.statsGrid}>
-            <StatCard label="Ingresos" value={currency(kpis.revenue)} icon={DollarSign} hint={revenueHint} />
-            <StatCard label="Cobrado" value={currency(kpis.collected)} icon={Wallet} tone="good" />
-            <StatCard label="Pendiente" value={currency(kpis.outstanding)} icon={Clock} tone="warn" />
-            <StatCard label="Pago a empleados" value={currency(kpis.laborCost)} icon={Banknote} />
-            <StatCard label="Gastos" value={currency(kpis.expenses)} icon={TrendingDown} />
+            <StatCard label="Ingresos" value={currency(kpis.revenue)} icon={DollarSign} hint={revenueHint} size="compact" />
+            <StatCard label="Cobrado" value={currency(kpis.collected)} icon={Wallet} tone="good" size="compact" />
+            <StatCard label="Pendiente" value={currency(kpis.outstanding)} icon={Clock} tone="warn" size="compact" />
+            <StatCard label="Pago a empleados" value={currency(kpis.laborCost)} icon={Banknote} size="compact" />
+            <StatCard label="Gastos" value={currency(kpis.expenses)} icon={TrendingDown} size="compact" />
             <StatCard
               label="Ganancia estimada"
               value={currency(kpis.estimatedProfit)}
               icon={TrendingUp}
               tone={kpis.estimatedProfit >= 0 ? 'good' : 'warn'}
+              size="compact"
             />
             <StatCard
               label="Margen"
               value={kpis.profitMargin == null ? '—' : percent(kpis.profitMargin)}
               icon={Percent}
               tone={kpis.profitMargin == null ? 'default' : kpis.profitMargin < 15 ? 'warn' : 'good'}
+              size="compact"
             />
           </View>
 
@@ -380,7 +382,7 @@ export const DashboardScreen = () => {
               )}
             </DashboardPanel>
 
-            <DashboardPanel title="Antigüedad de cobros pendientes" subtitle="Días desde que se generó el cobro">
+            <DashboardPanel title="Antigüedad de cobros pendientes" subtitle="Días desde que se generó el cobro" titleTone="danger">
               <View style={styles.agingList}>
                 {outstandingAging.map((bucket) => (
                   <View key={bucket.label} style={styles.agingRow}>
@@ -540,7 +542,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   agingValue: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.white,
+    color: colors.rose,
   },
   agingCount: {
     fontWeight: '400',

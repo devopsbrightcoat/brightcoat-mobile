@@ -28,7 +28,6 @@ export const PlanillasScreen = () => {
   const navigation = useNavigation<Nav>()
   const [refreshKey, setRefreshKey] = useState(0)
   const [searchText, setSearchText] = useState('')
-  const [propertyId, setPropertyId] = useState('all')
   const [employeeId, setEmployeeId] = useState('all')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
@@ -69,7 +68,6 @@ export const PlanillasScreen = () => {
   const filtered = useMemo(() => {
     const q = searchText.trim().toLowerCase()
     return (entries ?? []).filter((entry) => {
-      if (propertyId !== 'all' && entry.propertyId !== propertyId) return false
       if (employeeId !== 'all' && entry.employeeId !== employeeId) return false
       if (q) {
         const propertyName = propertyMap.get(entry.propertyId) ?? ''
@@ -79,10 +77,9 @@ export const PlanillasScreen = () => {
       }
       return true
     })
-  }, [entries, propertyMap, employeeMap, propertyId, employeeId, searchText])
+  }, [entries, propertyMap, employeeMap, employeeId, searchText])
 
-  const activeFilterCount =
-    (propertyId !== 'all' ? 1 : 0) + (employeeId !== 'all' ? 1 : 0) + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0)
+  const activeFilterCount = (employeeId !== 'all' ? 1 : 0) + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0)
 
   const totals = useMemo(() => {
     let sales = 0
@@ -257,13 +254,10 @@ export const PlanillasScreen = () => {
       <PayrollFiltersModal
         open={filtersOpen}
         onClose={() => setFiltersOpen(false)}
-        properties={properties ?? []}
         employees={employees ?? []}
-        propertyId={propertyId}
         employeeId={employeeId}
         dateFrom={dateFrom}
         dateTo={dateTo}
-        onPropertyChange={setPropertyId}
         onEmployeeChange={setEmployeeId}
         onDateFromChange={setDateFrom}
         onDateToChange={setDateTo}
