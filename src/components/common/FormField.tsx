@@ -1,13 +1,16 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { StyleSheet, Text, TextInput, View } from 'react-native'
 import type { TextInputProps } from 'react-native'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 
 type FormFieldProps = TextInputProps & {
   label: string
 }
 
 export const FormField = ({ label, style, ...inputProps }: FormFieldProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>{label}</Text>
@@ -16,7 +19,7 @@ export const FormField = ({ label, style, ...inputProps }: FormFieldProps) => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   wrap: {
     gap: 6,
   },
@@ -28,7 +31,7 @@ const styles = StyleSheet.create({
   input: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surface,
     paddingHorizontal: 14,
     paddingVertical: 12,

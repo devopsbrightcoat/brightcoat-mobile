@@ -11,7 +11,8 @@ import { fetchSchedules } from '../../lib/api'
 import { computePropertyActivity, filterSchedulesByRange, type DateRange } from '../../lib/dashboardMetrics'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../../navigation/RootNavigator'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 
 type Nav = NativeStackNavigationProp<RootStackParamList>
 type FilterKey = 'all' | 'active' | 'inactive'
@@ -23,6 +24,8 @@ const FILTER_OPTIONS: { value: FilterKey; label: string }[] = [
 ]
 
 export const PropiedadesActividadScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const [filter, setFilter] = useState<FilterKey>('all')
   const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
@@ -119,7 +122,7 @@ export const PropiedadesActividadScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,

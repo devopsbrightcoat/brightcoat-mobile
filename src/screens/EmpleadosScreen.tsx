@@ -10,12 +10,15 @@ import { StatusPill } from '../components/common/StatusPill'
 import { useReferenceData } from '../contexts/ReferenceDataContext'
 import { deleteEmployee } from '../lib/api'
 import type { RootStackParamList } from '../navigation/RootNavigator'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 import type { Employee } from '../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
 export const EmpleadosScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const [searchText, setSearchText] = useState('')
   const [deletingEmployee, setDeletingEmployee] = useState<Employee | null>(null)
@@ -157,7 +160,7 @@ export const EmpleadosScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -174,7 +177,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -249,7 +252,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: colors.tint05,
     paddingTop: 8,
   },
   rate: {

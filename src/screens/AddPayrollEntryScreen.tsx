@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Check, ChevronDown, ChevronUp, Plus, X } from 'lucide-react-native'
@@ -24,7 +24,8 @@ import { SALES_TAX_RATE } from '../lib/tax'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import type { Schedule } from '../types'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'AddPayrollEntry'>
 
@@ -41,6 +42,8 @@ const SCHEDULE_STATUS_LABELS: Record<Schedule['status'], string> = {
 }
 
 export const AddPayrollEntryScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
 
   const { properties, loadingProperties, employees, loadingEmployees, serviceTypes } = useReferenceData()
@@ -411,7 +414,7 @@ export const AddPayrollEntryScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -426,7 +429,7 @@ const styles = StyleSheet.create({
   section: {
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
+    borderTopColor: colors.tint10,
     paddingTop: 16,
   },
   sectionLabel: {
@@ -447,7 +450,7 @@ const styles = StyleSheet.create({
     gap: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surface,
     padding: 12,
   },
@@ -489,7 +492,7 @@ const styles = StyleSheet.create({
     width: 20,
     borderRadius: 5,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: colors.tint25,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -525,7 +528,7 @@ const styles = StyleSheet.create({
     gap: 5,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
@@ -545,7 +548,7 @@ const styles = StyleSheet.create({
   input: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     paddingHorizontal: 14,
     paddingVertical: 12,

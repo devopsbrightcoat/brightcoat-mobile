@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { DrawerActions, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
@@ -17,7 +17,8 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { Panel } from '../components/common/Panel'
 import { ScreenHeader } from '../components/common/ScreenHeader'
 import type { RootStackParamList } from '../navigation/RootNavigator'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
@@ -95,6 +96,8 @@ const OPERATIONS_ITEMS: ReportItem[] = [
 ]
 
 export const ReportesScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
 
   const handlePress = (route: ReportRoute) => {
@@ -162,7 +165,7 @@ export const ReportesScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,

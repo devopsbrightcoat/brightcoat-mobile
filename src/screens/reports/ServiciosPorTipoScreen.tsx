@@ -7,11 +7,14 @@ import { useReferenceData } from '../../contexts/ReferenceDataContext'
 import { fetchSchedules } from '../../lib/api'
 import { computeServiceTypeActivity, filterSchedulesByRange, type DateRange } from '../../lib/dashboardMetrics'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 
 const screenWidth = Dimensions.get('window').width
 
 export const ServiciosPorTipoScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
 
   const {
@@ -141,7 +144,7 @@ export const ServiciosPorTipoScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -217,7 +220,7 @@ const styles = StyleSheet.create({
   breakdown: {
     marginTop: 10,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: colors.tint05,
     paddingTop: 8,
     gap: 4,
   },

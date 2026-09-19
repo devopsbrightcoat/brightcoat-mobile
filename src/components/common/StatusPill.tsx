@@ -1,12 +1,15 @@
 import React from 'react'
 import { StyleSheet, Text, View } from 'react-native'
-import { statusColors, statusLabels } from '../../theme/colors'
+import { getStatusColors, statusLabels } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
 
 type StatusPillProps = {
   status: string
 }
 
 export const StatusPill = ({ status }: StatusPillProps) => {
+  const { scheme } = useTheme()
+  const statusColors = getStatusColors(scheme)
   const style = statusColors[status] ?? statusColors.inactive
   const label = statusLabels[status] ?? status
 

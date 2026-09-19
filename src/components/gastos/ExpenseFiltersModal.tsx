@@ -1,10 +1,11 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { FormField } from '../common/FormField'
 import { InlineSelect } from '../common/InlineSelect'
 import { Modal } from '../common/Modal'
 import { QuincenaDateFilter } from '../dashboard/QuincenaDateFilter'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 import type { Vendor } from '../../types'
 
 type ExpenseFiltersModalProps = {
@@ -38,6 +39,8 @@ export const ExpenseFiltersModal = ({
   vendors,
   onVendorIdChange,
 }: ExpenseFiltersModalProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const hasFilters = Boolean(dateFrom || dateTo || amountMin || amountMax || vendorId)
   const vendorOptions = vendors.map((v) => ({ id: v.id, label: v.name }))
 
@@ -95,7 +98,7 @@ export const ExpenseFiltersModal = ({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   row: {
     flexDirection: 'row',
     gap: 12,
@@ -116,7 +119,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     paddingVertical: 12,
   },
   clearButtonDisabled: {

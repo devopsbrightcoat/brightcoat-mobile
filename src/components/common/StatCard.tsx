@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import type { LucideIcon } from 'lucide-react-native'
 import { StyleSheet, Text, View } from 'react-native'
-import { colors } from '../../theme/colors'
+import type { ThemeColors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
 
 type Tone = 'default' | 'good' | 'warn'
 type Size = 'default' | 'compact'
@@ -18,20 +19,22 @@ type StatCardProps = {
   size?: Size
 }
 
-const toneStyles: Record<Tone, { bg: string; icon: string }> = {
-  default: { bg: 'rgba(255,255,255,0.05)', icon: colors.ink300 },
+const makeToneStyles = (colors: ThemeColors): Record<Tone, { bg: string; icon: string }> => ({
+  default: { bg: colors.tint05, icon: colors.ink300 },
   good: { bg: 'rgba(52,211,153,0.1)', icon: colors.emerald },
   warn: { bg: 'rgba(251,191,36,0.1)', icon: colors.amber },
-}
+})
 
-const hintToneStyles: Record<HintTone, { color: string; fontWeight: '400' | '700' }> = {
+const makeHintToneStyles = (colors: ThemeColors): Record<HintTone, { color: string; fontWeight: '400' | '700' }> => ({
   default: { color: colors.ink500, fontWeight: '400' },
   warn: { color: colors.amber, fontWeight: '700' },
-}
+})
 
 export const StatCard = ({ label, value, icon: Icon, tone = 'default', hint, hintTone = 'default', size = 'default' }: StatCardProps) => {
-  const toneStyle = toneStyles[tone]
-  const hintStyle = hintToneStyles[hintTone]
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+  const toneStyle = useMemo(() => makeToneStyles(colors)[tone], [colors, tone])
+  const hintStyle = useMemo(() => makeHintToneStyles(colors)[hintTone], [colors, hintTone])
   const compact = size === 'compact'
 
   return (
@@ -52,13 +55,13 @@ export const StatCard = ({ label, value, icon: Icon, tone = 'default', hint, hin
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   card: {
     flex: 1,
     minWidth: '46%',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     padding: 16,
   },

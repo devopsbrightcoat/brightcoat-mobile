@@ -16,18 +16,10 @@ import {
   type ScheduleActivityGranularity,
 } from '../../lib/dashboardMetrics'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 
 const screenWidth = Dimensions.get('window').width
-
-const chartConfig = {
-  backgroundGradientFrom: colors.surfaceAlt,
-  backgroundGradientTo: colors.surfaceAlt,
-  decimalPlaces: 0,
-  color: () => colors.gold500,
-  labelColor: () => colors.ink400,
-  propsForDots: { r: '0' },
-}
 
 const GRANULARITY_OPTIONS: { value: ScheduleActivityGranularity; label: string }[] = [
   { value: 'week', label: 'Semana' },
@@ -35,6 +27,19 @@ const GRANULARITY_OPTIONS: { value: ScheduleActivityGranularity; label: string }
 ]
 
 export const TrabajosPorEstatusScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+  const chartConfig = useMemo(
+    () => ({
+      backgroundGradientFrom: colors.surfaceAlt,
+      backgroundGradientTo: colors.surfaceAlt,
+      decimalPlaces: 0,
+      color: () => colors.gold500,
+      labelColor: () => colors.ink400,
+      propsForDots: { r: '0' },
+    }),
+    [colors],
+  )
   const [granularity, setGranularity] = useState<ScheduleActivityGranularity>('week')
   const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
   const { data: schedules, loading, error, refreshing, refetch } = useSupabaseQuery(fetchSchedules, [])
@@ -131,7 +136,7 @@ export const TrabajosPorEstatusScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,

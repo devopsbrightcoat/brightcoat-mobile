@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker'
 import { Calendar } from 'lucide-react-native'
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Modal } from './Modal'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 
 type DatePickerProps = {
   label: string
@@ -30,6 +31,8 @@ const formatDisplay = (value: string) => {
 }
 
 export const DatePicker = ({ label, value, onChange, placeholder = 'Selecciona una fecha' }: DatePickerProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<Date>(() => parseIso(value) ?? new Date())
 
@@ -88,7 +91,7 @@ export const DatePicker = ({ label, value, onChange, placeholder = 'Selecciona u
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   wrap: {
     gap: 6,
   },
@@ -103,7 +106,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surface,
     paddingHorizontal: 14,
     paddingVertical: 12,

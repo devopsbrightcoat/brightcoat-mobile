@@ -16,7 +16,8 @@ import { currency } from '../lib/format'
 import { serviceCategoryLabels } from '../lib/serviceTypeOptions'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 import type { ChargeTemplate, ExpenseTemplate, ServiceType } from '../types'
 
 type TabKey = 'general' | 'alertas' | 'servicios' | 'gastos_fijos' | 'cobros_fijos'
@@ -40,6 +41,8 @@ const TABS: { key: TabKey; label: string }[] = [
 const ALL_ROLES: ProfileRole[] = ['owner', 'admin', 'staff', 'finance']
 
 export const ConfiguracionScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const { profile, refreshProfile } = useAuth()
   const isOwner = profile?.role === 'owner'
@@ -78,6 +81,11 @@ export const ConfiguracionScreen = () => {
   const chargeTemplatePropertyNameById = useMemo(
     () => new Map((chargeTemplateProperties ?? []).map((p) => [p.id, p.name])),
     [chargeTemplateProperties],
+  )
+
+  const chargeTemplateServiceTypeNameById = useMemo(
+    () => new Map((serviceTypes ?? []).map((t) => [t.id, t.name])),
+    [serviceTypes],
   )
 
   useFocusEffect(
@@ -621,6 +629,9 @@ export const ConfiguracionScreen = () => {
                     <Text style={styles.cardMeta} numberOfLines={1}>
                       {chargeTemplatePropertyNameById.get(item.propertyId) ?? '—'}
                     </Text>
+                    <Text style={styles.cardMeta} numberOfLines={1}>
+                      {item.serviceTypeId ? chargeTemplateServiceTypeNameById.get(item.serviceTypeId) ?? '—' : '—'}
+                    </Text>
                     <View style={styles.serviceRowActions}>
                       <Text style={styles.cardMeta}>{currency(item.amount)}</Text>
                       <TouchableOpacity
@@ -677,7 +688,7 @@ export const ConfiguracionScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -697,7 +708,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     paddingVertical: 10,
   },
@@ -835,7 +846,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 26,
     borderRadius: 13,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: colors.tint10,
     padding: 2,
   },
   switchTrackOn: {
@@ -861,7 +872,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surface,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -875,7 +886,7 @@ const styles = StyleSheet.create({
     width: 20,
     borderRadius: 5,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: colors.tint25,
     alignItems: 'center',
     justifyContent: 'center',
   },

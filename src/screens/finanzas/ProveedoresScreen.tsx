@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Trash2 } from 'lucide-react-native'
@@ -8,12 +8,15 @@ import { Panel } from '../../components/common/Panel'
 import { deleteVendor, fetchVendors } from '../../lib/api'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../../navigation/RootNavigator'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 import type { Vendor } from '../../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
 export const ProveedoresScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const [refreshKey, setRefreshKey] = useState(0)
   const [deletingVendor, setDeletingVendor] = useState<Vendor | null>(null)
@@ -88,7 +91,7 @@ export const ProveedoresScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,

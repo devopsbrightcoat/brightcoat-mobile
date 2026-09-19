@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { RouteProp } from '@react-navigation/native'
@@ -22,7 +22,8 @@ import { currency } from '../lib/format'
 import { getErrorMessage } from '../lib/errors'
 import { SALES_TAX_RATE } from '../lib/tax'
 import type { RootStackParamList } from '../navigation/RootNavigator'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'EditPayrollEntry'>
 type Route = RouteProp<RootStackParamList, 'EditPayrollEntry'>
@@ -32,6 +33,8 @@ type ItemLine = { key: number; description: string; amount: string }
 const emptyItem = (key: number): ItemLine => ({ key, description: '', amount: '' })
 
 export const EditPayrollEntryScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const { params } = useRoute<Route>()
   const { entry } = params
@@ -267,7 +270,7 @@ export const EditPayrollEntryScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -294,7 +297,7 @@ const styles = StyleSheet.create({
     width: 20,
     borderRadius: 5,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: colors.tint25,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -325,7 +328,7 @@ const styles = StyleSheet.create({
     gap: 5,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
@@ -345,7 +348,7 @@ const styles = StyleSheet.create({
   input: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     paddingHorizontal: 14,
     paddingVertical: 12,

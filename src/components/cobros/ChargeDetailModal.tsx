@@ -1,17 +1,22 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { Modal } from '../common/Modal'
 import { StatusPill } from '../common/StatusPill'
 import { currency } from '../../lib/format'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 import type { Charge } from '../../types'
 
-const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <View style={styles.field}>
-    <Text style={styles.fieldLabel}>{label}</Text>
-    {children}
-  </View>
-)
+const Field = ({ label, children }: { label: string; children: React.ReactNode }) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+  return (
+    <View style={styles.field}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      {children}
+    </View>
+  )
+}
 
 type ChargeDetailModalProps = {
   charge: Charge | null
@@ -21,6 +26,8 @@ type ChargeDetailModalProps = {
 }
 
 export const ChargeDetailModal = ({ charge, propertyMap, serviceTypeMap, onClose }: ChargeDetailModalProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   return (
     <Modal open={charge !== null} onClose={onClose} title="Detalle del cobro">
       {charge ? (
@@ -84,7 +91,7 @@ export const ChargeDetailModal = ({ charge, propertyMap, serviceTypeMap, onClose
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   field: {
     gap: 4,
   },
@@ -112,7 +119,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 8,
     borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: colors.tint05,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },

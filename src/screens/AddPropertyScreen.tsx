@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native'
@@ -8,12 +8,15 @@ import { createProperty } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import { CLIENT_TYPE_OPTIONS, PROPERTY_STATUS_OPTIONS } from '../lib/propertyOptions'
 import type { RootStackParamList } from '../navigation/RootNavigator'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 import type { ClientType, PropertyStatus } from '../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'AddProperty'>
 
 export const AddPropertyScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const [name, setName] = useState('')
   const [address, setAddress] = useState('')
@@ -69,7 +72,7 @@ export const AddPropertyScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,

@@ -1,11 +1,12 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Modal } from '../common/Modal'
 import { StatusPill } from '../common/StatusPill'
 import { taxOnAmount } from '../../lib/tax'
 import { updateChargesTaxPaid } from '../../lib/api'
 import { getErrorMessage } from '../../lib/errors'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 import type { Charge } from '../../types'
 
 const currency = (value: number) =>
@@ -30,6 +31,8 @@ type ImpuestosMonthDetailModalProps = {
 }
 
 export const ImpuestosMonthDetailModal = ({ month, propertyMap, onClose, onChanged }: ImpuestosMonthDetailModalProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [savingId, setSavingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -94,7 +97,7 @@ export const ImpuestosMonthDetailModal = ({ month, propertyMap, onClose, onChang
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   list: {
     gap: 12,
   },
@@ -105,7 +108,7 @@ const styles = StyleSheet.create({
   row: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     padding: 12,
     gap: 6,
@@ -146,7 +149,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
@@ -160,7 +163,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: colors.tint05,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },

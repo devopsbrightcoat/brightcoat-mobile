@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
@@ -8,12 +8,15 @@ import { createEmployee } from '../lib/api'
 import { EMPLOYEE_STATUS_OPTIONS, W2_STATUS_OPTIONS } from '../lib/employeeOptions'
 import { getErrorMessage } from '../lib/errors'
 import type { RootStackParamList } from '../navigation/RootNavigator'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 import type { Employee } from '../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'AddEmployee'>
 
 export const AddEmployeeScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const [name, setName] = useState('')
   const [role, setRole] = useState('')
@@ -107,7 +110,7 @@ export const AddEmployeeScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,

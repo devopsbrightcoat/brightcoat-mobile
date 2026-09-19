@@ -12,13 +12,16 @@ import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import { formatMonthLabel, parseISODate } from '../../lib/scheduleDates'
 import { taxOnAmount, SALES_TAX_RATE } from '../../lib/tax'
 import { getErrorMessage } from '../../lib/errors'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 import type { Charge } from '../../types'
 
 const currency = (value: number) =>
   value.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 })
 
 export const ImpuestosScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [refreshKey, setRefreshKey] = useState(0)
   const [detailMonthKey, setDetailMonthKey] = useState<string | null>(null)
   const [savingMonthKey, setSavingMonthKey] = useState<string | null>(null)
@@ -189,7 +192,7 @@ export const ImpuestosScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -252,7 +255,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: colors.tint05,
     paddingTop: 8,
   },
   taxLabel: {
@@ -281,7 +284,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },

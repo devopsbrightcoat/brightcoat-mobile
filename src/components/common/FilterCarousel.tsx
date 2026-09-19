@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef } from 'react'
 import type { NativeScrollEvent, NativeSyntheticEvent, ViewStyle } from 'react-native'
 import { Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { colors } from '../../theme/colors'
+import type { ThemeColors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
 
 type Option<T extends string> = {
   value: T
@@ -28,6 +29,8 @@ export function FilterCarousel<T extends string>({
   itemWidth = 176,
   style,
 }: FilterCarouselProps<T>) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const slotWidth = itemWidth + ITEM_GAP
   const listPadding = Math.max(0, (screenWidth - slotWidth) / 2)
   const listRef = useRef<FlatList<Option<T>>>(null)
@@ -82,7 +85,7 @@ export function FilterCarousel<T extends string>({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   label: {
     marginHorizontal: 20,
     marginBottom: 6,
@@ -99,7 +102,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     paddingHorizontal: 12,
     paddingVertical: 12,

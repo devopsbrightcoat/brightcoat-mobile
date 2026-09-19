@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { RouteProp } from '@react-navigation/native'
@@ -9,13 +9,16 @@ import { updateServiceType } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import { SERVICE_CATEGORY_OPTIONS } from '../lib/serviceTypeOptions'
 import type { RootStackParamList } from '../navigation/RootNavigator'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 import type { ServiceCategory } from '../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'EditServiceType'>
 type Route = RouteProp<RootStackParamList, 'EditServiceType'>
 
 export const EditServiceTypeScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const { params } = useRoute<Route>()
   const { serviceType } = params
@@ -63,7 +66,7 @@ export const EditServiceTypeScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,

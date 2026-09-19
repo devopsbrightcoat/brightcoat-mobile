@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { colors } from '../../theme/colors'
+import type { ThemeColors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
 
 type Option<T extends string> = {
   value: T
@@ -15,6 +16,8 @@ type SegmentedFieldProps<T extends string> = {
 }
 
 export function SegmentedField<T extends string>({ label, options, value, onChange }: SegmentedFieldProps<T>) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>{label}</Text>
@@ -37,7 +40,7 @@ export function SegmentedField<T extends string>({ label, options, value, onChan
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   wrap: {
     gap: 6,
   },
@@ -54,7 +57,7 @@ const styles = StyleSheet.create({
   chip: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: colors.tint12,
     backgroundColor: colors.surface,
     paddingHorizontal: 14,
     paddingVertical: 9,

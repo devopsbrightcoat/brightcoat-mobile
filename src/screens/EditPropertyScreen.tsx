@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { RouteProp } from '@react-navigation/native'
@@ -9,13 +9,16 @@ import { updateProperty } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import { CLIENT_TYPE_OPTIONS, PROPERTY_STATUS_OPTIONS } from '../lib/propertyOptions'
 import type { RootStackParamList } from '../navigation/RootNavigator'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 import type { ClientType, PropertyStatus } from '../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'EditProperty'>
 type Route = RouteProp<RootStackParamList, 'EditProperty'>
 
 export const EditPropertyScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const { params } = useRoute<Route>()
   const { property } = params
@@ -74,7 +77,7 @@ export const EditPropertyScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,

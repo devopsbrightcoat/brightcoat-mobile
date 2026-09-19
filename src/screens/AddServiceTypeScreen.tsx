@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native'
@@ -8,12 +8,15 @@ import { createServiceType } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import { SERVICE_CATEGORY_OPTIONS } from '../lib/serviceTypeOptions'
 import type { RootStackParamList } from '../navigation/RootNavigator'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 import type { ServiceCategory } from '../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'AddServiceType'>
 
 export const AddServiceTypeScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const [name, setName] = useState('')
   const [category, setCategory] = useState<ServiceCategory>('painting')
@@ -58,7 +61,7 @@ export const AddServiceTypeScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,

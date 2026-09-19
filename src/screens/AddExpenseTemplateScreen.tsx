@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native'
@@ -6,11 +6,14 @@ import { FormField } from '../components/common/FormField'
 import { createExpenseTemplate } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import type { RootStackParamList } from '../navigation/RootNavigator'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'AddExpenseTemplate'>
 
 export const AddExpenseTemplateScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const [name, setName] = useState('')
   const [amount, setAmount] = useState('')
@@ -82,7 +85,7 @@ export const AddExpenseTemplateScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,

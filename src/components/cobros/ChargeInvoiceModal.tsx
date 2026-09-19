@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { Modal } from '../common/Modal'
 import { updateChargeStatus } from '../../lib/api'
 import { getErrorMessage } from '../../lib/errors'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 import type { Charge } from '../../types'
 
 type ChargeInvoiceModalProps = {
@@ -13,6 +14,8 @@ type ChargeInvoiceModalProps = {
 }
 
 export const ChargeInvoiceModal = ({ charge, onClose, onSaved }: ChargeInvoiceModalProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -77,7 +80,7 @@ export const ChargeInvoiceModal = ({ charge, onClose, onSaved }: ChargeInvoiceMo
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   hint: {
     fontSize: 13,
     color: colors.ink400,
@@ -93,7 +96,7 @@ const styles = StyleSheet.create({
   input: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     paddingHorizontal: 14,
     paddingVertical: 12,

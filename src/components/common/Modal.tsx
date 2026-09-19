@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { X } from 'lucide-react-native'
 import {
   KeyboardAvoidingView,
@@ -11,7 +11,8 @@ import {
   View,
 } from 'react-native'
 import type { DimensionValue } from 'react-native'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 
 type ModalProps = {
   open: boolean
@@ -23,6 +24,8 @@ type ModalProps = {
 }
 
 export const Modal = ({ open, onClose, title, children, minHeight, scrollEnabled = true }: ModalProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   return (
     <RNModal visible={open} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -47,7 +50,7 @@ export const Modal = ({ open, onClose, title, children, minHeight, scrollEnabled
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -68,7 +71,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
+    borderBottomColor: colors.tint08,
   },
   modalTitle: {
     fontSize: 16,

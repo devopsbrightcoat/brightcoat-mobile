@@ -1,16 +1,21 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Modal } from '../common/Modal'
 import { currency } from '../../lib/format'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 import type { Expense, Vendor } from '../../types'
 
-const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <View style={styles.field}>
-    <Text style={styles.fieldLabel}>{label}</Text>
-    {children}
-  </View>
-)
+const Field = ({ label, children }: { label: string; children: React.ReactNode }) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+  return (
+    <View style={styles.field}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      {children}
+    </View>
+  )
+}
 
 type ExpenseDetailModalProps = {
   expense: Expense | null
@@ -20,6 +25,8 @@ type ExpenseDetailModalProps = {
 }
 
 export const ExpenseDetailModal = ({ expense, vendors, onClose, onEdit }: ExpenseDetailModalProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const vendorName = expense?.vendorId ? vendors.find((v) => v.id === expense.vendorId)?.name : undefined
   return (
     <Modal open={expense !== null} onClose={onClose} title="Detalle del gasto">
@@ -50,7 +57,7 @@ export const ExpenseDetailModal = ({ expense, vendors, onClose, onEdit }: Expens
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   field: {
     gap: 4,
   },
@@ -69,7 +76,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     paddingVertical: 12,
   },
   editButtonText: {

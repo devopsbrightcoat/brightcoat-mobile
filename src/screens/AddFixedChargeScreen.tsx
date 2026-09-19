@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
@@ -10,11 +10,14 @@ import { createFixedCharge, fetchChargeTemplates } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'AddFixedCharge'>
 
 export const AddFixedChargeScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
 
   const [templateId, setTemplateId] = useState('')
@@ -23,13 +26,16 @@ export const AddFixedChargeScreen = () => {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const { properties } = useReferenceData()
+  const { properties, serviceTypes } = useReferenceData()
   const { data: templates } = useSupabaseQuery(fetchChargeTemplates, [])
   const templateOptions = (templates ?? []).map((t) => ({ id: t.id, label: t.name }))
 
   const selectedTemplate = (templates ?? []).find((t) => t.id === templateId)
   const selectedPropertyName = selectedTemplate
     ? (properties ?? []).find((p) => p.id === selectedTemplate.propertyId)?.name ?? '—'
+    : null
+  const selectedServiceTypeName = selectedTemplate?.serviceTypeId
+    ? (serviceTypes ?? []).find((t) => t.id === selectedTemplate.serviceTypeId)?.name ?? '—'
     : null
 
   const handleTemplateChange = (id: string) => {
@@ -62,6 +68,7 @@ export const AddFixedChargeScreen = () => {
         amount: amountNum,
         generatedDate: date.trim(),
         description: template.name,
+        serviceTypeId: template.serviceTypeId,
       })
       navigation.goBack()
     } catch (err) {
@@ -89,6 +96,9 @@ export const AddFixedChargeScreen = () => {
             </Text>
           ) : null}
           {selectedPropertyName ? <Text style={styles.hint}>Propiedad: {selectedPropertyName}</Text> : null}
+          {selectedServiceTypeName ? (
+            <Text style={styles.hint}>Tipo de servicio: {selectedServiceTypeName}</Text>
+          ) : null}
         </View>
 
         <FormField label="Monto" value={amount} onChangeText={setAmount} placeholder="0.00" keyboardType="decimal-pad" />
@@ -96,8 +106,8 @@ export const AddFixedChargeScreen = () => {
         <DatePicker label="Fecha de cobro" value={date} onChange={setDate} />
 
         <Text style={styles.hint}>
-          Un cobro fijo no lleva apartamento ni tipo de servicio — queda ligado solo a la propiedad. Cobros lo
-          muestra con &quot;N/A&quot; en Apartamento.
+          Un cobro fijo no lleva apartamento — queda ligado a la propiedad y, si el cobro fijo del catálogo tiene
+          uno asignado, a su tipo de servicio. Cobros lo muestra con &quot;N/A&quot; en Apartamento.
         </Text>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -115,7 +125,7 @@ export const AddFixedChargeScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,

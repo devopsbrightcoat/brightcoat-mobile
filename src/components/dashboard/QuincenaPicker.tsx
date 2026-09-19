@@ -1,10 +1,11 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { InlineSelect } from '../common/InlineSelect'
 import { SegmentedField } from '../common/SegmentedField'
 import { formatMonthLabel } from '../../lib/scheduleDates'
 import { formatQuincenaRangeLabel, listRecentMonths, type QuincenaHalf, type QuincenaKey } from '../../lib/quincena'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 
 type QuincenaPickerProps = {
   value: QuincenaKey
@@ -13,6 +14,8 @@ type QuincenaPickerProps = {
 }
 
 export const QuincenaPicker = ({ value, onChange, monthsBack = 24 }: QuincenaPickerProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const months = listRecentMonths(monthsBack)
   const monthOptions = months.map((m) => ({ id: `${m.year}-${m.month}`, label: formatMonthLabel(m.year, m.month - 1) }))
   const monthKey = `${value.year}-${value.month}`
@@ -45,7 +48,7 @@ export const QuincenaPicker = ({ value, onChange, monthsBack = 24 }: QuincenaPic
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   wrap: {
     gap: 10,
   },

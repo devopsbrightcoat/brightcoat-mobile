@@ -1,19 +1,24 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Trash2 } from 'lucide-react-native'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Modal } from '../common/Modal'
 import { formatFullDate } from '../../lib/scheduleDates'
 import { currency } from '../../lib/format'
 import { taxOnAmount, SALES_TAX_RATE } from '../../lib/tax'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 import type { PayrollEntry } from '../../types'
 
-const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <View style={styles.field}>
-    <Text style={styles.fieldLabel}>{label}</Text>
-    {children}
-  </View>
-)
+const Field = ({ label, children }: { label: string; children: React.ReactNode }) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+  return (
+    <View style={styles.field}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      {children}
+    </View>
+  )
+}
 
 type PayrollEntryDetailModalProps = {
   entry: PayrollEntry | null
@@ -32,6 +37,8 @@ export const PayrollEntryDetailModal = ({
   onEdit,
   onDelete,
 }: PayrollEntryDetailModalProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const sales = entry ? entry.items.reduce((sum, item) => sum + item.amount, 0) : 0
   const profit = entry && entry.amount != null ? entry.amount - sales : null
   const tax = entry && entry.taxable && entry.amount != null ? taxOnAmount(entry.amount) : null
@@ -133,7 +140,7 @@ export const PayrollEntryDetailModal = ({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   field: {
     gap: 4,
   },
@@ -153,7 +160,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     padding: 14,
   },
@@ -198,7 +205,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 8,
     borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: colors.tint05,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
@@ -223,7 +230,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     paddingVertical: 12,
   },
   editButtonText: {

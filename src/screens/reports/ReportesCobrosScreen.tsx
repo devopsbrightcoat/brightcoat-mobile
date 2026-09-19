@@ -16,21 +16,25 @@ import {
 } from '../../lib/dashboardMetrics'
 import { currency } from '../../lib/format'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
-import { colors } from '../../theme/colors'
+import type { ThemeColors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
 
 const percent = (value: number) => `${value.toFixed(1)}%`
 
-const BUCKET_TONE: Record<string, { bg: string; text: string }> = {
-  '0–30 días': { bg: 'rgba(255,255,255,0.06)', text: colors.ink400 },
+const makeBucketTone = (colors: ThemeColors): Record<string, { bg: string; text: string }> => ({
+  '0–30 días': { bg: colors.tint06, text: colors.ink400 },
   '31–60 días': { bg: 'rgba(251,191,36,0.12)', text: colors.amber },
   '61–90 días': { bg: 'rgba(217,89,38,0.16)', text: '#e08a5c' },
   '+90 días': { bg: 'rgba(248,113,113,0.12)', text: colors.rose },
-}
-const DEFAULT_BUCKET_TONE = { bg: 'rgba(255,255,255,0.06)', text: colors.ink400 }
+})
 
 const SEVERE_BUCKETS = new Set(['61–90 días', '+90 días'])
 
 export const ReportesCobrosScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+  const BUCKET_TONE = useMemo(() => makeBucketTone(colors), [colors])
+  const DEFAULT_BUCKET_TONE = useMemo(() => ({ bg: colors.tint06, text: colors.ink400 }), [colors])
   const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
   const [bucketFilter, setBucketFilter] = useState<string>('all')
 
@@ -195,7 +199,7 @@ export const ReportesCobrosScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
   scroll: { paddingBottom: 32 },
@@ -225,7 +229,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: colors.tint05,
     paddingTop: 8,
   },
   cardMeta: { flex: 1, fontSize: 11, color: colors.ink500 },

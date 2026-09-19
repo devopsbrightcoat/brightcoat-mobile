@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { InlineSelect } from '../common/InlineSelect'
 import { Modal } from '../common/Modal'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 import type { Employee, Property } from '../../types'
 
 type ScheduleFiltersModalProps = {
@@ -26,6 +27,8 @@ export const ScheduleFiltersModal = ({
   onPropertyChange,
   onEmployeeChange,
 }: ScheduleFiltersModalProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [openField, setOpenField] = useState<string | null>(null)
 
   useEffect(() => {
@@ -80,7 +83,7 @@ export const ScheduleFiltersModal = ({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   field: {
     gap: 6,
   },
@@ -93,7 +96,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     paddingVertical: 12,
   },
   clearButtonDisabled: {

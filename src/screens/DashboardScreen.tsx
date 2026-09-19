@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { DrawerActions, useNavigation } from '@react-navigation/native'
 import {
   AlertTriangle,
@@ -22,6 +22,7 @@ import { SelectField } from '../components/common/SelectField'
 import { StatCard } from '../components/common/StatCard'
 import { StatusPill } from '../components/common/StatusPill'
 import { DashboardPanel } from '../components/dashboard/DashboardPanel'
+import { Pagination } from '../components/common/Pagination'
 import { RankingBars } from '../components/dashboard/RankingBars'
 import { ServiceCategoryModal } from '../components/dashboard/ServiceCategoryModal'
 import { ScreenHeader } from '../components/common/ScreenHeader'
@@ -35,7 +36,7 @@ import {
   computeKpis,
   computeMonthlyFinancials,
   computeOutstandingAging,
-  computeOverdueSchedules,
+  computePendingSchedules,
   computeRevenueByCategory,
   computeRevenueByProperty,
   computeTodaySchedules,
@@ -46,32 +47,42 @@ import {
 import { currency } from '../lib/format'
 import { getQuincenaForDate } from '../lib/quincena'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 import { QuincenaPicker } from '../components/dashboard/QuincenaPicker'
 
 const screenWidth = Dimensions.get('window').width
 
-const COLOR_GOLD = colors.gold400
+// Cantidad fija de trabajos pendientes que se muestran por página en el
+// panel "Trabajos Pendientes de Total" — así el panel no crece sin límite.
+const PENDING_SCHEDULES_PAGE_SIZE = 5
+
+const COLOR_GOLD = '#e3a730'
 const COLOR_BLUE = '#3987e5'
 const COLOR_ORANGE = '#d95926'
 const COLOR_AQUA = '#199e70'
 
 const percent = (value: number) => `${value.toFixed(1)}%`
 
-const chartConfig = {
-  backgroundGradientFrom: colors.surfaceAlt,
-  backgroundGradientTo: colors.surfaceAlt,
-  decimalPlaces: 2,
-  color: () => colors.ink400,
-  labelColor: () => colors.ink400,
-  propsForDots: { r: '0' },
-}
-
 export const DashboardScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+  const chartConfig = useMemo(
+    () => ({
+      backgroundGradientFrom: colors.surfaceAlt,
+      backgroundGradientTo: colors.surfaceAlt,
+      decimalPlaces: 2,
+      color: () => colors.ink400,
+      labelColor: () => colors.ink400,
+      propsForDots: { r: '0' },
+    }),
+    [colors],
+  )
   const navigation = useNavigation()
   const [rangeSelection, setRangeSelection] = useState<DashboardDateRangeSelection>({ kind: 'preset', key: 'this_month' })
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
   const [filtersExpanded, setFiltersExpanded] = useState(false)
+  const [pendingPage, setPendingPage] = useState(1)
 
   // El Dashboard solo necesita datos de los últimos ~14 meses (ver
   // computeDashboardFetchWindowStart) — antes traía TODO el historial en
@@ -142,8 +153,21 @@ export const DashboardScreen = () => {
   )
 
   const todaySchedules = useMemo(() => computeTodaySchedules(schedules ?? []), [schedules])
-  const overdueSchedules = useMemo(() => computeOverdueSchedules(schedules ?? []), [schedules])
+  const pendingSchedules = useMemo(() => computePendingSchedules(schedules ?? []), [schedules])
   const outstandingAging = useMemo(() => computeOutstandingAging(charges ?? []), [charges])
+
+  const pendingTotalPages = Math.max(1, Math.ceil(pendingSchedules.length / PENDING_SCHEDULES_PAGE_SIZE))
+  // Si el rango de fechas cambia y la lista se encoge, volvemos a la página 1
+  // en vez de quedarnos en una página vacía.
+  useEffect(() => setPendingPage(1), [pendingSchedules])
+  const pendingCurrentPage = Math.min(pendingPage, pendingTotalPages)
+  const pendingPageItems = useMemo(
+    () => pendingSchedules.slice(
+      (pendingCurrentPage - 1) * PENDING_SCHEDULES_PAGE_SIZE,
+      pendingCurrentPage * PENDING_SCHEDULES_PAGE_SIZE,
+    ),
+    [pendingSchedules, pendingCurrentPage],
+  )
 
   const alerts = useMemo(
     () => computeAlerts(charges ?? [], payrollEntries ?? [], expenses ?? [], properties ?? [], range, currency),
@@ -329,26 +353,30 @@ export const DashboardScreen = () => {
               )}
             </DashboardPanel>
 
-            <DashboardPanel title="Trabajos atrasados" subtitle="Fecha programada ya pasada" action={<CalendarClock size={16} color={colors.amber} />}>
-              {overdueSchedules.length === 0 ? (
-                <Text style={styles.emptyText}>No hay trabajos atrasados.</Text>
+            <DashboardPanel
+              title="Trabajos Pendientes de Total"
+              subtitle={`${pendingSchedules.length} de ${(schedules ?? []).length} trabajos`}
+              action={<CalendarClock size={16} color={colors.amber} />}
+            >
+              {pendingSchedules.length === 0 ? (
+                <Text style={styles.emptyText}>No hay trabajos pendientes.</Text>
               ) : (
-                <View style={styles.listGroup}>
-                  {overdueSchedules.slice(0, 6).map((s, index, arr) => (
-                    <View key={s.id} style={[styles.jobRow, index === arr.length - 1 && styles.jobRowLast]}>
-                      <View style={styles.jobInfo}>
-                        <Text style={styles.jobTitle} numberOfLines={1}>{propertyName(s.propertyId)}</Text>
-                        <Text style={styles.jobSubtitle} numberOfLines={1}>
-                          {serviceTypeName(s.serviceTypeId)} · {employeeName(s.employeeId)} · {s.scheduledDate}
-                        </Text>
+                <>
+                  <View style={styles.listGroup}>
+                    {pendingPageItems.map((s, index, arr) => (
+                      <View key={s.id} style={[styles.jobRow, index === arr.length - 1 && styles.jobRowLast]}>
+                        <View style={styles.jobInfo}>
+                          <Text style={styles.jobTitle} numberOfLines={1}>{propertyName(s.propertyId)}</Text>
+                          <Text style={styles.jobSubtitle} numberOfLines={1}>
+                            {serviceTypeName(s.serviceTypeId)} · {employeeName(s.employeeId)} · {s.scheduledDate}
+                          </Text>
+                        </View>
+                        <StatusPill status={s.status} />
                       </View>
-                      <StatusPill status={s.status} />
-                    </View>
-                  ))}
-                  {overdueSchedules.length > 6 && (
-                    <Text style={styles.moreText}>y {overdueSchedules.length - 6} más…</Text>
-                  )}
-                </View>
+                    ))}
+                  </View>
+                  <Pagination page={pendingCurrentPage} totalPages={pendingTotalPages} onChange={setPendingPage} />
+                </>
               )}
             </DashboardPanel>
 
@@ -394,7 +422,7 @@ export const DashboardScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -409,7 +437,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -471,7 +499,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: colors.tint05,
     paddingVertical: 10,
     gap: 8,
   },

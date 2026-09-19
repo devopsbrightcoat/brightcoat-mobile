@@ -18,11 +18,14 @@ import { currency } from '../../lib/format'
 import { taxOnAmount, SALES_TAX_RATE } from '../../lib/tax'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import type { PayrollEntry } from '../../types'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 
 type DetailRow = PayrollEntry & { sales: number; profit: number | null; tax: number | null }
 
 export const ReportesPlanillaScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [employeeId, setEmployeeId] = useState('all')
   const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
 
@@ -311,7 +314,7 @@ export const ReportesPlanillaScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
   scroll: { paddingBottom: 32 },
@@ -342,7 +345,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: colors.tint05,
     paddingTop: 8,
   },
   cardFooterAmounts: { flexDirection: 'row', alignItems: 'center', gap: 10 },

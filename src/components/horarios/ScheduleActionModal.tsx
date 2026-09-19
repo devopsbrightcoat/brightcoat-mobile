@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Plus, X } from 'lucide-react-native'
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { DatePicker } from '../common/DatePicker'
 import { Modal } from '../common/Modal'
-import { createScheduleCharge, rescheduleSchedule, updateScheduleStatus } from '../../lib/api'
+import { createScheduleCharge, fetchChargeByScheduleId, rescheduleSchedule, updateScheduleStatus } from '../../lib/api'
 import { getErrorMessage } from '../../lib/errors'
-import { colors, statusColors, statusLabels } from '../../theme/colors'
+import { getStatusColors, statusLabels } from '../../theme/colors'
+import type { ThemeColors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
 import type { Schedule, ScheduleStatus } from '../../types'
 
 const STATUS_OPTIONS: ScheduleStatus[] = ['pending', 'in_progress', 'delivered', 'cancelled', 'rescheduled']
@@ -21,6 +23,9 @@ type ScheduleActionModalProps = {
 }
 
 export const ScheduleActionModal = ({ schedule, onClose, onSaved }: ScheduleActionModalProps) => {
+  const { colors, scheme } = useTheme()
+  const statusColors = getStatusColors(scheme)
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [step, setStep] = useState<'status' | 'charge' | 'reschedule'>('status')
   const [totalCost, setTotalCost] = useState('')
   const [notes, setNotes] = useState('')
@@ -40,7 +45,35 @@ export const ScheduleActionModal = ({ schedule, onClose, onSaved }: ScheduleActi
 
   const handlePickStatus = async (status: ScheduleStatus) => {
     if (!schedule) return
-    if (status === 'delivered') {
+    // Un servicio de cobro fijo (ej. limpieza de oficina mensual) se marca
+    // "Entregado" directo, igual que Pendiente/En proceso/Cancelado — sin
+    // pedir costo ni crear un cobro, porque el cobro real ya se captura a
+    // mano en Cobros como cobro fijo recurrente.
+    if (status === 'delivered' && !schedule.isFixedCharge) {
+      if (schedule.status === 'delivered') {
+        // Ya estaba entregado y cobrado — se precarga el cobro existente
+        // para editarlo en vez de partir de un formulario en blanco.
+        setSaving(true)
+        setError(null)
+        try {
+          const existing = await fetchChargeByScheduleId(schedule.id)
+          if (existing) {
+            setTotalCost(String(existing.amount))
+            setNotes(existing.notes ?? '')
+            setExtras(
+              existing.extras.map((extra, i) => ({
+                key: i + 1,
+                description: extra.description,
+                amount: String(extra.amount),
+              })),
+            )
+          }
+        } catch (err) {
+          setError(getErrorMessage(err, 'No se pudo cargar el cobro existente — puedes capturarlo de nuevo.'))
+        } finally {
+          setSaving(false)
+        }
+      }
       setStep('charge')
       return
     }
@@ -152,7 +185,7 @@ export const ScheduleActionModal = ({ schedule, onClose, onSaved }: ScheduleActi
 
   if (step === 'charge') {
     return (
-      <Modal open={schedule !== null} onClose={onClose} title="Cobro del servicio">
+      <Modal open={schedule !== null} onClose={onClose} title={schedule?.status === 'delivered' ? 'Editar cobro' : 'Cobro del servicio'}>
         <View style={styles.field}>
           <Text style={styles.label}>Costo de servicio total</Text>
           <TextInput
@@ -231,7 +264,9 @@ export const ScheduleActionModal = ({ schedule, onClose, onSaved }: ScheduleActi
             disabled={saving}
             onPress={handleSaveCharge}
           >
-            <Text style={styles.primaryButtonText}>{saving ? 'Guardando…' : 'Confirmar entrega y cobro'}</Text>
+            <Text style={styles.primaryButtonText}>
+              {saving ? 'Guardando…' : schedule?.status === 'delivered' ? 'Guardar cambios' : 'Confirmar entrega y cobro'}
+            </Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -264,7 +299,7 @@ export const ScheduleActionModal = ({ schedule, onClose, onSaved }: ScheduleActi
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   field: {
     gap: 6,
   },
@@ -276,7 +311,7 @@ const styles = StyleSheet.create({
   input: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -298,7 +333,7 @@ const styles = StyleSheet.create({
     gap: 5,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
@@ -348,7 +383,7 @@ const styles = StyleSheet.create({
   secondaryButton: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     paddingHorizontal: 16,
     paddingVertical: 12,
   },

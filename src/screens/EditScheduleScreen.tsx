@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { RouteProp } from '@react-navigation/native'
+import { Check } from 'lucide-react-native'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { DatePicker } from '../components/common/DatePicker'
 import { FormField } from '../components/common/FormField'
@@ -10,12 +11,15 @@ import { useReferenceData } from '../contexts/ReferenceDataContext'
 import { updateSchedule } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import type { RootStackParamList } from '../navigation/RootNavigator'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'EditSchedule'>
 type Route = RouteProp<RootStackParamList, 'EditSchedule'>
 
 export const EditScheduleScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const { params } = useRoute<Route>()
   const { schedule } = params
@@ -27,6 +31,7 @@ export const EditScheduleScreen = () => {
   const [date, setDate] = useState(schedule.scheduledDate)
   const [unitLabel, setUnitLabel] = useState(schedule.unitLabel ?? '')
   const [serviceTypeId, setServiceTypeId] = useState(schedule.serviceTypeId)
+  const [isFixedCharge, setIsFixedCharge] = useState(schedule.isFixedCharge)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [openField, setOpenField] = useState<string | null>(null)
@@ -62,6 +67,7 @@ export const EditScheduleScreen = () => {
         scheduledDate: date.trim(),
         unitLabel,
         serviceTypeId,
+        isFixedCharge,
       })
       navigation.goBack()
     } catch (err) {
@@ -104,7 +110,31 @@ export const EditScheduleScreen = () => {
 
             <DatePicker label="Fecha" value={date} onChange={setDate} />
 
-            <FormField label="Unidad (ej. L303)" value={unitLabel} onChangeText={setUnitLabel} placeholder="L303" />
+            <TouchableOpacity
+              style={styles.checkboxRow}
+              activeOpacity={0.75}
+              onPress={() => {
+                setIsFixedCharge((prev) => {
+                  const next = !prev
+                  setUnitLabel(next ? 'N/A' : '')
+                  return next
+                })
+              }}
+            >
+              <View style={[styles.checkbox, isFixedCharge && styles.checkboxChecked]}>
+                {isFixedCharge ? <Check size={13} color={colors.brand900} strokeWidth={3} /> : null}
+              </View>
+              <View style={styles.checkboxTextGroup}>
+                <Text style={styles.checkboxLabel}>Servicio de cobro fijo</Text>
+                <Text style={styles.checkboxHint}>
+                  Se cobra por un monto fijo recurrente (ej. limpieza de oficina mensual) — al marcarlo "Entregado" se marca directo, sin pedir costo ni crear un cobro. No lleva unidad — se guarda como "N/A".
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {!isFixedCharge ? (
+              <FormField label="Unidad (ej. L303)" value={unitLabel} onChangeText={setUnitLabel} placeholder="L303" />
+            ) : null}
 
             <View style={styles.field}>
               <Text style={styles.label}>Servicio</Text>
@@ -135,7 +165,7 @@ export const EditScheduleScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -151,6 +181,38 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: colors.ink200,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  checkbox: {
+    marginTop: 1,
+    height: 20,
+    width: 20,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: colors.tint25,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: colors.gold500,
+    borderColor: colors.gold500,
+  },
+  checkboxTextGroup: {
+    flex: 1,
+    gap: 2,
+  },
+  checkboxLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.ink200,
+  },
+  checkboxHint: {
+    fontSize: 11,
+    color: colors.ink500,
   },
   error: {
     fontSize: 13,

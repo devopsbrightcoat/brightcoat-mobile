@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { InlineSelect } from './InlineSelect'
-import { colors } from '../../theme/colors'
+import type { ThemeColors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
 
 type Option = {
   id: string
@@ -20,14 +21,18 @@ type SelectFieldProps = {
   onOpenChange?: (open: boolean) => void
 }
 
-export const SelectField = ({ label, ...selectProps }: SelectFieldProps) => (
-  <View style={styles.wrap}>
-    <Text style={styles.label}>{label}</Text>
-    <InlineSelect {...selectProps} />
-  </View>
-)
+export const SelectField = ({ label, ...selectProps }: SelectFieldProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+  return (
+    <View style={styles.wrap}>
+      <Text style={styles.label}>{label}</Text>
+      <InlineSelect {...selectProps} />
+    </View>
+  )
+}
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   wrap: {
     gap: 6,
   },

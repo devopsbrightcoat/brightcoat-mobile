@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { RouteProp } from '@react-navigation/native'
@@ -7,12 +7,15 @@ import { FormField } from '../components/common/FormField'
 import { updateExpenseTemplate } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import type { RootStackParamList } from '../navigation/RootNavigator'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'EditExpenseTemplate'>
 type Route = RouteProp<RootStackParamList, 'EditExpenseTemplate'>
 
 export const EditExpenseTemplateScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const { params } = useRoute<Route>()
   const { template } = params
@@ -87,7 +90,7 @@ export const EditExpenseTemplateScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Search } from 'lucide-react-native'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { DatePicker } from '../common/DatePicker'
@@ -6,7 +6,8 @@ import { SegmentedField } from '../common/SegmentedField'
 import { QuincenaPicker } from './QuincenaPicker'
 import type { DateRange } from '../../lib/dashboardMetrics'
 import { getQuincenaForDate, getQuincenaRange, type QuincenaKey } from '../../lib/quincena'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 
 type ReportDateRangeBarProps = {
   onGenerate: (range: DateRange) => void
@@ -14,6 +15,8 @@ type ReportDateRangeBarProps = {
 }
 
 export const ReportDateRangeBar = ({ onGenerate, generated }: ReportDateRangeBarProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [mode, setMode] = useState<'manual' | 'quincena'>('manual')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
@@ -84,14 +87,14 @@ export const ReportDateRangeBar = ({ onGenerate, generated }: ReportDateRangeBar
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   wrap: {
     marginHorizontal: 20,
     marginTop: 16,
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     gap: 10,
   },

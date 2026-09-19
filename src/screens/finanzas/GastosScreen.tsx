@@ -11,12 +11,15 @@ import { fetchExpenses, fetchVendors } from '../../lib/api'
 import { currency } from '../../lib/format'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../../navigation/RootNavigator'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 import type { Expense, Vendor } from '../../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
 export const GastosScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const [refreshKey, setRefreshKey] = useState(0)
   const [searchText, setSearchText] = useState('')
@@ -168,7 +171,7 @@ export const GastosScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -193,7 +196,7 @@ const styles = StyleSheet.create({
     gap: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -210,7 +213,7 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     paddingHorizontal: 10,
     paddingVertical: 10,
   },

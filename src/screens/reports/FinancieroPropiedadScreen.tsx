@@ -14,11 +14,14 @@ import { filterChargesByRange, filterSchedulesByRange, type DateRange } from '..
 import { currency } from '../../lib/format'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../../navigation/RootNavigator'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 
 type Route = RouteProp<RootStackParamList, 'FinancieroPropiedad'>
 
 export const FinancieroPropiedadScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const route = useRoute<Route>()
   const [propertyId, setPropertyId] = useState(route.params?.propertyId ?? 'all')
   const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
@@ -168,7 +171,7 @@ export const FinancieroPropiedadScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -232,7 +235,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: colors.tint05,
     paddingVertical: 12,
   },
   rowLast: {

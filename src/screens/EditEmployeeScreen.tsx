@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { RouteProp } from '@react-navigation/native'
@@ -9,13 +9,16 @@ import { updateEmployee } from '../lib/api'
 import { EMPLOYEE_STATUS_OPTIONS, W2_STATUS_OPTIONS } from '../lib/employeeOptions'
 import { getErrorMessage } from '../lib/errors'
 import type { RootStackParamList } from '../navigation/RootNavigator'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 import type { Employee } from '../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'EditEmployee'>
 type Route = RouteProp<RootStackParamList, 'EditEmployee'>
 
 export const EditEmployeeScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const { params } = useRoute<Route>()
   const { employee } = params
@@ -112,7 +115,7 @@ export const EditEmployeeScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,

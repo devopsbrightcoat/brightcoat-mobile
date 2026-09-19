@@ -1,8 +1,8 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { RouteProp } from '@react-navigation/native'
-import { Plus, X } from 'lucide-react-native'
+import { Check, Plus, X } from 'lucide-react-native'
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -20,7 +20,8 @@ import { useReferenceData } from '../contexts/ReferenceDataContext'
 import { createSchedules } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import type { RootStackParamList } from '../navigation/RootNavigator'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'AddSchedule'>
 type Route = RouteProp<RootStackParamList, 'AddSchedule'>
@@ -29,11 +30,14 @@ type Line = {
   key: number
   unitLabel: string
   serviceTypeId: string
+  isFixedCharge: boolean
 }
 
-const emptyLine = (key: number): Line => ({ key, unitLabel: '', serviceTypeId: '' })
+const emptyLine = (key: number): Line => ({ key, unitLabel: '', serviceTypeId: '', isFixedCharge: false })
 
 export const AddScheduleScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const { params } = useRoute<Route>()
 
@@ -87,6 +91,7 @@ export const AddScheduleScreen = () => {
           scheduledDate: date.trim(),
           unitLabel: line.unitLabel,
           serviceTypeId: line.serviceTypeId,
+          isFixedCharge: line.isFixedCharge,
         })),
       )
       navigation.goBack()
@@ -152,12 +157,35 @@ export const AddScheduleScreen = () => {
                     ) : null}
                   </View>
 
-                  <FormField
-                    label="Unidad (ej. L303)"
-                    value={line.unitLabel}
-                    onChangeText={(text) => updateLine(line.key, { unitLabel: text })}
-                    placeholder="L303"
-                  />
+                  <TouchableOpacity
+                    style={styles.checkboxRow}
+                    activeOpacity={0.75}
+                    onPress={() =>
+                      updateLine(line.key, {
+                        isFixedCharge: !line.isFixedCharge,
+                        unitLabel: !line.isFixedCharge ? 'N/A' : '',
+                      })
+                    }
+                  >
+                    <View style={[styles.checkbox, line.isFixedCharge && styles.checkboxChecked]}>
+                      {line.isFixedCharge ? <Check size={13} color={colors.brand900} strokeWidth={3} /> : null}
+                    </View>
+                    <View style={styles.checkboxTextGroup}>
+                      <Text style={styles.checkboxLabel}>Servicio de cobro fijo</Text>
+                      <Text style={styles.checkboxHint}>
+                        Se cobra por un monto fijo recurrente (ej. limpieza de oficina mensual) — al marcarlo "Entregado" se marca directo, sin pedir costo ni crear un cobro. No lleva unidad — se guarda como "N/A".
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  {!line.isFixedCharge ? (
+                    <FormField
+                      label="Unidad (ej. L303)"
+                      value={line.unitLabel}
+                      onChangeText={(text) => updateLine(line.key, { unitLabel: text })}
+                      placeholder="L303"
+                    />
+                  ) : null}
 
                   <View style={styles.field}>
                     <Text style={styles.label}>Servicio</Text>
@@ -170,7 +198,6 @@ export const AddScheduleScreen = () => {
                       onOpenChange={(next) => setOpenField(next ? `service-${line.key}` : null)}
                     />
                   </View>
-
                 </View>
               ))}
             </View>
@@ -192,7 +219,7 @@ export const AddScheduleScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -223,7 +250,7 @@ const styles = StyleSheet.create({
     gap: 5,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
@@ -236,7 +263,7 @@ const styles = StyleSheet.create({
     gap: 14,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     padding: 14,
   },
@@ -248,6 +275,38 @@ const styles = StyleSheet.create({
   lineIndex: {
     fontSize: 11,
     fontWeight: '600',
+    color: colors.ink500,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  checkbox: {
+    marginTop: 1,
+    height: 20,
+    width: 20,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: colors.tint25,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: colors.gold500,
+    borderColor: colors.gold500,
+  },
+  checkboxTextGroup: {
+    flex: 1,
+    gap: 2,
+  },
+  checkboxLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.ink200,
+  },
+  checkboxHint: {
+    fontSize: 11,
     color: colors.ink500,
   },
   error: {

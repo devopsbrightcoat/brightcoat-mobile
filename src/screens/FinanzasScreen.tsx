@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { DrawerActions, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Plus } from 'lucide-react-native'
@@ -9,7 +9,8 @@ import { GastosScreen } from './finanzas/GastosScreen'
 import { ImpuestosScreen } from './finanzas/ImpuestosScreen'
 import { ProveedoresScreen } from './finanzas/ProveedoresScreen'
 import type { RootStackParamList } from '../navigation/RootNavigator'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 
 type TabKey = 'cobros' | 'gastos' | 'impuestos' | 'proveedores'
 type Nav = NativeStackNavigationProp<RootStackParamList>
@@ -22,6 +23,8 @@ const TABS: { key: TabKey; label: string }[] = [
 ]
 
 export const FinanzasScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const [tab, setTab] = useState<TabKey>('cobros')
 
@@ -87,7 +90,7 @@ export const FinanzasScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -107,7 +110,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     paddingVertical: 10,
   },

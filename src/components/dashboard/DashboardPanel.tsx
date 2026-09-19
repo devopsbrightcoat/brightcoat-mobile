@@ -1,8 +1,9 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import type { PropsWithChildren, ReactNode } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { Panel } from '../common/Panel'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 
 type DashboardPanelProps = PropsWithChildren<{
   title: string
@@ -11,6 +12,8 @@ type DashboardPanelProps = PropsWithChildren<{
 }>
 
 export const DashboardPanel = ({ title, subtitle, action, children }: DashboardPanelProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   return (
     <Panel style={styles.panel}>
       <View style={styles.header}>
@@ -25,7 +28,7 @@ export const DashboardPanel = ({ title, subtitle, action, children }: DashboardP
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   panel: {
     padding: 16,
   },

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { NavigationContainer, DarkTheme } from '@react-navigation/native'
 import type { NavigatorScreenParams } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
@@ -6,7 +6,8 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native'
 import { useAuth } from '../auth/AuthProvider'
 import { ReferenceDataProvider } from '../contexts/ReferenceDataContext'
 import { usePushNotifications } from '../lib/pushNotifications'
-import { colors } from '../theme/colors'
+import type { ThemeColors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
 import type { ChargeTemplate, Employee, Expense, ExpenseTemplate, PayrollEntry, Property, Schedule, ServiceType, Vendor } from '../types'
 import { AddEmployeeScreen } from '../screens/AddEmployeeScreen'
 import { AddExpenseScreen } from '../screens/AddExpenseScreen'
@@ -76,28 +77,37 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
-const navigationTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: colors.surface,
-    card: colors.surfaceAlt,
-    text: colors.white,
-    border: 'rgba(255,255,255,0.1)',
-    primary: colors.gold500,
-  },
-}
-
-const screenOptions = {
-  headerStyle: { backgroundColor: colors.surfaceAlt },
-  headerTintColor: colors.white,
-  headerShadowVisible: false,
-  headerBackTitle: 'Atrás',
-}
-
 export const RootNavigator = () => {
   const { loading, session } = useAuth()
+  const { colors } = useTheme()
   usePushNotifications(session?.user.id)
+
+  const navigationTheme = useMemo(
+    () => ({
+      ...DarkTheme,
+      colors: {
+        ...DarkTheme.colors,
+        background: colors.surface,
+        card: colors.surfaceAlt,
+        text: colors.white,
+        border: colors.tint10,
+        primary: colors.gold500,
+      },
+    }),
+    [colors],
+  )
+
+  const screenOptions = useMemo(
+    () => ({
+      headerStyle: { backgroundColor: colors.surfaceAlt },
+      headerTintColor: colors.white,
+      headerShadowVisible: false,
+      headerBackTitle: 'Atrás',
+    }),
+    [colors],
+  )
+
+  const styles = useMemo(() => createStyles(colors), [colors])
 
   return (
     <NavigationContainer theme={navigationTheme} ref={navigationRef}>
@@ -220,11 +230,12 @@ export const RootNavigator = () => {
   )
 }
 
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-  },
-})
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    loadingContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surface,
+    },
+  })

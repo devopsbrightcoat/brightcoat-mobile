@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react'
 import WheelPicker from '@quidone/react-native-wheel-picker'
 import { StyleSheet, Text, View } from 'react-native'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 
 type TimePickerProps = {
   label: string
@@ -43,6 +44,8 @@ const parseTime = (value: string) => {
 }
 
 export const TimePicker = ({ label, value, onChange }: TimePickerProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const { hour12, minute, period } = useMemo(() => parseTime(value), [value])
 
   return (
@@ -85,7 +88,7 @@ export const TimePicker = ({ label, value, onChange }: TimePickerProps) => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   wrap: {
     gap: 6,
   },
@@ -100,7 +103,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surface,
     paddingVertical: 2,
   },

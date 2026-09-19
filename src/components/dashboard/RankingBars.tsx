@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 
 type RankingBarsItem = {
   id: string
@@ -17,6 +18,8 @@ type RankingBarsProps = {
 }
 
 export const RankingBars = ({ items, formatValue, color, emptyText, onItemPress }: RankingBarsProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   if (items.length === 0) {
     return <Text style={styles.empty}>{emptyText}</Text>
   }
@@ -58,7 +61,7 @@ export const RankingBars = ({ items, formatValue, color, emptyText, onItemPress 
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   empty: {
     paddingVertical: 20,
     textAlign: 'center',
@@ -90,7 +93,7 @@ const styles = StyleSheet.create({
   track: {
     height: 7,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: colors.tint06,
     overflow: 'hidden',
   },
   fill: {

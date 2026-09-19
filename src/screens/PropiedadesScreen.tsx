@@ -11,12 +11,15 @@ import { useReferenceData } from '../contexts/ReferenceDataContext'
 import { deleteProperty } from '../lib/api'
 import { clientTypeLabels } from '../lib/propertyOptions'
 import type { RootStackParamList } from '../navigation/RootNavigator'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 import type { Property } from '../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
 export const PropiedadesScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const [searchText, setSearchText] = useState('')
   const [deletingProperty, setDeletingProperty] = useState<Property | null>(null)
@@ -139,7 +142,7 @@ export const PropiedadesScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -156,7 +159,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -221,7 +224,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: colors.tint05,
     paddingTop: 8,
   },
   cardMeta: {

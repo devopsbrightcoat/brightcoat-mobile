@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { RouteProp } from '@react-navigation/native'
@@ -9,32 +9,41 @@ import { useReferenceData } from '../contexts/ReferenceDataContext'
 import { updateChargeTemplate } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import type { RootStackParamList } from '../navigation/RootNavigator'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'EditChargeTemplate'>
 type Route = RouteProp<RootStackParamList, 'EditChargeTemplate'>
 
 export const EditChargeTemplateScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const { params } = useRoute<Route>()
   const { template } = params
 
   const [propertyId, setPropertyId] = useState(template.propertyId)
+  const [serviceTypeId, setServiceTypeId] = useState(template.serviceTypeId ?? '')
   const [name, setName] = useState(template.name)
   const [amount, setAmount] = useState(String(template.amount))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const { properties } = useReferenceData()
+  const { properties, serviceTypes } = useReferenceData()
   const propertyOptions = (properties ?? []).map((p) => ({ id: p.id, label: p.name }))
+  const serviceTypeOptions = (serviceTypes ?? []).map((t) => ({ id: t.id, label: t.name }))
 
   const handleSave = async () => {
     if (!propertyId) {
       setError('Selecciona una propiedad.')
       return
     }
+    if (!serviceTypeId) {
+      setError('Selecciona un tipo de servicio.')
+      return
+    }
     if (!name.trim()) {
-      setError('El nombre es obligatorio.')
+      setError('La descripción es obligatoria.')
       return
     }
     const amountValue = Number(amount)
@@ -45,7 +54,7 @@ export const EditChargeTemplateScreen = () => {
     setSaving(true)
     setError(null)
     try {
-      await updateChargeTemplate(template.id, { propertyId, name: name.trim(), amount: amountValue })
+      await updateChargeTemplate(template.id, { propertyId, name: name.trim(), amount: amountValue, serviceTypeId })
       navigation.goBack()
     } catch (err) {
       setError(getErrorMessage(err, 'No se pudo guardar el cobro fijo.'))
@@ -68,7 +77,18 @@ export const EditChargeTemplateScreen = () => {
           />
         </View>
 
-        <FormField label="Servicio" value={name} onChangeText={setName} placeholder="ej. Cuota de administración" />
+        <View style={styles.field}>
+          <Text style={styles.label}>Tipo de servicio</Text>
+          <InlineSelect
+            options={serviceTypeOptions}
+            value={serviceTypeId}
+            onChange={setServiceTypeId}
+            placeholder="Seleccionar servicio…"
+            searchPlaceholder="Buscar…"
+          />
+        </View>
+
+        <FormField label="Descripción" value={name} onChangeText={setName} placeholder="ej. Cuota de administración" />
 
         <FormField label="Monto" value={amount} onChangeText={setAmount} placeholder="0.00" keyboardType="decimal-pad" />
 
@@ -87,7 +107,7 @@ export const EditChargeTemplateScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,

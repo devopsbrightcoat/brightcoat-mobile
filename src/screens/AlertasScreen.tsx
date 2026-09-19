@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native'
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { ScreenHeader } from '../components/common/ScreenHeader'
 import { fetchNotifications, markAllNotificationsRead, markNotificationRead } from '../lib/api'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 import type { AppNotification } from '../types'
 
 const timeAgo = (iso: string): string => {
@@ -17,6 +18,8 @@ const timeAgo = (iso: string): string => {
 }
 
 export const AlertasScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation()
   const [refreshKey, setRefreshKey] = useState(0)
   const [items, setItems] = useState<AppNotification[] | null>(null)
@@ -99,7 +102,7 @@ export const AlertasScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -135,7 +138,7 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     padding: 14,
   },

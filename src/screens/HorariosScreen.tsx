@@ -36,7 +36,8 @@ import {
 } from '../lib/scheduleDates'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
-import { colors } from '../theme/colors'
+import { useTheme } from '../theme/ThemeContext'
+import type { ThemeColors } from '../theme/colors'
 import type { Schedule } from '../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList>
@@ -50,6 +51,8 @@ const screenWidth = Dimensions.get('window').width
 const weekListPadding = Math.max(0, (screenWidth - WEEK_SLOT_WIDTH) / 2)
 
 export const HorariosScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const [refreshKey, setRefreshKey] = useState(0)
 
@@ -291,7 +294,14 @@ export const HorariosScreen = () => {
                           <StatusPill status={row.status} />
                         </TouchableOpacity>
                       </View>
-                      <Text style={styles.cardSubtitle}>{serviceTypeMap.get(row.serviceTypeId) ?? '—'}</Text>
+                      <View style={styles.cardSubtitleRow}>
+                        <Text style={styles.cardSubtitle}>{serviceTypeMap.get(row.serviceTypeId) ?? '—'}</Text>
+                        {row.isFixedCharge ? (
+                          <View style={styles.fixedBadge}>
+                            <Text style={styles.fixedBadgeText}>Fijo</Text>
+                          </View>
+                        ) : null}
+                      </View>
                       <View style={styles.cardFooter}>
                         <Text style={styles.cardMeta}>
                           {employeeMap.get(row.employeeId) ?? '—'}
@@ -373,7 +383,7 @@ export const HorariosScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -395,7 +405,7 @@ const styles = StyleSheet.create({
   monthButton: {
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     padding: 8,
   },
   monthLabel: {
@@ -417,7 +427,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -492,7 +502,7 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
@@ -553,10 +563,28 @@ const styles = StyleSheet.create({
   statusButtonDisabled: {
     opacity: 0.6,
   },
-  cardSubtitle: {
+  cardSubtitleRow: {
     marginTop: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  cardSubtitle: {
     fontSize: 12,
     color: colors.ink400,
+  },
+  fixedBadge: {
+    borderRadius: 999,
+    backgroundColor: `${colors.gold500}1a`,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  fixedBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+    color: colors.gold300,
   },
   cardFooter: {
     marginTop: 10,
@@ -564,7 +592,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: colors.tint05,
     paddingTop: 8,
   },
   cardMeta: {
@@ -583,7 +611,7 @@ const styles = StyleSheet.create({
     gap: 4,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     paddingHorizontal: 8,
     paddingVertical: 5,
   },
@@ -601,7 +629,7 @@ const styles = StyleSheet.create({
     gap: 4,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     paddingHorizontal: 8,
     paddingVertical: 5,
   },

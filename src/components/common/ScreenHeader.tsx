@@ -1,8 +1,9 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Menu } from 'lucide-react-native'
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 
 type ScreenHeaderProps = {
   title: string
@@ -13,6 +14,8 @@ type ScreenHeaderProps = {
 }
 
 export const ScreenHeader = ({ title, subtitle, showLogo = false, onMenuPress, right }: ScreenHeaderProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.container}>
@@ -38,7 +41,7 @@ export const ScreenHeader = ({ title, subtitle, showLogo = false, onMenuPress, r
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   safeArea: {
     backgroundColor: colors.surfaceAlt,
   },
@@ -47,7 +50,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    borderBottomColor: colors.tint10,
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 16,

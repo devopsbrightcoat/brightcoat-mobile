@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Modal } from './Modal'
 import { getErrorMessage } from '../../lib/errors'
-import { colors } from '../../theme/colors'
+import type { ThemeColors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
 
 type ConfirmModalProps = {
   open: boolean
@@ -21,6 +22,8 @@ export const ConfirmModal = ({
   confirmLabel = 'Eliminar',
   onConfirm,
 }: ConfirmModalProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -66,7 +69,7 @@ export const ConfirmModal = ({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   body: {
     gap: 14,
   },
@@ -88,7 +91,7 @@ const styles = StyleSheet.create({
   secondaryButton: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
@@ -107,7 +110,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: 14,
     fontWeight: '700',
-    color: colors.white,
+    color: '#ffffff',
   },
   buttonDisabled: {
     opacity: 0.6,

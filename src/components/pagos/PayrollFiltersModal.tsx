@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity } from 'react-native'
 import { InlineSelect } from '../common/InlineSelect'
 import { Modal } from '../common/Modal'
 import { QuincenaDateFilter } from '../dashboard/QuincenaDateFilter'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 import type { Employee, Property } from '../../types'
 
 type PayrollFiltersModalProps = {
@@ -35,6 +36,8 @@ export const PayrollFiltersModal = ({
   onDateFromChange,
   onDateToChange,
 }: PayrollFiltersModalProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [openField, setOpenField] = useState<string | null>(null)
 
   useEffect(() => {
@@ -87,12 +90,12 @@ export const PayrollFiltersModal = ({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   clearButton: {
     alignItems: 'center',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     paddingVertical: 12,
   },
   clearButtonDisabled: {

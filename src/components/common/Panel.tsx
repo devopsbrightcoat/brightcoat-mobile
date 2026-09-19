@@ -1,22 +1,25 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import type { PropsWithChildren } from 'react'
 import { StyleSheet, View } from 'react-native'
 import type { ViewStyle } from 'react-native'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 
 type PanelProps = PropsWithChildren<{
   style?: ViewStyle
 }>
 
 export const Panel = ({ children, style }: PanelProps) => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   return <View style={[styles.panel, style]}>{children}</View>
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   panel: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
   },
 })

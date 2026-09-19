@@ -18,6 +18,7 @@ import { useAuth } from '../auth/AuthProvider'
 import type { ProfileRole } from '../auth/AuthProvider'
 import { useUnreadNotificationsCount } from '../lib/useUnreadNotificationsCount'
 import { colors } from '../theme/colors'
+import { ThemeToggle } from '../components/common/ThemeToggle'
 import type { DrawerParamList } from './DrawerNavigator'
 
 const roleLabel: Record<ProfileRole, string> = {
@@ -79,6 +80,7 @@ export const DrawerContent = (props: DrawerContentComponentProps) => {
       </View>
 
       <View style={styles.footer}>
+        <ThemeToggle />
         <View style={styles.userRow}>
           <View style={styles.userTextGroup}>
             <Text style={styles.userName} numberOfLines={1}>
@@ -169,6 +171,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     padding: 12,
+    gap: 6,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.08)',
   },

@@ -18,32 +18,39 @@ import {
 } from '../../lib/dashboardMetrics'
 import { currency } from '../../lib/format'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 
 const screenWidth = Dimensions.get('window').width
 const COLOR_ORANGE = '#d95926'
 
 const percent = (value: number) => `${value.toFixed(1)}%`
 
-const lineChartConfig = {
-  backgroundGradientFrom: colors.surfaceAlt,
-  backgroundGradientTo: colors.surfaceAlt,
-  decimalPlaces: 2,
-  color: () => COLOR_ORANGE,
-  labelColor: () => colors.ink400,
-  propsForDots: { r: '0' },
-}
-
-const barChartConfig = {
-  backgroundGradientFrom: colors.surfaceAlt,
-  backgroundGradientTo: colors.surfaceAlt,
-  decimalPlaces: 2,
-  color: () => COLOR_ORANGE,
-  labelColor: () => colors.ink400,
-  barPercentage: 0.6,
-}
-
 export const ReportesGastosScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+  const lineChartConfig = useMemo(
+    () => ({
+      backgroundGradientFrom: colors.surfaceAlt,
+      backgroundGradientTo: colors.surfaceAlt,
+      decimalPlaces: 2,
+      color: () => COLOR_ORANGE,
+      labelColor: () => colors.ink400,
+      propsForDots: { r: '0' },
+    }),
+    [colors],
+  )
+  const barChartConfig = useMemo(
+    () => ({
+      backgroundGradientFrom: colors.surfaceAlt,
+      backgroundGradientTo: colors.surfaceAlt,
+      decimalPlaces: 2,
+      color: () => COLOR_ORANGE,
+      labelColor: () => colors.ink400,
+      barPercentage: 0.6,
+    }),
+    [colors],
+  )
   const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
   const [granularity, setGranularity] = useState<RevenuePeriodGranularity>('day')
 
@@ -172,7 +179,7 @@ export const ReportesGastosScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
   scroll: { paddingBottom: 32 },

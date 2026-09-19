@@ -4,7 +4,8 @@ import { Check, ChevronDown, ChevronUp, X } from 'lucide-react-native'
 import DropDownPicker from 'react-native-dropdown-picker'
 import { Dimensions, StyleSheet } from 'react-native'
 import type { StyleProp, ViewStyle } from 'react-native'
-import { colors } from '../../theme/colors'
+import type { ThemeColors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
 
 type Option = {
   id: string
@@ -20,16 +21,24 @@ const DEFAULT_MAX_LIST_HEIGHT = Math.round(Dimensions.get('window').height * 0.5
 // Íconos definidos fuera del componente — si se declaran inline en cada
 // render, React los trata como un tipo de componente nuevo en cada render
 // (ver react/no-unstable-nested-components) y además desmonta/remonta la UI.
-const ArrowDownIcon = ({ style }: { style: StyleProp<ViewStyle> }) => (
-  <ChevronDown size={16} color={colors.ink400} style={style} />
-)
-const ArrowUpIcon = ({ style }: { style: StyleProp<ViewStyle> }) => (
-  <ChevronUp size={16} color={colors.ink400} style={style} />
-)
-const TickIcon = ({ style }: { style: StyleProp<ViewStyle> }) => (
-  <Check size={16} color={colors.gold400} style={style} />
-)
-const CloseIcon = ({ style }: { style: StyleProp<ViewStyle> }) => <X size={20} color={colors.ink300} style={style} />
+// Cada uno lee el tema con su propio useTheme() (siguen siendo componentes
+// estables — el hook interno no rompe esa identidad referencial).
+const ArrowDownIcon = ({ style }: { style: StyleProp<ViewStyle> }) => {
+  const { colors } = useTheme()
+  return <ChevronDown size={16} color={colors.ink400} style={style} />
+}
+const ArrowUpIcon = ({ style }: { style: StyleProp<ViewStyle> }) => {
+  const { colors } = useTheme()
+  return <ChevronUp size={16} color={colors.ink400} style={style} />
+}
+const TickIcon = ({ style }: { style: StyleProp<ViewStyle> }) => {
+  const { colors } = useTheme()
+  return <Check size={16} color={colors.gold400} style={style} />
+}
+const CloseIcon = ({ style }: { style: StyleProp<ViewStyle> }) => {
+  const { colors } = useTheme()
+  return <X size={20} color={colors.ink300} style={style} />
+}
 
 type InlineSelectProps = {
   options: Option[]
@@ -54,6 +63,8 @@ export const InlineSelect = ({
   open: openProp,
   onOpenChange,
 }: InlineSelectProps) => {
+  const { colors, scheme } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
   const isControlled = openProp !== undefined
   const open = isControlled ? (openProp as boolean) : uncontrolledOpen
@@ -92,7 +103,7 @@ export const InlineSelect = ({
       value={value || null}
       setValue={handleSetValue}
       listMode="MODAL"
-      theme="DARK"
+      theme={scheme === 'light' ? 'LIGHT' : 'DARK'}
       modalAnimationType="slide"
       modalProps={{ transparent: true, statusBarTranslucent: true }}
       searchable
@@ -120,11 +131,11 @@ export const InlineSelect = ({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   field: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     minHeight: 0,
     paddingHorizontal: 14,
@@ -168,7 +179,7 @@ const styles = StyleSheet.create({
     color: colors.white,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -178,7 +189,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     height: undefined,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: colors.tint05,
   },
   listItemLabel: {
     fontSize: 14,

@@ -23,32 +23,33 @@ import {
 } from '../../lib/dashboardMetrics'
 import { currency } from '../../lib/format'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
-import { colors } from '../../theme/colors'
+import { useTheme } from '../../theme/ThemeContext'
+import type { ThemeColors } from '../../theme/colors'
 
 const screenWidth = Dimensions.get('window').width
 
-const COLOR_GOLD = colors.gold400
+const COLOR_GOLD = '#e3a730'
 const COLOR_BLUE = '#3987e5'
 const COLOR_ORANGE = '#d95926'
 const COLOR_AQUA = '#199e70'
 
 const percent = (value: number) => `${value.toFixed(1)}%`
 
-const chartConfig = {
-  backgroundGradientFrom: colors.surfaceAlt,
-  backgroundGradientTo: colors.surfaceAlt,
-  decimalPlaces: 2,
-  color: () => colors.gold500,
-  labelColor: () => colors.ink400,
-  propsForDots: { r: '0' },
-}
-
-const compareChartConfig = {
-  ...chartConfig,
-  color: () => colors.ink400,
-}
-
 export const ReportesFinancieroScreen = () => {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+  const chartConfig = useMemo(
+    () => ({
+      backgroundGradientFrom: colors.surfaceAlt,
+      backgroundGradientTo: colors.surfaceAlt,
+      decimalPlaces: 2,
+      color: () => colors.gold500,
+      labelColor: () => colors.ink400,
+      propsForDots: { r: '0' },
+    }),
+    [colors],
+  )
+  const compareChartConfig = useMemo(() => ({ ...chartConfig, color: () => colors.ink400 }), [chartConfig, colors])
   const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
   const [periodGranularity, setPeriodGranularity] = useState<RevenuePeriodGranularity>('day')
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
@@ -309,7 +310,7 @@ export const ReportesFinancieroScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
   scroll: { paddingBottom: 32 },
@@ -347,7 +348,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: colors.tint05,
     paddingTop: 8,
   },
   cardMeta: { marginTop: 6, fontSize: 11, color: colors.ink500 },
