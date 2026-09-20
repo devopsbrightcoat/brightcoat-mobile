@@ -1,14 +1,15 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Filter, Plus, Search, Trash2, TrendingUp, Wallet } from 'lucide-react-native'
+import { ChevronLeft, Plus, Search, Trash2, TrendingUp, Wallet } from 'lucide-react-native'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { ScreenHeader } from '../components/common/ScreenHeader'
 import { ConfirmModal } from '../components/common/ConfirmModal'
-import { PayrollEntryDetailModal } from '../components/pagos/PayrollEntryDetailModal'
-import { PayrollFiltersModal } from '../components/pagos/PayrollFiltersModal'
 import { Panel } from '../components/common/Panel'
 import { StatCard } from '../components/common/StatCard'
+import { StatusPill } from '../components/common/StatusPill'
+import { QuincenaDateFilter } from '../components/dashboard/QuincenaDateFilter'
+import { PayrollEntryDetailModal } from '../components/pagos/PayrollEntryDetailModal'
 import { useReferenceData } from '../contexts/ReferenceDataContext'
 import { deletePayrollEntry, fetchPayrollEntries } from '../lib/api'
 import { formatFullDate } from '../lib/scheduleDates'
@@ -18,20 +19,22 @@ import { useSupabaseQuery } from '../lib/useSupabaseQuery'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import { useTheme } from '../theme/ThemeContext'
 import type { ThemeColors } from '../theme/colors'
-import type { PayrollEntry } from '../types'
+import type { Employee, PayrollEntry } from '../types'
 
 type Nav = NativeStackNavigationProp<RootStackParamList>
+
+type EmployeeStats = { count: number; sales: number; profit: number; pendingCount: number }
 
 export const PlanillasScreen = () => {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const [refreshKey, setRefreshKey] = useState(0)
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null)
+  const [employeeSearchText, setEmployeeSearchText] = useState('')
   const [searchText, setSearchText] = useState('')
-  const [employeeId, setEmployeeId] = useState('all')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
-  const [filtersOpen, setFiltersOpen] = useState(false)
   const [detailEntry, setDetailEntry] = useState<PayrollEntry | null>(null)
   const [deletingEntry, setDeletingEntry] = useState<PayrollEntry | null>(null)
 
@@ -58,6 +61,7 @@ export const PlanillasScreen = () => {
 
   const propertyMap = useMemo(() => new Map((properties ?? []).map((p) => [p.id, p.name])), [properties])
   const employeeMap = useMemo(() => new Map((employees ?? []).map((e) => [e.id, e.name])), [employees])
+  const selectedEmployee = (employees ?? []).find((e) => e.id === selectedEmployeeId) ?? null
 
   useFocusEffect(
     useCallback(() => {
@@ -65,21 +69,40 @@ export const PlanillasScreen = () => {
     }, []),
   )
 
+  const employeeStats = useMemo(() => {
+    const map = new Map<string, EmployeeStats>()
+    for (const entry of entries ?? []) {
+      const sales = entry.items.reduce((sum, item) => sum + item.amount, 0)
+      const current = map.get(entry.employeeId) ?? { count: 0, sales: 0, profit: 0, pendingCount: 0 }
+      current.count += 1
+      current.sales += sales
+      if (entry.amount == null) current.pendingCount += 1
+      else current.profit += entry.amount - sales
+      map.set(entry.employeeId, current)
+    }
+    return map
+  }, [entries])
+
+  const employeeCards = useMemo(() => {
+    const q = employeeSearchText.trim().toLowerCase()
+    return (employees ?? [])
+      .filter((e) => !q || e.name.toLowerCase().includes(q))
+      .map((employee) => ({ employee, stats: employeeStats.get(employee.id) }))
+  }, [employees, employeeSearchText, employeeStats])
+
   const filtered = useMemo(() => {
+    if (!selectedEmployeeId) return []
     const q = searchText.trim().toLowerCase()
     return (entries ?? []).filter((entry) => {
-      if (employeeId !== 'all' && entry.employeeId !== employeeId) return false
+      if (entry.employeeId !== selectedEmployeeId) return false
       if (q) {
         const propertyName = propertyMap.get(entry.propertyId) ?? ''
-        const employeeName = employeeMap.get(entry.employeeId) ?? ''
-        const haystack = [propertyName, entry.unitLabel, employeeName, entry.serviceName].filter(Boolean).join(' ').toLowerCase()
+        const haystack = [propertyName, entry.unitLabel, entry.serviceName].filter(Boolean).join(' ').toLowerCase()
         if (!haystack.includes(q)) return false
       }
       return true
     })
-  }, [entries, propertyMap, employeeMap, employeeId, searchText])
-
-  const activeFilterCount = (employeeId !== 'all' ? 1 : 0) + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0)
+  }, [entries, propertyMap, selectedEmployeeId, searchText])
 
   const totals = useMemo(() => {
     let sales = 0
@@ -98,6 +121,42 @@ export const PlanillasScreen = () => {
     refetchEntries()
     refetchProperties()
     refetchEmployees()
+  }
+
+  const renderEmployeeCard = ({ item }: { item: { employee: Employee; stats: EmployeeStats | undefined } }) => {
+    const { employee, stats } = item
+    return (
+      <TouchableOpacity activeOpacity={0.75} onPress={() => setSelectedEmployeeId(employee.id)}>
+        <Panel style={styles.employeeCard}>
+          <View style={styles.employeeCardHeader}>
+            <View style={styles.employeeCardHeaderText}>
+              <Text style={styles.cardTitle} numberOfLines={1}>
+                {employee.name}
+              </Text>
+              <Text style={styles.cardSubtitle} numberOfLines={1}>
+                {employee.role}
+              </Text>
+            </View>
+            <StatusPill status={employee.status} />
+          </View>
+          <View style={styles.employeeCardStats}>
+            <View>
+              <Text style={styles.statLabel}>Planillas</Text>
+              <Text style={styles.statValue}>{stats?.count ?? 0}</Text>
+            </View>
+            <View>
+              <Text style={styles.statLabel}>Pago</Text>
+              <Text style={styles.statValueGood}>{currency(stats?.sales ?? 0)}</Text>
+            </View>
+          </View>
+          {stats && stats.pendingCount > 0 ? (
+            <Text style={styles.pendingBadge}>
+              {stats.pendingCount} {stats.pendingCount === 1 ? 'planilla pendiente' : 'planillas pendientes'} de cobro
+            </Text>
+          ) : null}
+        </Panel>
+      </TouchableOpacity>
+    )
   }
 
   const renderItem = ({ item }: { item: PayrollEntry }) => {
@@ -165,59 +224,100 @@ export const PlanillasScreen = () => {
         }
       />
 
-      <View style={styles.statsGrid}>
-        <StatCard label="Pago" value={currency(totals.sales)} icon={TrendingUp} tone="good" size="compact" />
-        <StatCard label="Ganancia" value={currency(totals.profit)} icon={Wallet} size="compact" />
+      <View style={styles.filterWrap}>
+        <Panel style={styles.filterPanel}>
+          <QuincenaDateFilter dateFrom={dateFrom} dateTo={dateTo} onDateFromChange={setDateFrom} onDateToChange={setDateTo} />
+        </Panel>
       </View>
 
-      <View style={styles.searchRow}>
-        <View style={styles.searchBox}>
-          <Search size={16} color={colors.ink500} />
-          <TextInput
-            value={searchText}
-            onChangeText={setSearchText}
-            placeholder="Buscar…"
-            placeholderTextColor={colors.ink500}
-            style={styles.searchInput}
-            autoCorrect={false}
-          />
-        </View>
-        <TouchableOpacity style={styles.filtersButton} activeOpacity={0.7} onPress={() => setFiltersOpen(true)}>
-          <Filter size={14} color={colors.ink300} />
-          <Text style={styles.filtersButtonText}>Filtros</Text>
-          {activeFilterCount > 0 ? (
-            <View style={styles.filtersBadge}>
-              <Text style={styles.filtersBadgeText}>{activeFilterCount}</Text>
+      {selectedEmployeeId === null ? (
+        <>
+          <View style={styles.searchBox}>
+            <Search size={16} color={colors.ink500} />
+            <TextInput
+              value={employeeSearchText}
+              onChangeText={setEmployeeSearchText}
+              placeholder="Buscar empleado por nombre…"
+              placeholderTextColor={colors.ink500}
+              style={styles.searchInput}
+              autoCorrect={false}
+            />
+          </View>
+
+          {loadingEmployees ? (
+            <View style={styles.centered}>
+              <ActivityIndicator color={colors.gold400} />
             </View>
-          ) : null}
-        </TouchableOpacity>
-      </View>
-
-      {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator color={colors.gold400} />
-        </View>
-      ) : error ? (
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>No se pudieron cargar las planillas: {error}</Text>
-        </View>
+          ) : (
+            <FlatList
+              data={employeeCards}
+              keyExtractor={(item) => item.employee.id}
+              renderItem={renderEmployeeCard}
+              contentContainerStyle={styles.list}
+              refreshControl={
+                <RefreshControl refreshing={refreshingEmployees} onRefresh={refetchEmployees} tintColor={colors.gold400} colors={[colors.gold400]} />
+              }
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>
+                  {employeeSearchText ? `Ningún empleado coincide con "${employeeSearchText}".` : 'Todavía no hay empleados registrados.'}
+                </Text>
+              }
+            />
+          )}
+        </>
       ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.list}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.gold400} colors={[colors.gold400]} />
-          }
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>
-              {activeFilterCount > 0 || searchText
-                ? 'No hay planillas con estos filtros.'
-                : 'Todavía no hay planillas registradas.'}
-            </Text>
-          }
-        />
+        <>
+          <TouchableOpacity style={styles.backRow} activeOpacity={0.7} onPress={() => setSelectedEmployeeId(null)}>
+            <ChevronLeft size={16} color={colors.ink300} />
+            <Text style={styles.backText}>Empleados</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.employeeHeading} numberOfLines={1}>
+            {selectedEmployee ? `${selectedEmployee.name} — ${selectedEmployee.role}` : ''}
+          </Text>
+
+          <View style={styles.statsGrid}>
+            <StatCard label="Pago" value={currency(totals.sales)} icon={TrendingUp} tone="good" size="compact" />
+            <StatCard label="Ganancia" value={currency(totals.profit)} icon={Wallet} size="compact" />
+          </View>
+
+          <View style={styles.searchBox}>
+            <Search size={16} color={colors.ink500} />
+            <TextInput
+              value={searchText}
+              onChangeText={setSearchText}
+              placeholder="Buscar…"
+              placeholderTextColor={colors.ink500}
+              style={styles.searchInput}
+              autoCorrect={false}
+            />
+          </View>
+
+          {loading ? (
+            <View style={styles.centered}>
+              <ActivityIndicator color={colors.gold400} />
+            </View>
+          ) : error ? (
+            <View style={styles.centered}>
+              <Text style={styles.errorText}>No se pudieron cargar las planillas: {error}</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={filtered}
+              keyExtractor={(item) => item.id}
+              renderItem={renderItem}
+              contentContainerStyle={styles.list}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.gold400} colors={[colors.gold400]} />
+              }
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>
+                  {searchText ? 'No hay planillas con estos filtros.' : 'Todavía no hay planillas registradas para este empleado.'}
+                </Text>
+              }
+            />
+          )}
+        </>
       )}
 
       <PayrollEntryDetailModal
@@ -250,18 +350,6 @@ export const PlanillasScreen = () => {
           setRefreshKey((k) => k + 1)
         }}
       />
-
-      <PayrollFiltersModal
-        open={filtersOpen}
-        onClose={() => setFiltersOpen(false)}
-        employees={employees ?? []}
-        employeeId={employeeId}
-        dateFrom={dateFrom}
-        dateTo={dateTo}
-        onEmployeeChange={setEmployeeId}
-        onDateFromChange={setDateFrom}
-        onDateToChange={setDateTo}
-      />
     </View>
   )
 }
@@ -275,11 +363,36 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 2,
   },
+  filterWrap: {
+    paddingHorizontal: 20,
+    paddingTop: 14,
+  },
+  filterPanel: {
+    padding: 14,
+  },
   statsGrid: {
     flexDirection: 'row',
     gap: 8,
     paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  backRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 20,
     paddingTop: 14,
+  },
+  backText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.ink300,
+  },
+  employeeHeading: {
+    marginTop: 4,
+    paddingHorizontal: 20,
+    fontSize: 12,
+    color: colors.ink500,
   },
   searchRow: {
     flexDirection: 'row',
@@ -289,10 +402,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingTop: 10,
   },
   searchBox: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    marginHorizontal: 20,
+    marginTop: 10,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.tint10,
@@ -305,35 +419,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 14,
     color: colors.white,
     padding: 0,
-  },
-  filtersButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.tint10,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-  },
-  filtersButtonText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: colors.ink300,
-  },
-  filtersBadge: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.gold500,
-    paddingHorizontal: 4,
-  },
-  filtersBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.brand900,
   },
   centered: {
     flex: 1,
@@ -352,6 +437,49 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 32,
     gap: 10,
+  },
+  employeeCard: {
+    padding: 14,
+    marginBottom: 10,
+  },
+  employeeCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  employeeCardHeaderText: {
+    flex: 1,
+  },
+  employeeCardStats: {
+    marginTop: 12,
+    flexDirection: 'row',
+    gap: 24,
+    borderTopWidth: 1,
+    borderTopColor: colors.tint05,
+    paddingTop: 10,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: colors.ink500,
+  },
+  statValue: {
+    marginTop: 2,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.white,
+  },
+  statValueGood: {
+    marginTop: 2,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.emerald,
+  },
+  pendingBadge: {
+    marginTop: 8,
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.amber,
   },
   card: {
     padding: 14,
