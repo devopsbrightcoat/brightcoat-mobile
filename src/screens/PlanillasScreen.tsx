@@ -1,10 +1,11 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { ChevronLeft, Plus, Search, Trash2, TrendingUp, Wallet } from 'lucide-react-native'
+import { CalendarDays, ChevronLeft, Plus, Search, Trash2, TrendingUp, Wallet } from 'lucide-react-native'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { ScreenHeader } from '../components/common/ScreenHeader'
 import { ConfirmModal } from '../components/common/ConfirmModal'
+import { Modal } from '../components/common/Modal'
 import { Panel } from '../components/common/Panel'
 import { StatCard } from '../components/common/StatCard'
 import { StatusPill } from '../components/common/StatusPill'
@@ -12,7 +13,7 @@ import { QuincenaDateFilter } from '../components/dashboard/QuincenaDateFilter'
 import { PayrollEntryDetailModal } from '../components/pagos/PayrollEntryDetailModal'
 import { useReferenceData } from '../contexts/ReferenceDataContext'
 import { deletePayrollEntry, fetchPayrollEntries } from '../lib/api'
-import { formatFullDate } from '../lib/scheduleDates'
+import { formatFullDate, MONTH_NAMES } from '../lib/scheduleDates'
 import { currency } from '../lib/format'
 import { taxOnAmount, SALES_TAX_RATE } from '../lib/tax'
 import { useSupabaseQuery } from '../lib/useSupabaseQuery'
@@ -25,6 +26,11 @@ type Nav = NativeStackNavigationProp<RootStackParamList>
 
 type EmployeeStats = { count: number; sales: number; profit: number; pendingCount: number }
 
+const shortDateLabel = (iso: string) => {
+  const date = new Date(`${iso}T00:00:00`)
+  return `${date.getDate()} ${MONTH_NAMES[date.getMonth()].slice(0, 3)}`
+}
+
 export const PlanillasScreen = () => {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
@@ -35,6 +41,7 @@ export const PlanillasScreen = () => {
   const [searchText, setSearchText] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [dateFilterOpen, setDateFilterOpen] = useState(false)
   const [detailEntry, setDetailEntry] = useState<PayrollEntry | null>(null)
   const [deletingEntry, setDeletingEntry] = useState<PayrollEntry | null>(null)
 
@@ -62,6 +69,16 @@ export const PlanillasScreen = () => {
   const propertyMap = useMemo(() => new Map((properties ?? []).map((p) => [p.id, p.name])), [properties])
   const employeeMap = useMemo(() => new Map((employees ?? []).map((e) => [e.id, e.name])), [employees])
   const selectedEmployee = (employees ?? []).find((e) => e.id === selectedEmployeeId) ?? null
+
+  const hasDateFilter = Boolean(dateFrom) || Boolean(dateTo)
+  const dateRangeLabel =
+    dateFrom && dateTo
+      ? `${shortDateLabel(dateFrom)} – ${shortDateLabel(dateTo)}`
+      : dateFrom
+        ? `Desde ${shortDateLabel(dateFrom)}`
+        : dateTo
+          ? `Hasta ${shortDateLabel(dateTo)}`
+          : 'Todas las fechas'
 
   useFocusEffect(
     useCallback(() => {
@@ -224,24 +241,25 @@ export const PlanillasScreen = () => {
         }
       />
 
-      <View style={styles.filterWrap}>
-        <Panel style={styles.filterPanel}>
-          <QuincenaDateFilter dateFrom={dateFrom} dateTo={dateTo} onDateFromChange={setDateFrom} onDateToChange={setDateTo} />
-        </Panel>
-      </View>
-
       {selectedEmployeeId === null ? (
         <>
-          <View style={styles.searchBox}>
-            <Search size={16} color={colors.ink500} />
-            <TextInput
-              value={employeeSearchText}
-              onChangeText={setEmployeeSearchText}
-              placeholder="Buscar empleado por nombre…"
-              placeholderTextColor={colors.ink500}
-              style={styles.searchInput}
-              autoCorrect={false}
-            />
+          <View style={styles.searchRow}>
+            <View style={styles.searchBox}>
+              <Search size={16} color={colors.ink500} />
+              <TextInput
+                value={employeeSearchText}
+                onChangeText={setEmployeeSearchText}
+                placeholder="Buscar empleado por nombre…"
+                placeholderTextColor={colors.ink500}
+                style={styles.searchInput}
+                autoCorrect={false}
+              />
+            </View>
+
+            <TouchableOpacity style={styles.dateButton} activeOpacity={0.7} onPress={() => setDateFilterOpen(true)}>
+              <CalendarDays size={14} color={colors.ink300} />
+              <Text style={styles.dateButtonText}>{dateRangeLabel}</Text>
+            </TouchableOpacity>
           </View>
 
           {loadingEmployees ? (
@@ -281,16 +299,23 @@ export const PlanillasScreen = () => {
             <StatCard label="Ganancia" value={currency(totals.profit)} icon={Wallet} size="compact" />
           </View>
 
-          <View style={styles.searchBox}>
-            <Search size={16} color={colors.ink500} />
-            <TextInput
-              value={searchText}
-              onChangeText={setSearchText}
-              placeholder="Buscar…"
-              placeholderTextColor={colors.ink500}
-              style={styles.searchInput}
-              autoCorrect={false}
-            />
+          <View style={styles.searchRow}>
+            <View style={styles.searchBox}>
+              <Search size={16} color={colors.ink500} />
+              <TextInput
+                value={searchText}
+                onChangeText={setSearchText}
+                placeholder="Buscar…"
+                placeholderTextColor={colors.ink500}
+                style={styles.searchInput}
+                autoCorrect={false}
+              />
+            </View>
+
+            <TouchableOpacity style={styles.dateButton} activeOpacity={0.7} onPress={() => setDateFilterOpen(true)}>
+              <CalendarDays size={14} color={colors.ink300} />
+              <Text style={styles.dateButtonText}>{dateRangeLabel}</Text>
+            </TouchableOpacity>
           </View>
 
           {loading ? (
@@ -319,6 +344,22 @@ export const PlanillasScreen = () => {
           )}
         </>
       )}
+
+      <Modal open={dateFilterOpen} onClose={() => setDateFilterOpen(false)} title="Quincena" minHeight="55%">
+        <QuincenaDateFilter dateFrom={dateFrom} dateTo={dateTo} onDateFromChange={setDateFrom} onDateToChange={setDateTo} />
+
+        <TouchableOpacity
+          style={[styles.clearButton, !hasDateFilter && styles.clearButtonDisabled]}
+          activeOpacity={0.7}
+          disabled={!hasDateFilter}
+          onPress={() => {
+            setDateFrom('')
+            setDateTo('')
+          }}
+        >
+          <Text style={[styles.clearButtonText, !hasDateFilter && styles.clearButtonTextDisabled]}>Limpiar filtro</Text>
+        </TouchableOpacity>
+      </Modal>
 
       <PayrollEntryDetailModal
         entry={detailEntry}
@@ -363,12 +404,39 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 2,
   },
-  filterWrap: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
+  dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.tint10,
+    backgroundColor: colors.surfaceAlt,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  filterPanel: {
-    padding: 14,
+  dateButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.ink300,
+  },
+  clearButton: {
+    alignItems: 'center',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.tint10,
+    paddingVertical: 12,
+  },
+  clearButtonDisabled: {
+    opacity: 0.4,
+  },
+  clearButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.ink300,
+  },
+  clearButtonTextDisabled: {
+    color: colors.ink500,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -402,11 +470,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingTop: 10,
   },
   searchBox: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginHorizontal: 20,
-    marginTop: 10,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.tint10,

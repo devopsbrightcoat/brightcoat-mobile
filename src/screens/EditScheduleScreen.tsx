@@ -127,7 +127,7 @@ export const EditScheduleScreen = () => {
               <View style={styles.checkboxTextGroup}>
                 <Text style={styles.checkboxLabel}>Servicio de cobro fijo</Text>
                 <Text style={styles.checkboxHint}>
-                  Se cobra por un monto fijo recurrente (ej. limpieza de oficina mensual) — al marcarlo "Entregado" se marca directo, sin pedir costo ni crear un cobro. No lleva unidad — se guarda como "N/A".
+                  Se cobra por un monto fijo recurrente (ej. limpieza de oficina mensual)∂. No lleva unidad — se guarda como "N/A".
                 </Text>
               </View>
             </TouchableOpacity>
