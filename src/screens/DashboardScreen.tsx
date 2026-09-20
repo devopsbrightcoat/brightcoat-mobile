@@ -71,13 +71,24 @@ export const DashboardScreen = () => {
     () => ({
       backgroundGradientFrom: colors.surfaceAlt,
       backgroundGradientTo: colors.surfaceAlt,
-      decimalPlaces: 2,
+      decimalPlaces: 0,
       color: () => colors.ink400,
       labelColor: () => colors.ink400,
       propsForDots: { r: '0' },
     }),
     [colors],
   )
+  // Los montos del eje Y pueden llegar a 5 cifras (ej. "28534.03") — en una
+  // pantalla angosta esa etiqueta completa no cabe en el espacio reservado a
+  // la izquierda del gráfico y termina recortada. Se abrevia a formato
+  // "28.5k" para que siempre quepa. Nota: esto es una prop directa de
+  // LineChart, no va dentro de chartConfig (chart-kit no la lee de ahí).
+  const formatYAxisLabel = (yLabel: string) => {
+    const value = Number(yLabel)
+    if (Number.isNaN(value)) return yLabel
+    if (Math.abs(value) < 1000) return String(Math.round(value))
+    return `${(value / 1000).toFixed(1)}k`
+  }
   const navigation = useNavigation()
   const [rangeSelection, setRangeSelection] = useState<DashboardDateRangeSelection>({ kind: 'preset', key: 'this_month' })
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
@@ -257,17 +268,18 @@ export const DashboardScreen = () => {
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
           <View style={styles.statsGrid}>
-            <StatCard label="Ingresos" value={currency(kpis.revenue)} icon={DollarSign} hint={revenueHint} size="compact" />
-            <StatCard label="Cobrado" value={currency(kpis.collected)} icon={Wallet} tone="good" size="compact" />
-            <StatCard label="Pendiente" value={currency(kpis.outstanding)} icon={Clock} tone="warn" size="compact" />
-            <StatCard label="Pago a empleados" value={currency(kpis.laborCost)} icon={Banknote} size="compact" />
-            <StatCard label="Gastos" value={currency(kpis.expenses)} icon={TrendingDown} size="compact" />
+            <StatCard label="Ingresos" value={currency(kpis.revenue)} icon={DollarSign} hint={revenueHint} size="compact" style={styles.statCard} />
+            <StatCard label="Cobrado" value={currency(kpis.collected)} icon={Wallet} tone="good" size="compact" style={styles.statCard} />
+            <StatCard label="Pendiente" value={currency(kpis.outstanding)} icon={Clock} tone="warn" size="compact" style={styles.statCard} />
+            <StatCard label="Pago a empleados" value={currency(kpis.laborCost)} icon={Banknote} size="compact" style={styles.statCard} />
+            <StatCard label="Gastos" value={currency(kpis.expenses)} icon={TrendingDown} size="compact" style={styles.statCard} />
             <StatCard
               label="Ganancia estimada"
               value={currency(kpis.estimatedProfit)}
               icon={TrendingUp}
               tone={kpis.estimatedProfit >= 0 ? 'good' : 'warn'}
               size="compact"
+              style={styles.statCard}
             />
             <StatCard
               label="Margen"
@@ -275,6 +287,7 @@ export const DashboardScreen = () => {
               icon={Percent}
               tone={kpis.profitMargin == null ? 'default' : kpis.profitMargin < 15 ? 'warn' : 'good'}
               size="compact"
+              style={styles.statCard}
             />
           </View>
 
@@ -289,6 +302,7 @@ export const DashboardScreen = () => {
                 withShadow={false}
                 bezier
                 chartConfig={chartConfig}
+                formatYLabel={formatYAxisLabel}
                 style={styles.chart}
               />
             </DashboardPanel>
@@ -303,6 +317,7 @@ export const DashboardScreen = () => {
                 withShadow={false}
                 bezier
                 chartConfig={chartConfig}
+                formatYLabel={formatYAxisLabel}
                 style={styles.chart}
               />
             </DashboardPanel>
@@ -477,6 +492,16 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
   },
+  // El tamaño "compact" de StatCard no trae mínimo de ancho (pensado para
+  // filas de 2-3 tarjetas, ej. Cobros/Impuestos, donde no hace falta forzar
+  // el salto de línea). Acá son 7 tarjetas — sin este mínimo, flexWrap las
+  // encoge a todas en una sola fila hasta volverlas ilegibles (el valor
+  // completo termina truncado a algo como "$..."). Este 46% reproduce el
+  // mismo ancho mínimo que ya usa el tamaño "default" en otras pantallas
+  // (ver ReportesFinancieroScreen) para forzar 2 tarjetas por fila.
+  statCard: {
+    minWidth: '46%',
+  },
   panelsGroup: {
     gap: 16,
     paddingHorizontal: 20,
@@ -484,7 +509,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   chart: {
     marginTop: 4,
-    marginLeft: -16,
+    // Antes -16 (igual al padding del Panel) dejaba las etiquetas del eje Y
+    // pegadas al borde del panel, sin colchón — con las etiquetas ya
+    // abreviadas (formatYLabel) esto ya no debería recortarse, pero se deja
+    // un poco de aire de todas formas.
+    marginLeft: -8,
     borderRadius: 8,
   },
   emptyText: {

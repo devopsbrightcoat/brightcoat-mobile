@@ -1,17 +1,24 @@
 import { useMemo, useState } from 'react'
-import { Search } from 'lucide-react-native'
+import { CalendarDays, Search } from 'lucide-react-native'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { DatePicker } from '../common/DatePicker'
+import { Modal } from '../common/Modal'
 import { SegmentedField } from '../common/SegmentedField'
 import { QuincenaPicker } from './QuincenaPicker'
 import type { DateRange } from '../../lib/dashboardMetrics'
 import { getQuincenaForDate, getQuincenaRange, type QuincenaKey } from '../../lib/quincena'
+import { MONTH_NAMES } from '../../lib/scheduleDates'
 import { useTheme } from '../../theme/ThemeContext'
 import type { ThemeColors } from '../../theme/colors'
 
 type ReportDateRangeBarProps = {
   onGenerate: (range: DateRange) => void
   generated: boolean
+}
+
+const shortDateLabel = (iso: string) => {
+  const date = new Date(`${iso}T00:00:00`)
+  return `${date.getDate()} ${MONTH_NAMES[date.getMonth()].slice(0, 3)}`
 }
 
 export const ReportDateRangeBar = ({ onGenerate, generated }: ReportDateRangeBarProps) => {
@@ -21,6 +28,11 @@ export const ReportDateRangeBar = ({ onGenerate, generated }: ReportDateRangeBar
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [quincena, setQuincena] = useState<QuincenaKey>(() => getQuincenaForDate())
+  // Antes del primer "Generar reporte" el formulario va siempre expandido
+  // (no hay nada que enfocar todavía). Una vez generado el reporte, se
+  // colapsa detrás de un botón compacto — igual que el resto de filtros de
+  // la app — para dejarle todo el espacio a la respuesta del reporte.
+  const [panelOpen, setPanelOpen] = useState(false)
 
   const invalidOrder = !!from && !!to && from > to
   const canGenerate = !!from && !!to && !invalidOrder
@@ -41,8 +53,15 @@ export const ReportDateRangeBar = ({ onGenerate, generated }: ReportDateRangeBar
     setTo(range.end)
   }
 
-  return (
-    <View style={styles.wrap}>
+  const handleGenerate = () => {
+    onGenerate({ start: from, end: to })
+    setPanelOpen(false)
+  }
+
+  const rangeLabel = from && to ? `${shortDateLabel(from)} – ${shortDateLabel(to)}` : 'Elegir rango'
+
+  const form = (
+    <>
       <SegmentedField
         label="Tipo de filtro"
         options={[
@@ -70,7 +89,7 @@ export const ReportDateRangeBar = ({ onGenerate, generated }: ReportDateRangeBar
         style={[styles.button, !canGenerate && styles.buttonDisabled]}
         activeOpacity={0.85}
         disabled={!canGenerate}
-        onPress={() => onGenerate({ start: from, end: to })}
+        onPress={handleGenerate}
       >
         <Search size={16} color={colors.brand900} />
         <Text style={styles.buttonText}>Generar reporte</Text>
@@ -83,7 +102,26 @@ export const ReportDateRangeBar = ({ onGenerate, generated }: ReportDateRangeBar
       ) : (
         <Text style={styles.hint}>Elige un rango de fechas para generar el reporte.</Text>
       )}
-    </View>
+    </>
+  )
+
+  if (!generated) {
+    return <View style={styles.wrap}>{form}</View>
+  }
+
+  return (
+    <>
+      <View style={styles.summaryRow}>
+        <TouchableOpacity style={styles.summaryButton} activeOpacity={0.7} onPress={() => setPanelOpen(true)}>
+          <CalendarDays size={14} color={colors.ink300} />
+          <Text style={styles.summaryButtonText}>{rangeLabel}</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Modal open={panelOpen} onClose={() => setPanelOpen(false)} title="Rango del reporte" minHeight="60%">
+        <View style={styles.modalForm}>{form}</View>
+      </Modal>
+    </>
   )
 }
 
@@ -96,6 +134,31 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
+    gap: 10,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginHorizontal: 20,
+    marginTop: 16,
+  },
+  summaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.tint10,
+    backgroundColor: colors.surfaceAlt,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  summaryButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.ink300,
+  },
+  modalForm: {
     gap: 10,
   },
   dateRow: {

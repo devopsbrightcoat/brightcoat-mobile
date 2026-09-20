@@ -42,7 +42,7 @@ export const ReportesFinancieroScreen = () => {
     () => ({
       backgroundGradientFrom: colors.surfaceAlt,
       backgroundGradientTo: colors.surfaceAlt,
-      decimalPlaces: 2,
+      decimalPlaces: 0,
       color: () => colors.gold500,
       labelColor: () => colors.ink400,
       propsForDots: { r: '0' },
@@ -50,6 +50,15 @@ export const ReportesFinancieroScreen = () => {
     [colors],
   )
   const compareChartConfig = useMemo(() => ({ ...chartConfig, color: () => colors.ink400 }), [chartConfig, colors])
+  // Los montos del eje Y pueden llegar a 5 cifras (ej. "28534") — se abrevia
+  // a formato "28.5k" para que quepan. Nota: formatYLabel es una prop
+  // directa de LineChart/BarChart, no va dentro de chartConfig.
+  const formatYAxisLabel = (yLabel: string) => {
+    const value = Number(yLabel)
+    if (Number.isNaN(value)) return yLabel
+    if (Math.abs(value) < 1000) return String(Math.round(value))
+    return `${(value / 1000).toFixed(1)}k`
+  }
   const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
   const [periodGranularity, setPeriodGranularity] = useState<RevenuePeriodGranularity>('day')
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
@@ -220,6 +229,7 @@ export const ReportesFinancieroScreen = () => {
                 withShadow={false}
                 bezier
                 chartConfig={chartConfig}
+                formatYLabel={formatYAxisLabel}
                 style={styles.chart}
               />
             )}
@@ -237,6 +247,7 @@ export const ReportesFinancieroScreen = () => {
               withShadow={false}
               bezier
               chartConfig={compareChartConfig}
+              formatYLabel={formatYAxisLabel}
               style={styles.chart}
             />
             <View style={styles.legendRow}>

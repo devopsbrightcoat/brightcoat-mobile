@@ -314,7 +314,10 @@ const bucketByPeriod = (
 
     if (granularity === 'day') {
       key = item.date
-      label = item.date
+      // item.date es un ISO "YYYY-MM-DD" — en el eje X del gráfico (mobile)
+      // ese formato completo se amontona y se vuelve ilegible cuando hay
+      // muchos días en el rango. Se muestra solo el día ("DD").
+      label = item.date.slice(8)
     } else if (granularity === 'week') {
       key = toISODate(startOfWeekMonday(d))
       label = `Sem. ${key}`

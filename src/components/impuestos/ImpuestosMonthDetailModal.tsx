@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Modal } from '../common/Modal'
 import { StatusPill } from '../common/StatusPill'
-import { taxOnAmount } from '../../lib/tax'
+import { computeChargeTax } from '../../lib/tax'
 import { updateChargesTaxPaid } from '../../lib/api'
 import { getErrorMessage } from '../../lib/errors'
 import { useTheme } from '../../theme/ThemeContext'
@@ -60,7 +60,7 @@ export const ImpuestosMonthDetailModal = ({ month, propertyMap, onClose, onChang
         <View style={styles.list}>
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
           {month.charges.map((charge) => {
-            const tax = taxOnAmount(charge.amount)
+            const { base, tax, total } = computeChargeTax(charge.amount, charge.taxIncluded)
             return (
               <View key={charge.id} style={styles.row}>
                 <View style={styles.rowHeader}>
@@ -70,9 +70,21 @@ export const ImpuestosMonthDetailModal = ({ month, propertyMap, onClose, onChang
                   </Text>
                   <StatusPill status={charge.taxPaid ? 'paid' : 'pending'} />
                 </View>
-                <Text style={styles.rowMeta}>{charge.generatedDate || '—'}</Text>
+                <View style={styles.rowMetaRow}>
+                  <Text style={styles.rowMeta}>{charge.generatedDate || '—'}</Text>
+                  <View style={[styles.taxModeBadge, charge.taxIncluded && styles.taxModeBadgeIncluded]}>
+                    <Text style={styles.taxModeBadgeText}>
+                      {charge.taxIncluded ? 'Impuesto incluido' : 'Impuesto aparte'}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.breakdownText}>
+                  {charge.taxIncluded
+                    ? `${currency(total)} − ${currency(tax)} (8.25%) = ${currency(base)} base`
+                    : `${currency(base)} + ${currency(tax)} (8.25%) = ${currency(total)} total`}
+                </Text>
                 <View style={styles.rowFooter}>
-                  <Text style={styles.rowAmount}>{currency(charge.amount)}</Text>
+                  <Text style={styles.rowAmount}>{currency(total)}</Text>
                   <Text style={styles.rowTax}>Impuesto {currency(tax)}</Text>
                 </View>
                 <TouchableOpacity
@@ -125,9 +137,33 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '600',
     color: colors.white,
   },
+  rowMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   rowMeta: {
     fontSize: 11,
     color: colors.ink500,
+  },
+  taxModeBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: colors.tint05,
+  },
+  taxModeBadgeIncluded: {
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+  },
+  taxModeBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.ink400,
+  },
+  breakdownText: {
+    fontSize: 11,
+    color: colors.ink400,
   },
   rowFooter: {
     flexDirection: 'row',

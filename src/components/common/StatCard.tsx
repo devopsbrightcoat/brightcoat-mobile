@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react'
 import type { LucideIcon } from 'lucide-react-native'
 import { StyleSheet, Text, View } from 'react-native'
+import type { StyleProp, ViewStyle } from 'react-native'
 import type { ThemeColors } from '../../theme/colors'
 import { useTheme } from '../../theme/ThemeContext'
 
@@ -17,6 +18,7 @@ type StatCardProps = {
   hint?: string
   hintTone?: HintTone
   size?: Size
+  style?: StyleProp<ViewStyle>
 }
 
 const makeToneStyles = (colors: ThemeColors): Record<Tone, { bg: string; icon: string }> => ({
@@ -30,7 +32,7 @@ const makeHintToneStyles = (colors: ThemeColors): Record<HintTone, { color: stri
   warn: { color: colors.amber, fontWeight: '700' },
 })
 
-export const StatCard = ({ label, value, icon: Icon, tone = 'default', hint, hintTone = 'default', size = 'default' }: StatCardProps) => {
+export const StatCard = ({ label, value, icon: Icon, tone = 'default', hint, hintTone = 'default', size = 'default', style }: StatCardProps) => {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
   const toneStyle = useMemo(() => makeToneStyles(colors)[tone], [colors, tone])
@@ -38,7 +40,7 @@ export const StatCard = ({ label, value, icon: Icon, tone = 'default', hint, hin
   const compact = size === 'compact'
 
   return (
-    <View style={[styles.card, compact && styles.cardCompact]}>
+    <View style={[styles.card, compact && styles.cardCompact, style]}>
       <View style={styles.headerRow}>
         <Text style={[styles.label, compact && styles.labelCompact]} numberOfLines={1}>
           {label}

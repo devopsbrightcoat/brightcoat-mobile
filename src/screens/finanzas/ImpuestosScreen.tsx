@@ -1,16 +1,18 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
-import { CheckCircle2, Clock, Receipt } from 'lucide-react-native'
+import { CalendarDays, CheckCircle2, Clock, Receipt } from 'lucide-react-native'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Modal } from '../../components/common/Modal'
 import { Panel } from '../../components/common/Panel'
 import { StatCard } from '../../components/common/StatCard'
 import { StatusPill } from '../../components/common/StatusPill'
+import { QuincenaDateFilter } from '../../components/dashboard/QuincenaDateFilter'
 import { ImpuestosMonthDetailModal, type MonthGroup } from '../../components/impuestos/ImpuestosMonthDetailModal'
 import { useReferenceData } from '../../contexts/ReferenceDataContext'
 import { fetchCharges, updateChargesTaxPaid } from '../../lib/api'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
-import { formatMonthLabel, parseISODate } from '../../lib/scheduleDates'
-import { taxOnAmount, SALES_TAX_RATE } from '../../lib/tax'
+import { formatMonthLabel, parseISODate, MONTH_NAMES } from '../../lib/scheduleDates'
+import { computeChargeTax, SALES_TAX_RATE } from '../../lib/tax'
 import { getErrorMessage } from '../../lib/errors'
 import { useTheme } from '../../theme/ThemeContext'
 import type { ThemeColors } from '../../theme/colors'
@@ -19,6 +21,11 @@ import type { Charge } from '../../types'
 const currency = (value: number) =>
   value.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 })
 
+const shortDateLabel = (iso: string) => {
+  const date = new Date(`${iso}T00:00:00`)
+  return `${date.getDate()} ${MONTH_NAMES[date.getMonth()].slice(0, 3)}`
+}
+
 export const ImpuestosScreen = () => {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
@@ -26,6 +33,9 @@ export const ImpuestosScreen = () => {
   const [detailMonthKey, setDetailMonthKey] = useState<string | null>(null)
   const [savingMonthKey, setSavingMonthKey] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [dateFilterOpen, setDateFilterOpen] = useState(false)
 
   const {
     data: charges,
@@ -33,7 +43,10 @@ export const ImpuestosScreen = () => {
     error,
     refreshing: refreshingCharges,
     refetch: refetchCharges,
-  } = useSupabaseQuery(fetchCharges, [refreshKey])
+  } = useSupabaseQuery(
+    () => fetchCharges(dateFrom || undefined, dateTo || undefined),
+    [refreshKey, dateFrom, dateTo],
+  )
   const { properties, loadingProperties, refreshingProperties, refetchProperties } = useReferenceData()
 
   useFocusEffect(
@@ -56,21 +69,22 @@ export const ImpuestosScreen = () => {
     return Array.from(groups.entries())
       .map(([key, groupCharges]) => {
         const [year, month] = key.split('-').map(Number)
+        let totalBase = 0
         let totalTax = 0
         let paidTax = 0
         for (const c of groupCharges) {
-          const tax = taxOnAmount(c.amount)
+          const { base, tax } = computeChargeTax(c.amount, c.taxIncluded)
+          totalBase += base
           totalTax += tax
           if (c.taxPaid) paidTax += tax
         }
-        const totalAmount = groupCharges.reduce((sum, c) => sum + c.amount, 0)
         const allPaid = groupCharges.every((c) => c.taxPaid)
         const nonePaid = groupCharges.every((c) => !c.taxPaid)
         return {
           key,
           label: formatMonthLabel(year, month - 1),
           charges: groupCharges,
-          totalBase: totalAmount,
+          totalBase,
           totalTax,
           paidTax,
           pendingTax: totalTax - paidTax,
@@ -81,6 +95,16 @@ export const ImpuestosScreen = () => {
   }, [charges])
 
   const activeMonth = months.find((m) => m.key === detailMonthKey) ?? null
+
+  const hasDateFilter = Boolean(dateFrom) || Boolean(dateTo)
+  const dateRangeLabel =
+    dateFrom && dateTo
+      ? `${shortDateLabel(dateFrom)} – ${shortDateLabel(dateTo)}`
+      : dateFrom
+        ? `Desde ${shortDateLabel(dateFrom)}`
+        : dateTo
+          ? `Hasta ${shortDateLabel(dateTo)}`
+          : 'Todas las fechas'
 
   const totalTax = months.reduce((sum, m) => sum + m.totalTax, 0)
   const totalPaid = months.reduce((sum, m) => sum + m.paidTax, 0)
@@ -151,6 +175,13 @@ export const ImpuestosScreen = () => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.dateFilterRow}>
+        <TouchableOpacity style={styles.dateButton} activeOpacity={0.7} onPress={() => setDateFilterOpen(true)}>
+          <CalendarDays size={14} color={colors.ink300} />
+          <Text style={styles.dateButtonText}>{dateRangeLabel}</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.statsGrid}>
         <StatCard label="Impuesto" value={currency(totalTax)} icon={Receipt} size="compact" />
         <StatCard label="Pagado" value={currency(totalPaid)} icon={CheckCircle2} tone="good" size="compact" />
@@ -182,6 +213,22 @@ export const ImpuestosScreen = () => {
         />
       )}
 
+      <Modal open={dateFilterOpen} onClose={() => setDateFilterOpen(false)} title="Quincena" minHeight="55%">
+        <QuincenaDateFilter dateFrom={dateFrom} dateTo={dateTo} onDateFromChange={setDateFrom} onDateToChange={setDateTo} />
+
+        <TouchableOpacity
+          style={[styles.clearButton, !hasDateFilter && styles.clearButtonDisabled]}
+          activeOpacity={0.7}
+          disabled={!hasDateFilter}
+          onPress={() => {
+            setDateFrom('')
+            setDateTo('')
+          }}
+        >
+          <Text style={[styles.clearButtonText, !hasDateFilter && styles.clearButtonTextDisabled]}>Limpiar filtro</Text>
+        </TouchableOpacity>
+      </Modal>
+
       <ImpuestosMonthDetailModal
         month={activeMonth}
         propertyMap={propertyMap}
@@ -203,6 +250,46 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 8,
     paddingHorizontal: 20,
     paddingTop: 14,
+  },
+  dateFilterRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 20,
+    paddingTop: 14,
+  },
+  dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.tint10,
+    backgroundColor: colors.surfaceAlt,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  dateButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.ink300,
+  },
+  clearButton: {
+    alignItems: 'center',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.tint10,
+    paddingVertical: 12,
+  },
+  clearButtonDisabled: {
+    opacity: 0.4,
+  },
+  clearButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.ink300,
+  },
+  clearButtonTextDisabled: {
+    color: colors.ink500,
   },
   actionErrorText: {
     marginTop: 10,

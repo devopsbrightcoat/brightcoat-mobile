@@ -33,21 +33,32 @@ export const ReportesGastosScreen = () => {
     () => ({
       backgroundGradientFrom: colors.surfaceAlt,
       backgroundGradientTo: colors.surfaceAlt,
-      decimalPlaces: 2,
+      decimalPlaces: 0,
       color: () => COLOR_ORANGE,
       labelColor: () => colors.ink400,
       propsForDots: { r: '0' },
     }),
     [colors],
   )
+  // Los montos del eje Y pueden llegar a 5 cifras (ej. "28534") — se abrevia
+  // a formato "28.5k" para que quepan.
+  const formatYAxisLabel = (yLabel: string) => {
+    const value = Number(yLabel)
+    if (Number.isNaN(value)) return yLabel
+    if (Math.abs(value) < 1000) return String(Math.round(value))
+    return `${(value / 1000).toFixed(1)}k`
+  }
   const barChartConfig = useMemo(
     () => ({
       backgroundGradientFrom: colors.surfaceAlt,
       backgroundGradientTo: colors.surfaceAlt,
-      decimalPlaces: 2,
+      decimalPlaces: 0,
       color: () => COLOR_ORANGE,
       labelColor: () => colors.ink400,
       barPercentage: 0.6,
+      // A diferencia de LineChart, BarChart no tiene una prop formatYLabel
+      // propia — la lee de chartConfig (AbstractChartConfig).
+      formatYLabel: formatYAxisLabel,
     }),
     [colors],
   )
@@ -146,6 +157,7 @@ export const ReportesGastosScreen = () => {
                 withShadow={false}
                 bezier
                 chartConfig={lineChartConfig}
+                formatYLabel={formatYAxisLabel}
                 style={styles.chart}
               />
             )}

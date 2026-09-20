@@ -8,7 +8,7 @@ import { ReferenceDataProvider } from '../contexts/ReferenceDataContext'
 import { usePushNotifications } from '../lib/pushNotifications'
 import type { ThemeColors } from '../theme/colors'
 import { useTheme } from '../theme/ThemeContext'
-import type { ChargeTemplate, Employee, Expense, ExpenseTemplate, PayrollEntry, Property, Schedule, ServiceType, Vendor } from '../types'
+import type { Charge, ChargeTemplate, Employee, Expense, ExpenseTemplate, PayrollEntry, Property, Schedule, ServiceType, Vendor } from '../types'
 import { AddEmployeeScreen } from '../screens/AddEmployeeScreen'
 import { AddExpenseScreen } from '../screens/AddExpenseScreen'
 import { AddChargeTemplateScreen } from '../screens/AddChargeTemplateScreen'
@@ -20,6 +20,7 @@ import { AddScheduleScreen } from '../screens/AddScheduleScreen'
 import { AddServiceTypeScreen } from '../screens/AddServiceTypeScreen'
 import { AddVendorScreen } from '../screens/AddVendorScreen'
 import { EditEmployeeScreen } from '../screens/EditEmployeeScreen'
+import { EditChargeScreen } from '../screens/EditChargeScreen'
 import { EditChargeTemplateScreen } from '../screens/EditChargeTemplateScreen'
 import { EditExpenseScreen } from '../screens/EditExpenseScreen'
 import { EditExpenseTemplateScreen } from '../screens/EditExpenseTemplateScreen'
@@ -56,6 +57,7 @@ export type RootStackParamList = {
   AddFixedCharge: undefined
   AddChargeTemplate: undefined
   EditChargeTemplate: { template: ChargeTemplate }
+  EditCharge: { charge: Charge }
   AddPayrollEntry: undefined
   EditPayrollEntry: { entry: PayrollEntry }
   AddEmployee: undefined
@@ -144,6 +146,7 @@ export const RootNavigator = () => {
             component={EditChargeTemplateScreen}
             options={{ title: 'Editar cobro fijo' }}
           />
+          <Stack.Screen name="EditCharge" component={EditChargeScreen} options={{ title: 'Editar cobro' }} />
           <Stack.Screen
             name="AddExpenseTemplate"
             component={AddExpenseTemplateScreen}

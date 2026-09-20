@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Plus, X } from 'lucide-react-native'
+import { Check, Plus, X } from 'lucide-react-native'
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { DatePicker } from '../common/DatePicker'
 import { Modal } from '../common/Modal'
@@ -28,6 +28,7 @@ export const ScheduleActionModal = ({ schedule, onClose, onSaved }: ScheduleActi
   const styles = useMemo(() => createStyles(colors), [colors])
   const [step, setStep] = useState<'status' | 'charge' | 'reschedule'>('status')
   const [totalCost, setTotalCost] = useState('')
+  const [taxIncluded, setTaxIncluded] = useState(false)
   const [notes, setNotes] = useState('')
   const [extras, setExtras] = useState<ExtraLine[]>([])
   const [newDate, setNewDate] = useState('')
@@ -37,6 +38,7 @@ export const ScheduleActionModal = ({ schedule, onClose, onSaved }: ScheduleActi
   useEffect(() => {
     setStep('status')
     setTotalCost('')
+    setTaxIncluded(false)
     setNotes('')
     setExtras([])
     setNewDate('')
@@ -54,6 +56,7 @@ export const ScheduleActionModal = ({ schedule, onClose, onSaved }: ScheduleActi
         .then((existing) => {
           if (existing) {
             setTotalCost(String(existing.amount))
+            setTaxIncluded(existing.taxIncluded)
             setNotes(existing.notes ?? '')
             setExtras(
               existing.extras.map((extra, i) => ({
@@ -130,7 +133,7 @@ export const ScheduleActionModal = ({ schedule, onClose, onSaved }: ScheduleActi
     setSaving(true)
     setError(null)
     try {
-      await createScheduleCharge(schedule.id, { totalCost: totalCostValue, notes, extras: parsedExtras })
+      await createScheduleCharge(schedule.id, { totalCost: totalCostValue, notes, extras: parsedExtras, taxIncluded })
       onSaved()
       onClose()
     } catch (err) {
@@ -201,6 +204,18 @@ export const ScheduleActionModal = ({ schedule, onClose, onSaved }: ScheduleActi
             style={styles.input}
           />
         </View>
+
+        <TouchableOpacity style={styles.checkboxRow} activeOpacity={0.75} onPress={() => setTaxIncluded(!taxIncluded)}>
+          <View style={[styles.checkbox, taxIncluded && styles.checkboxChecked]}>
+            {taxIncluded ? <Check size={13} color={colors.brand900} strokeWidth={3} /> : null}
+          </View>
+          <View style={styles.checkboxTextGroup}>
+            <Text style={styles.checkboxLabel}>Impuesto incluido en el cobro</Text>
+            <Text style={styles.checkboxHint}>
+              Márcalo si el monto de arriba ya trae el 8.25% de impuesto de ventas incluido (ej. el cliente pagó "todo incluido"). En Impuestos se desglosará hacia atrás en vez de sumarse aparte.
+            </Text>
+          </View>
+        </TouchableOpacity>
 
         <View style={styles.field}>
           <Text style={styles.label}>Notas</Text>
@@ -359,6 +374,39 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 12,
     color: colors.ink500,
     lineHeight: 17,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  checkbox: {
+    marginTop: 1,
+    height: 20,
+    width: 20,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: colors.tint25,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: colors.gold500,
+    borderColor: colors.gold500,
+  },
+  checkboxTextGroup: {
+    flex: 1,
+    gap: 2,
+  },
+  checkboxLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.ink200,
+  },
+  checkboxHint: {
+    fontSize: 11,
+    color: colors.ink500,
+    lineHeight: 15,
   },
   extrasList: {
     marginTop: 10,

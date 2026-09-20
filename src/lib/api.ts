@@ -340,6 +340,7 @@ const mapCharge = (row: ChargeRow): Charge => ({
   invoiceNumber: row.invoice_number ?? undefined,
   taxPaid: row.tax_paid,
   taxPaidDate: row.tax_paid_date ?? undefined,
+  taxIncluded: row.tax_included,
   isFixed: row.is_fixed,
   scheduleId: row.schedule_id ?? undefined,
 })
@@ -459,6 +460,112 @@ export const updateChargesTaxPaid = async (ids: string[], taxPaid: boolean): Pro
     .update({ tax_paid: taxPaid, tax_paid_date: taxPaid ? new Date().toISOString().slice(0, 10) : null })
     .in('id', ids)
   if (error) throw error
+}
+
+export const updateCharge = async (
+  id: string,
+  patch: {
+    propertyId: string
+    unitLabel?: string
+    serviceTypeId?: string
+    generatedDate?: string
+    description?: string
+    amount: number
+    responsible?: string
+    payrollPeriod?: string
+    notes?: string
+    extras: { description: string; amount: number }[]
+    taxIncluded?: boolean
+  },
+): Promise<void> => {
+  const { data: existing, error: fetchError } = await supabase
+    .from('charges')
+    .select('property_id, unit_label, service_type_id, generated_date')
+    .eq('id', id)
+    .single()
+  if (fetchError) throw fetchError
+
+  const newUnitLabel = patch.unitLabel?.trim() || null
+  const newServiceTypeId = patch.serviceTypeId || null
+  const newDate = patch.generatedDate || null
+
+  const { error } = await supabase
+    .from('charges')
+    .update({
+      property_id: patch.propertyId,
+      unit_label: newUnitLabel,
+      service_type_id: newServiceTypeId,
+      generated_date: newDate,
+      description: patch.description?.trim() || null,
+      amount: patch.amount,
+      responsible: patch.responsible?.trim() || null,
+      payroll_period: patch.payrollPeriod?.trim() || null,
+      notes: patch.notes?.trim() || null,
+      extras: patch.extras,
+      ...(patch.taxIncluded !== undefined ? { tax_included: patch.taxIncluded } : {}),
+    })
+    .eq('id', id)
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('Ya existe otro cobro para esa misma propiedad, unidad, servicio y fecha.')
+    }
+    throw error
+  }
+
+  if (!existing.service_type_id || !existing.generated_date) return
+
+  const { data: schedules, error: schedError } = await supabase
+    .from('schedules')
+    .select('id, unit_label')
+    .eq('property_id', existing.property_id)
+    .eq('service_type_id', existing.service_type_id)
+    .eq('scheduled_date', existing.generated_date)
+    .eq('status', 'delivered')
+  if (schedError) throw schedError
+
+  const wantedOld = existing.unit_label ?? ''
+  const match = (schedules ?? []).find((s) => (s.unit_label ?? '') === wantedOld)
+  if (!match) return
+
+  const identityChanged =
+    existing.property_id !== patch.propertyId ||
+    (existing.unit_label ?? null) !== newUnitLabel ||
+    existing.service_type_id !== newServiceTypeId ||
+    existing.generated_date !== newDate
+
+  const canRelinkIdentity = identityChanged && !!newServiceTypeId && !!newDate
+
+  if (canRelinkIdentity) {
+    const { error: schedUpdateError } = await supabase
+      .from('schedules')
+      .update({
+        property_id: patch.propertyId,
+        unit_label: newUnitLabel,
+        service_type_id: newServiceTypeId,
+        scheduled_date: newDate,
+      })
+      .eq('id', match.id)
+    if (schedUpdateError) throw schedUpdateError
+  }
+
+  const canRelinkPlanillaIdentity = canRelinkIdentity && !!newUnitLabel
+  const payrollUpdate: {
+    amount: number
+    property_id?: string
+    unit_label?: string
+    date?: string
+  } = { amount: patch.amount }
+  if (canRelinkPlanillaIdentity) {
+    payrollUpdate.property_id = patch.propertyId
+    payrollUpdate.unit_label = newUnitLabel
+    payrollUpdate.date = newDate
+  }
+
+  const { error: payrollError } = await supabase
+    .from('payroll_entries')
+    .update(payrollUpdate)
+    .eq('schedule_id', match.id)
+  if (payrollError) throw payrollError
 }
 
 export const deleteCharge = async (id: string): Promise<void> => {
@@ -776,7 +883,7 @@ export const fetchChargeByScheduleId = async (scheduleId: string): Promise<Charg
 
 export const createScheduleCharge = async (
   scheduleId: string,
-  data: { totalCost: number; notes: string; extras: { description: string; amount: number }[] },
+  data: { totalCost: number; notes: string; extras: { description: string; amount: number }[]; taxIncluded: boolean },
 ): Promise<void> => {
   const { data: schedule, error: scheduleError } = await supabase
     .from('schedules')
@@ -800,7 +907,7 @@ export const createScheduleCharge = async (
     // único de charges_schedule_id_idx.
     const { error } = await supabase
       .from('charges')
-      .update({ amount, notes: data.notes.trim() || null, extras: data.extras })
+      .update({ amount, notes: data.notes.trim() || null, extras: data.extras, tax_included: data.taxIncluded })
       .eq('id', existing.id)
     if (error) throw error
   } else {
@@ -814,6 +921,7 @@ export const createScheduleCharge = async (
       generated_date: schedule.scheduled_date,
       notes: data.notes.trim() || null,
       extras: data.extras,
+      tax_included: data.taxIncluded,
     })
     if (error) {
       if (error.code === '23505') {

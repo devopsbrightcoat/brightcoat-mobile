@@ -1,5 +1,7 @@
-import React, { useMemo, useState } from 'react'
-import { Clock, DollarSign, Filter, Search, Trash2 } from 'lucide-react-native'
+import React, { useCallback, useMemo, useState } from 'react'
+import { useFocusEffect, useNavigation } from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { Clock, DollarSign, Filter, Pencil, Search, Trash2 } from 'lucide-react-native'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { ChargeDetailModal } from '../../components/cobros/ChargeDetailModal'
 import { ChargeFiltersModal } from '../../components/cobros/ChargeFiltersModal'
@@ -10,6 +12,7 @@ import { StatCard } from '../../components/common/StatCard'
 import { StatusPill } from '../../components/common/StatusPill'
 import { useReferenceData } from '../../contexts/ReferenceDataContext'
 import { deleteCharge, fetchCharges } from '../../lib/api'
+import type { RootStackParamList } from '../../navigation/RootNavigator'
 import { currency } from '../../lib/format'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import { useTheme } from '../../theme/ThemeContext'
@@ -17,10 +20,12 @@ import type { ThemeColors } from '../../theme/colors'
 import type { Charge, PaymentStatus } from '../../types'
 
 type StatusFilter = 'all' | PaymentStatus
+type Nav = NativeStackNavigationProp<RootStackParamList>
 
 export const CobrosScreen = () => {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
+  const navigation = useNavigation<Nav>()
   const [refreshKey, setRefreshKey] = useState(0)
   const [searchText, setSearchText] = useState('')
   const [propertyId, setPropertyId] = useState('all')
@@ -53,6 +58,12 @@ export const CobrosScreen = () => {
     refreshingServiceTypes,
     refetchServiceTypes,
   } = useReferenceData()
+
+  useFocusEffect(
+    useCallback(() => {
+      setRefreshKey((k) => k + 1)
+    }, []),
+  )
 
   const propertyMap = useMemo(() => new Map((properties ?? []).map((p) => [p.id, p.name])), [properties])
   const serviceTypeMap = useMemo(() => new Map((serviceTypes ?? []).map((t) => [t.id, t.name])), [serviceTypes])
@@ -103,6 +114,15 @@ export const CobrosScreen = () => {
           <View style={styles.headerActions}>
             <TouchableOpacity onPress={() => setInvoiceCharge(item)} hitSlop={8}>
               <StatusPill status={item.status} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation()
+                navigation.navigate('EditCharge', { charge: item })
+              }}
+              hitSlop={8}
+            >
+              <Pencil size={15} color={colors.ink300} />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={(e) => {
