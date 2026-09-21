@@ -33,10 +33,12 @@ import {
   computeDashboardFetchWindowStart,
   computeDateRange,
   computeEmployeeProductivity,
+  computeEmployeeProfit,
   computeKpis,
   computeMonthlyFinancials,
   computeOutstandingAging,
   computePendingSchedules,
+  computeProfitByCategory,
   computeRevenueByCategory,
   computeRevenueByProperty,
   computeTodaySchedules,
@@ -161,6 +163,16 @@ export const DashboardScreen = () => {
   const employeeProductivity = useMemo(
     () => computeEmployeeProductivity(schedules ?? [], employees ?? [], range),
     [schedules, employees, range],
+  )
+
+  const employeeProfit = useMemo(
+    () => computeEmployeeProfit(payrollEntries ?? [], employees ?? [], range),
+    [payrollEntries, employees, range],
+  )
+
+  const profitByCategory = useMemo(
+    () => computeProfitByCategory(payrollEntries ?? [], schedules ?? [], serviceTypes ?? [], range),
+    [payrollEntries, schedules, serviceTypes, range],
   )
 
   const todaySchedules = useMemo(() => computeTodaySchedules(schedules ?? []), [schedules])
@@ -350,6 +362,90 @@ export const DashboardScreen = () => {
               />
             </DashboardPanel>
 
+            <DashboardPanel title="Vendido, pagado y ganancia por empleado" subtitle="Cobro, pago al empleado y ganancia — período seleccionado">
+              {employeeProfit.length === 0 ? (
+                <Text style={styles.emptyText}>No hay planillas cobradas en este período.</Text>
+              ) : (
+                <>
+                  <Text style={styles.subSectionLabel}>Vendido</Text>
+                  <RankingBars
+                    items={employeeProfit.map((e) => ({
+                      id: e.employeeId,
+                      label: `${e.name} · ${e.jobCount} ${e.jobCount === 1 ? 'trabajo' : 'trabajos'}`,
+                      value: e.sold,
+                    }))}
+                    formatValue={currency}
+                    color={COLOR_BLUE}
+                    emptyText=""
+                  />
+                  <Text style={[styles.subSectionLabel, styles.subSectionLabelSpaced]}>Pagado</Text>
+                  <RankingBars
+                    items={employeeProfit.map((e) => ({
+                      id: e.employeeId,
+                      label: `${e.name} · ${e.jobCount} ${e.jobCount === 1 ? 'trabajo' : 'trabajos'}`,
+                      value: e.paid,
+                    }))}
+                    formatValue={currency}
+                    color={COLOR_AQUA}
+                    emptyText=""
+                  />
+                  <Text style={[styles.subSectionLabel, styles.subSectionLabelSpaced]}>Ganancia</Text>
+                  <RankingBars
+                    items={employeeProfit.map((e) => ({
+                      id: e.employeeId,
+                      label: `${e.name} · ${e.jobCount} ${e.jobCount === 1 ? 'trabajo' : 'trabajos'}`,
+                      value: e.profit,
+                    }))}
+                    formatValue={currency}
+                    color={COLOR_GOLD}
+                    emptyText=""
+                  />
+                </>
+              )}
+            </DashboardPanel>
+
+            <DashboardPanel title="Vendido, pagado y ganancia por servicio" subtitle="Por categoría — período seleccionado">
+              {profitByCategory.length === 0 ? (
+                <Text style={styles.emptyText}>No hay planillas cobradas en este período.</Text>
+              ) : (
+                <>
+                  <Text style={styles.subSectionLabel}>Vendido</Text>
+                  <RankingBars
+                    items={profitByCategory.map((c) => ({
+                      id: c.category ?? c.label,
+                      label: `${c.label} · ${c.jobCount} ${c.jobCount === 1 ? 'trabajo' : 'trabajos'}`,
+                      value: c.sold,
+                    }))}
+                    formatValue={currency}
+                    color={COLOR_BLUE}
+                    emptyText=""
+                  />
+                  <Text style={[styles.subSectionLabel, styles.subSectionLabelSpaced]}>Pagado</Text>
+                  <RankingBars
+                    items={profitByCategory.map((c) => ({
+                      id: c.category ?? c.label,
+                      label: `${c.label} · ${c.jobCount} ${c.jobCount === 1 ? 'trabajo' : 'trabajos'}`,
+                      value: c.paid,
+                    }))}
+                    formatValue={currency}
+                    color={COLOR_AQUA}
+                    emptyText=""
+                  />
+                  <Text style={[styles.subSectionLabel, styles.subSectionLabelSpaced]}>Ganancia</Text>
+                  <RankingBars
+                    items={profitByCategory.map((c) => ({
+                      id: c.category ?? c.label,
+                      label: `${c.label} · ${c.jobCount} ${c.jobCount === 1 ? 'trabajo' : 'trabajos'}`,
+                      value: c.profit,
+                    }))}
+                    formatValue={currency}
+                    color={COLOR_GOLD}
+                    emptyText=""
+                  />
+                </>
+              )}
+            </DashboardPanel>
+
             <DashboardPanel title="Trabajos de hoy" subtitle="Programación del día" action={<CalendarDays size={16} color={colors.ink500} />}>
               {todaySchedules.length === 0 ? (
                 <Text style={styles.emptyText}>No hay trabajos programados para hoy.</Text>
@@ -521,6 +617,17 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     textAlign: 'center',
     fontSize: 13,
     color: colors.ink500,
+  },
+  subSectionLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    color: colors.ink500,
+    marginBottom: 8,
+  },
+  subSectionLabelSpaced: {
+    marginTop: 16,
   },
   listGroup: {
     gap: 0,

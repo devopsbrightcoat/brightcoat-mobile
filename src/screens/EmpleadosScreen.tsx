@@ -76,11 +76,6 @@ export const EmpleadosScreen = () => {
         </View>
 
         <View style={styles.cardFooter}>
-          {item.hourlyRate != null ? (
-            <Text style={styles.rate}>${item.hourlyRate}/hr</Text>
-          ) : (
-            <View />
-          )}
           <View style={styles.w2Row}>
             <Text style={styles.w2Label}>W2</Text>
             <StatusPill status={item.w2Status} />
@@ -250,15 +245,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginTop: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     borderTopWidth: 1,
     borderTopColor: colors.tint05,
     paddingTop: 8,
-  },
-  rate: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.ink300,
   },
   w2Row: {
     flexDirection: 'row',

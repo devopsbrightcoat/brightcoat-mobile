@@ -27,7 +27,8 @@ export const EditEmployeeScreen = () => {
   const [role, setRole] = useState(employee.role === '—' ? '' : employee.role)
   const [contactNumber, setContactNumber] = useState(employee.contactNumber ?? '')
   const [address, setAddress] = useState(employee.address ?? '')
-  const [hourlyRate, setHourlyRate] = useState(employee.hourlyRate != null ? String(employee.hourlyRate) : '')
+  const [ssn, setSsn] = useState(employee.ssn ?? '')
+  const [itin, setItin] = useState(employee.itin ?? '')
   const [status, setStatus] = useState<Employee['status']>(employee.status)
   const [w2Status, setW2Status] = useState<Employee['w2Status']>(employee.w2Status)
   const [saving, setSaving] = useState(false)
@@ -37,15 +38,6 @@ export const EditEmployeeScreen = () => {
     if (!name.trim()) {
       setError('El nombre del empleado es obligatorio.')
       return
-    }
-    let hourlyRateValue: number | null = null
-    if (hourlyRate.trim()) {
-      const parsed = Number(hourlyRate)
-      if (Number.isNaN(parsed) || parsed < 0) {
-        setError('La tarifa por hora no es un número válido.')
-        return
-      }
-      hourlyRateValue = parsed
     }
 
     setSaving(true)
@@ -58,7 +50,8 @@ export const EditEmployeeScreen = () => {
         address,
         status,
         w2Status,
-        hourlyRate: hourlyRateValue,
+        ssn: ssn.trim(),
+        itin: itin.trim(),
       })
       navigation.goBack()
     } catch (err) {
@@ -74,28 +67,24 @@ export const EditEmployeeScreen = () => {
         <FormField label="Nombre" value={name} onChangeText={setName} placeholder="ej. Carlos Mejía" />
         <FormField label="Rol / puesto" value={role} onChangeText={setRole} placeholder="ej. Pintor" />
 
-        <View style={styles.row}>
-          <View style={styles.half}>
-            <FormField
-              label="Número de contacto"
-              value={contactNumber}
-              onChangeText={setContactNumber}
-              placeholder="Opcional"
-              keyboardType="phone-pad"
-            />
-          </View>
-          <View style={styles.half}>
-            <FormField
-              label="Tarifa por hora"
-              value={hourlyRate}
-              onChangeText={setHourlyRate}
-              placeholder="ej. 25"
-              keyboardType="decimal-pad"
-            />
-          </View>
-        </View>
+        <FormField
+          label="Número de contacto"
+          value={contactNumber}
+          onChangeText={setContactNumber}
+          placeholder="Opcional"
+          keyboardType="phone-pad"
+        />
 
         <FormField label="Dirección" value={address} onChangeText={setAddress} placeholder="Opcional" />
+
+        <View style={styles.row}>
+          <View style={styles.half}>
+            <FormField label="SSN" value={ssn} onChangeText={setSsn} placeholder="ej. 123-45-6789" />
+          </View>
+          <View style={styles.half}>
+            <FormField label="ITIN" value={itin} onChangeText={setItin} placeholder="ej. 9XX-XX-XXXX" />
+          </View>
+        </View>
 
         <SegmentedField label="Estado" options={EMPLOYEE_STATUS_OPTIONS} value={status} onChange={setStatus} />
         <SegmentedField label="W2" options={W2_STATUS_OPTIONS} value={w2Status} onChange={setW2Status} />

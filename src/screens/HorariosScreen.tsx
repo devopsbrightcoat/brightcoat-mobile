@@ -277,6 +277,12 @@ export const HorariosScreen = () => {
             <View style={styles.list}>
               {dayRows.map((row) => {
                 const locked = row.status === 'delivered' || row.status === 'rescheduled'
+                // Editar sigue permitido para un horario ya entregado —
+                // solo corrige los datos del horario en sí; el cobro o
+                // la planilla ya generados a partir de él no se tocan
+                // automáticamente. Uno reagendado queda cerrado porque
+                // fue reemplazado por un horario nuevo.
+                const editLocked = row.status === 'rescheduled'
                 // El botón de estatus sí debe seguir habilitado para un
                 // horario ya entregado (no de cobro fijo) — es la única
                 // forma de reabrirlo y corregir el monto del cobro. Un
@@ -314,9 +320,9 @@ export const HorariosScreen = () => {
                         </Text>
                         <View style={styles.footerActions}>
                           <TouchableOpacity
-                            disabled={locked}
+                            disabled={editLocked}
                             activeOpacity={0.7}
-                            style={[styles.editButton, locked && styles.editButtonDisabled]}
+                            style={[styles.editButton, editLocked && styles.editButtonDisabled]}
                             onPress={() => navigation.navigate('EditSchedule', { schedule: row })}
                           >
                             <Pencil size={12} color={colors.ink300} />

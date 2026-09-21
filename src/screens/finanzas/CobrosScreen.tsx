@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Clock, DollarSign, Filter, Pencil, Search, Trash2 } from 'lucide-react-native'
+import { Building2, ChevronLeft, Clock, DollarSign, Filter, Pencil, Search, Trash2 } from 'lucide-react-native'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { ChargeDetailModal } from '../../components/cobros/ChargeDetailModal'
 import { ChargeFiltersModal } from '../../components/cobros/ChargeFiltersModal'
@@ -17,16 +17,19 @@ import { currency } from '../../lib/format'
 import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import { useTheme } from '../../theme/ThemeContext'
 import type { ThemeColors } from '../../theme/colors'
-import type { Charge, PaymentStatus } from '../../types'
+import type { Charge, PaymentStatus, Property } from '../../types'
 
 type StatusFilter = 'all' | PaymentStatus
 type Nav = NativeStackNavigationProp<RootStackParamList>
+type PropertyStats = { count: number; paid: number; pending: number; pendingCount: number }
 
 export const CobrosScreen = () => {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
   const [refreshKey, setRefreshKey] = useState(0)
+  const [cardsView, setCardsView] = useState(true)
+  const [propertySearchText, setPropertySearchText] = useState('')
   const [searchText, setSearchText] = useState('')
   const [propertyId, setPropertyId] = useState('all')
   const [status, setStatus] = useState<StatusFilter>('all')
@@ -67,6 +70,41 @@ export const CobrosScreen = () => {
 
   const propertyMap = useMemo(() => new Map((properties ?? []).map((p) => [p.id, p.name])), [properties])
   const serviceTypeMap = useMemo(() => new Map((serviceTypes ?? []).map((t) => [t.id, t.name])), [serviceTypes])
+  const selectedProperty = propertyId !== 'all' ? (properties ?? []).find((p) => p.id === propertyId) ?? null : null
+
+  const handleSelectProperty = (id: string) => {
+    setPropertyId(id)
+    setCardsView(false)
+  }
+
+  const handleShowAllProperties = () => {
+    setPropertyId('all')
+    setCardsView(false)
+  }
+
+  const handleBackToCards = () => setCardsView(true)
+
+  const propertyStats = useMemo(() => {
+    const map = new Map<string, PropertyStats>()
+    for (const c of charges ?? []) {
+      const current = map.get(c.propertyId) ?? { count: 0, paid: 0, pending: 0, pendingCount: 0 }
+      current.count += 1
+      if (c.status === 'paid') current.paid += c.amount
+      else {
+        current.pending += c.amount
+        current.pendingCount += 1
+      }
+      map.set(c.propertyId, current)
+    }
+    return map
+  }, [charges])
+
+  const propertyCards = useMemo(() => {
+    const q = propertySearchText.trim().toLowerCase()
+    return (properties ?? [])
+      .filter((p) => !q || p.name.toLowerCase().includes(q))
+      .map((property) => ({ property, stats: propertyStats.get(property.id) }))
+  }, [properties, propertySearchText, propertyStats])
 
   const filtered = useMemo(() => {
     const q = searchText.trim().toLowerCase()
@@ -92,8 +130,13 @@ export const CobrosScreen = () => {
     (serviceTypeId !== 'all' ? 1 : 0) +
     (dateFrom ? 1 : 0) +
     (dateTo ? 1 : 0)
-  const totalPaid = (charges ?? []).filter((c) => c.status === 'paid').reduce((sum, c) => sum + c.amount, 0)
-  const totalPending = (charges ?? []).filter((c) => c.status === 'pending').reduce((sum, c) => sum + c.amount, 0)
+
+  const scopedCharges = useMemo(
+    () => (propertyId !== 'all' ? (charges ?? []).filter((c) => c.propertyId === propertyId) : charges ?? []),
+    [charges, propertyId],
+  )
+  const totalPaid = scopedCharges.filter((c) => c.status === 'paid').reduce((sum, c) => sum + c.amount, 0)
+  const totalPending = scopedCharges.filter((c) => c.status === 'pending').reduce((sum, c) => sum + c.amount, 0)
 
   const loading = loadingCharges || loadingProperties || loadingServiceTypes
   const refreshing = refreshingCharges || refreshingProperties || refreshingServiceTypes
@@ -101,6 +144,42 @@ export const CobrosScreen = () => {
     refetchCharges()
     refetchProperties()
     refetchServiceTypes()
+  }
+
+  const renderPropertyCard = ({ item }: { item: { property: Property; stats: PropertyStats | undefined } }) => {
+    const { property, stats } = item
+    return (
+      <TouchableOpacity activeOpacity={0.75} onPress={() => handleSelectProperty(property.id)}>
+        <Panel style={styles.propertyCard}>
+          <View style={styles.propertyCardHeader}>
+            <View style={styles.propertyCardHeaderText}>
+              <Text style={styles.cardTitle} numberOfLines={1}>
+                {property.name}
+              </Text>
+              <Text style={styles.cardSubtitle} numberOfLines={1}>
+                {property.address || '—'}
+              </Text>
+            </View>
+            <StatusPill status={property.status} />
+          </View>
+          <View style={styles.propertyCardStats}>
+            <View>
+              <Text style={styles.statLabel}>Cobrado</Text>
+              <Text style={styles.statValueGood}>{currency(stats?.paid ?? 0)}</Text>
+            </View>
+            <View>
+              <Text style={styles.statLabel}>Pendiente</Text>
+              <Text style={styles.statValueWarn}>{currency(stats?.pending ?? 0)}</Text>
+            </View>
+          </View>
+          {stats && stats.pendingCount > 0 ? (
+            <Text style={styles.pendingBadge}>
+              {stats.pendingCount} {stats.pendingCount === 1 ? 'cobro pendiente' : 'cobros pendientes'}
+            </Text>
+          ) : null}
+        </Panel>
+      </TouchableOpacity>
+    )
   }
 
   const renderItem = ({ item }: { item: Charge }) => (
@@ -156,59 +235,114 @@ export const CobrosScreen = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.statsGrid}>
-        <StatCard label="Cobrado" value={currency(totalPaid)} icon={DollarSign} tone="good" size="compact" />
-        <StatCard label="Pendiente" value={currency(totalPending)} icon={Clock} tone="warn" size="compact" />
-      </View>
-
-      <View style={styles.searchRow}>
-        <View style={styles.searchBox}>
-          <Search size={16} color={colors.ink500} />
-          <TextInput
-            value={searchText}
-            onChangeText={setSearchText}
-            placeholder="Buscar…"
-            placeholderTextColor={colors.ink500}
-            style={styles.searchInput}
-            autoCorrect={false}
-          />
-        </View>
-        <TouchableOpacity style={styles.filtersButton} activeOpacity={0.7} onPress={() => setFiltersOpen(true)}>
-          <Filter size={14} color={colors.ink300} />
-          <Text style={styles.filtersButtonText}>Filtros</Text>
-          {activeFilterCount > 0 ? (
-            <View style={styles.filtersBadge}>
-              <Text style={styles.filtersBadgeText}>{activeFilterCount}</Text>
+      {cardsView ? (
+        <>
+          <View style={styles.searchRow}>
+            <View style={styles.searchBox}>
+              <Search size={16} color={colors.ink500} />
+              <TextInput
+                value={propertySearchText}
+                onChangeText={setPropertySearchText}
+                placeholder="Buscar propiedad por nombre…"
+                placeholderTextColor={colors.ink500}
+                style={styles.searchInput}
+                autoCorrect={false}
+              />
             </View>
-          ) : null}
-        </TouchableOpacity>
-      </View>
 
-      {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator color={colors.gold400} />
-        </View>
-      ) : error ? (
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>No se pudieron cargar los cobros: {error}</Text>
-        </View>
+            <TouchableOpacity style={styles.allPropertiesButton} activeOpacity={0.7} onPress={handleShowAllProperties}>
+              <Building2 size={14} color={colors.ink300} />
+              <Text style={styles.allPropertiesButtonText}>Todas las propiedades</Text>
+            </TouchableOpacity>
+          </View>
+
+          {loadingProperties ? (
+            <View style={styles.centered}>
+              <ActivityIndicator color={colors.gold400} />
+            </View>
+          ) : (
+            <FlatList
+              data={propertyCards}
+              keyExtractor={(item) => item.property.id}
+              renderItem={renderPropertyCard}
+              contentContainerStyle={styles.list}
+              refreshControl={
+                <RefreshControl refreshing={refreshingProperties} onRefresh={refetchProperties} tintColor={colors.gold400} colors={[colors.gold400]} />
+              }
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>
+                  {propertySearchText ? `Ninguna propiedad coincide con "${propertySearchText}".` : 'Todavía no hay propiedades registradas.'}
+                </Text>
+              }
+            />
+          )}
+        </>
       ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.list}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.gold400} colors={[colors.gold400]} />
-          }
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>
-              {activeFilterCount > 0 || searchText
-                ? 'No hay cobros con estos filtros.'
-                : 'Todavía no hay cobros registrados.'}
-            </Text>
-          }
-        />
+        <>
+          <TouchableOpacity style={styles.backRow} activeOpacity={0.7} onPress={handleBackToCards}>
+            <ChevronLeft size={16} color={colors.ink300} />
+            <Text style={styles.backText}>Propiedades</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.propertyHeading} numberOfLines={1}>
+            {selectedProperty ? selectedProperty.name : 'Todas las propiedades'}
+          </Text>
+
+          <View style={styles.statsGrid}>
+            <StatCard label="Cobrado" value={currency(totalPaid)} icon={DollarSign} tone="good" size="compact" />
+            <StatCard label="Pendiente" value={currency(totalPending)} icon={Clock} tone="warn" size="compact" />
+          </View>
+
+          <View style={styles.searchRow}>
+            <View style={styles.searchBox}>
+              <Search size={16} color={colors.ink500} />
+              <TextInput
+                value={searchText}
+                onChangeText={setSearchText}
+                placeholder="Buscar…"
+                placeholderTextColor={colors.ink500}
+                style={styles.searchInput}
+                autoCorrect={false}
+              />
+            </View>
+            <TouchableOpacity style={styles.filtersButton} activeOpacity={0.7} onPress={() => setFiltersOpen(true)}>
+              <Filter size={14} color={colors.ink300} />
+              <Text style={styles.filtersButtonText}>Filtros</Text>
+              {activeFilterCount > 0 ? (
+                <View style={styles.filtersBadge}>
+                  <Text style={styles.filtersBadgeText}>{activeFilterCount}</Text>
+                </View>
+              ) : null}
+            </TouchableOpacity>
+          </View>
+
+          {loading ? (
+            <View style={styles.centered}>
+              <ActivityIndicator color={colors.gold400} />
+            </View>
+          ) : error ? (
+            <View style={styles.centered}>
+              <Text style={styles.errorText}>No se pudieron cargar los cobros: {error}</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={filtered}
+              keyExtractor={(item) => item.id}
+              renderItem={renderItem}
+              contentContainerStyle={styles.list}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.gold400} colors={[colors.gold400]} />
+              }
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>
+                  {activeFilterCount > 0 || searchText
+                    ? 'No hay cobros con estos filtros.'
+                    : 'Todavía no hay cobros registrados.'}
+                </Text>
+              }
+            />
+          )}
+        </>
       )}
 
       <ChargeDetailModal
@@ -269,14 +403,32 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  backRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 20,
     paddingTop: 14,
+  },
+  backText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.ink300,
+  },
+  propertyHeading: {
+    marginTop: 4,
+    paddingHorizontal: 20,
+    fontSize: 12,
+    color: colors.ink500,
   },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 14,
   },
   searchBox: {
     flex: 1,
@@ -295,6 +447,22 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 14,
     color: colors.white,
     padding: 0,
+  },
+  allPropertiesButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.tint10,
+    backgroundColor: colors.surfaceAlt,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+  },
+  allPropertiesButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.ink300,
   },
   filtersButton: {
     flexDirection: 'row',
@@ -342,6 +510,49 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 32,
     gap: 10,
+  },
+  propertyCard: {
+    padding: 14,
+    marginBottom: 10,
+  },
+  propertyCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  propertyCardHeaderText: {
+    flex: 1,
+  },
+  propertyCardStats: {
+    marginTop: 12,
+    flexDirection: 'row',
+    gap: 24,
+    borderTopWidth: 1,
+    borderTopColor: colors.tint05,
+    paddingTop: 10,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: colors.ink500,
+  },
+  statValueGood: {
+    marginTop: 2,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.emerald,
+  },
+  statValueWarn: {
+    marginTop: 2,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.amber,
+  },
+  pendingBadge: {
+    marginTop: 8,
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.amber,
   },
   card: {
     padding: 14,
