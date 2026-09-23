@@ -1,14 +1,16 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Plus, Search, Trash2 } from 'lucide-react-native'
+import { Eye, EyeOff, Plus, Search, Trash2 } from 'lucide-react-native'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { ConfirmModal } from '../components/common/ConfirmModal'
 import { Panel } from '../components/common/Panel'
 import { ScreenHeader } from '../components/common/ScreenHeader'
 import { StatusPill } from '../components/common/StatusPill'
+import { useAuth } from '../auth/AuthProvider'
 import { useReferenceData } from '../contexts/ReferenceDataContext'
-import { deleteEmployee } from '../lib/api'
+import { deleteEmployee, updateEmployeeHidden } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import { useTheme } from '../theme/ThemeContext'
 import type { ThemeColors } from '../theme/colors'
@@ -20,8 +22,13 @@ export const EmpleadosScreen = () => {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation<Nav>()
+  const { profile } = useAuth()
+  const canManageHidden = profile?.role === 'owner' || profile?.role === 'admin'
   const [searchText, setSearchText] = useState('')
   const [deletingEmployee, setDeletingEmployee] = useState<Employee | null>(null)
+  const [showHidden, setShowHidden] = useState(false)
+  const [hidingId, setHidingId] = useState<string | null>(null)
+  const [hideError, setHideError] = useState<string | null>(null)
 
   const {
     employees,
@@ -37,11 +44,32 @@ export const EmpleadosScreen = () => {
     }, [refetch]),
   )
 
+  // Solo owner/admin puede ver y alternar la vista de ocultos — el resto
+  // siempre ve la lista normal (sin empleados ocultos).
+  const scoped = useMemo(() => {
+    const base = employees ?? []
+    if (canManageHidden && showHidden) return base.filter((e) => e.hidden)
+    return base.filter((e) => !e.hidden)
+  }, [employees, canManageHidden, showHidden])
+
   const filtered = useMemo(() => {
     const q = searchText.trim().toLowerCase()
-    if (!q) return employees ?? []
-    return (employees ?? []).filter((e) => e.name.toLowerCase().includes(q))
-  }, [employees, searchText])
+    if (!q) return scoped
+    return scoped.filter((e) => e.name.toLowerCase().includes(q))
+  }, [scoped, searchText])
+
+  const handleToggleHidden = async (employee: Employee) => {
+    setHidingId(employee.id)
+    setHideError(null)
+    try {
+      await updateEmployeeHidden(employee.id, !employee.hidden)
+      refetch()
+    } catch (err) {
+      setHideError(getErrorMessage(err, 'No se pudo actualizar el empleado.'))
+    } finally {
+      setHidingId(null)
+    }
+  }
 
   const renderItem = ({ item }: { item: Employee }) => (
     <TouchableOpacity activeOpacity={0.75} onPress={() => navigation.navigate('EditEmployee', { employee: item })}>
@@ -57,6 +85,19 @@ export const EmpleadosScreen = () => {
           </View>
           <View style={styles.headerActions}>
             <StatusPill status={item.status} />
+            {canManageHidden && (
+              <TouchableOpacity
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                disabled={hidingId === item.id}
+                onPress={() => handleToggleHidden(item)}
+              >
+                {item.hidden ? (
+                  <Eye size={15} color={colors.ink300} />
+                ) : (
+                  <EyeOff size={15} color={colors.ink300} />
+                )}
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               onPress={() => setDeletingEmployee(item)}
@@ -100,17 +141,36 @@ export const EmpleadosScreen = () => {
           </TouchableOpacity>
         }
       />
-      <View style={styles.searchBox}>
-        <Search size={16} color={colors.ink500} />
-        <TextInput
-          value={searchText}
-          onChangeText={setSearchText}
-          placeholder="Buscar por nombre…"
-          placeholderTextColor={colors.ink500}
-          style={styles.searchInput}
-          autoCorrect={false}
-        />
+      <View style={styles.searchRow}>
+        <View style={styles.searchBox}>
+          <Search size={16} color={colors.ink500} />
+          <TextInput
+            value={searchText}
+            onChangeText={setSearchText}
+            placeholder="Buscar por nombre…"
+            placeholderTextColor={colors.ink500}
+            style={styles.searchInput}
+            autoCorrect={false}
+          />
+        </View>
+
+        {canManageHidden && (
+          <TouchableOpacity
+            style={[styles.toggleButton, showHidden && styles.toggleButtonActive]}
+            activeOpacity={0.7}
+            onPress={() => setShowHidden((prev) => !prev)}
+          >
+            {showHidden ? (
+              <Eye size={14} color={colors.brand900} />
+            ) : (
+              <EyeOff size={14} color={colors.ink300} />
+            )}
+            <Text style={[styles.toggleButtonText, showHidden && styles.toggleButtonTextActive]}>Ocultos</Text>
+          </TouchableOpacity>
+        )}
       </View>
+
+      {hideError ? <Text style={styles.errorText}>{hideError}</Text> : null}
 
       {loading ? (
         <View style={styles.centered}>
@@ -130,11 +190,17 @@ export const EmpleadosScreen = () => {
             <RefreshControl refreshing={refreshing} onRefresh={refetch} tintColor={colors.gold400} colors={[colors.gold400]} />
           }
           ListHeaderComponent={
-            <Text style={styles.count}>{employees?.length ?? 0} empleados registrados</Text>
+            <Text style={styles.count}>
+              {showHidden ? `${scoped.length} empleados ocultos` : `${scoped.length} empleados registrados`}
+            </Text>
           }
           ListEmptyComponent={
             <Text style={styles.emptyText}>
-              {searchText ? `Ningún empleado coincide con "${searchText}".` : 'Todavía no hay empleados registrados.'}
+              {searchText
+                ? `Ningún empleado coincide con "${searchText}".`
+                : showHidden
+                  ? 'No hay empleados ocultos.'
+                  : 'Todavía no hay empleados registrados.'}
             </Text>
           }
         />
@@ -164,18 +230,47 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 2,
   },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginHorizontal: 16,
+    marginTop: 14,
+  },
   searchBox: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginHorizontal: 16,
-    marginTop: 14,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     paddingHorizontal: 12,
     paddingVertical: 10,
+  },
+  toggleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.tint10,
+    backgroundColor: colors.surfaceAlt,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  toggleButtonActive: {
+    borderColor: colors.gold500,
+    backgroundColor: colors.gold500,
+  },
+  toggleButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.ink300,
+  },
+  toggleButtonTextActive: {
+    color: colors.brand900,
   },
   searchInput: {
     flex: 1,

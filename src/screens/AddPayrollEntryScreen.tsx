@@ -67,7 +67,7 @@ export const AddPayrollEntryScreen = () => {
   const [selectedScheduleId, setSelectedScheduleId] = useState('')
 
   const propertyOptions = (properties ?? []).map((p) => ({ id: p.id, label: p.name }))
-  const employeeOptions = (employees ?? []).map((e) => ({ id: e.id, label: e.name }))
+  const employeeOptions = (employees ?? []).filter((e) => !e.hidden).map((e) => ({ id: e.id, label: e.name }))
 
   const { data: schedules, loading: schedulesLoading } = useSupabaseQuery(
     () =>

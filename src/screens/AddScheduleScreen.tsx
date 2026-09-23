@@ -52,7 +52,7 @@ export const AddScheduleScreen = () => {
   const [openField, setOpenField] = useState<string | null>(null)
 
   const propertyOptions = (properties ?? []).map((p) => ({ id: p.id, label: p.name }))
-  const employeeOptions = (employees ?? []).map((e) => ({ id: e.id, label: e.name }))
+  const employeeOptions = (employees ?? []).filter((e) => !e.hidden).map((e) => ({ id: e.id, label: e.name }))
   const serviceTypeOptions = (serviceTypes ?? []).map((t) => ({ id: t.id, label: t.name }))
 
   const updateLine = (key: number, patch: Partial<Line>) =>

@@ -59,7 +59,9 @@ export const EditPayrollEntryScreen = () => {
   const [openField, setOpenField] = useState<string | null>(null)
 
   const propertyOptions = (properties ?? []).map((p) => ({ id: p.id, label: p.name }))
-  const employeeOptions = (employees ?? []).map((e) => ({ id: e.id, label: e.name }))
+  const employeeOptions = (employees ?? [])
+    .filter((e) => !e.hidden || e.id === employeeId)
+    .map((e) => ({ id: e.id, label: e.name }))
 
   const updateItem = (key: number, patch: Partial<ItemLine>) =>
     setItems((prev) => prev.map((item) => (item.key === key ? { ...item, ...patch } : item)))

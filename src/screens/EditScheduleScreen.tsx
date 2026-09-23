@@ -37,7 +37,9 @@ export const EditScheduleScreen = () => {
   const [openField, setOpenField] = useState<string | null>(null)
 
   const propertyOptions = (properties ?? []).map((p) => ({ id: p.id, label: p.name }))
-  const employeeOptions = (employees ?? []).map((e) => ({ id: e.id, label: e.name }))
+  const employeeOptions = (employees ?? [])
+    .filter((e) => !e.hidden || e.id === employeeId)
+    .map((e) => ({ id: e.id, label: e.name }))
   const serviceTypeOptions = (serviceTypes ?? []).map((t) => ({ id: t.id, label: t.name }))
 
   const handleSave = async () => {
