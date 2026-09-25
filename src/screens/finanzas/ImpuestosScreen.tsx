@@ -60,7 +60,11 @@ export const ImpuestosScreen = () => {
   const months = useMemo<MonthGroup[]>(() => {
     // Solo cuentan los cobros marcados como "impuesto incluido" — uno sin
     // esa marca no se le calcula ni se le suma impuesto en esta pantalla.
-    const taxable = (charges ?? []).filter((c) => c.status === 'paid' && c.generatedDate && c.taxIncluded)
+    // No se exige que el cliente ya haya pagado el cobro (charges.status):
+    // el impuesto de ventas se reporta por lo facturado, no por lo cobrado
+    // — "Pagado/Pendiente" aquí es sobre el impuesto en sí (taxPaid), no
+    // sobre si el cliente ya pagó el cobro.
+    const taxable = (charges ?? []).filter((c) => c.generatedDate && c.taxIncluded)
     const groups = new Map<string, Charge[]>()
     for (const charge of taxable) {
       const date = parseISODate(charge.generatedDate!)
