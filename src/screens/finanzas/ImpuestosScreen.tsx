@@ -58,7 +58,9 @@ export const ImpuestosScreen = () => {
   const propertyMap = useMemo(() => new Map((properties ?? []).map((p) => [p.id, p.name])), [properties])
 
   const months = useMemo<MonthGroup[]>(() => {
-    const taxable = (charges ?? []).filter((c) => c.status === 'paid' && c.generatedDate)
+    // Solo cuentan los cobros marcados como "impuesto incluido" — uno sin
+    // esa marca no se le calcula ni se le suma impuesto en esta pantalla.
+    const taxable = (charges ?? []).filter((c) => c.status === 'paid' && c.generatedDate && c.taxIncluded)
     const groups = new Map<string, Charge[]>()
     for (const charge of taxable) {
       const date = parseISODate(charge.generatedDate!)
