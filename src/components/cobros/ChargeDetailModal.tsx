@@ -47,7 +47,7 @@ export const ChargeDetailModal = ({ charge, propertyMap, serviceTypeMap, onClose
             <Text style={styles.fieldValueText}>{charge.generatedDate || '—'}</Text>
           </Field>
           <Field label="Estatus">
-            <StatusPill status={charge.status} />
+            <StatusPill status={charge.status} label={charge.status === 'paid' ? 'Subido a OPS' : undefined} />
           </Field>
           <Field label="Invoice #">
             <Text style={styles.fieldValueText}>{charge.invoiceNumber || '—'}</Text>

@@ -158,7 +158,7 @@ export const ReportesFinancieroScreen = () => {
       { data: monthlyFinancials.map((m) => m.expenses), color: () => COLOR_ORANGE, strokeWidth: 2 },
       { data: monthlyFinancials.map((m) => m.labor), color: () => COLOR_AQUA, strokeWidth: 2 },
     ],
-    legend: ['Ingresos', 'Gastos', 'Pago a empleados'],
+    legend: ['Ventas', 'Gastos', 'Pago a empleados'],
   }
 
   if (loading) {
@@ -188,8 +188,8 @@ export const ReportesFinancieroScreen = () => {
         ) : (
           <>
         <View style={styles.statsGrid}>
-          <StatCard label="Ingresos" value={currency(kpis.revenue)} icon={DollarSign} />
-          <StatCard label="Cobrado" value={currency(kpis.collected)} icon={Wallet} tone="good" />
+          <StatCard label="Ventas" value={currency(kpis.revenue)} icon={DollarSign} />
+          <StatCard label="Subido a OPS" value={currency(kpis.collected)} icon={Wallet} tone="good" />
           <StatCard label="Pendiente" value={currency(kpis.outstanding)} icon={Clock} tone="warn" />
           <StatCard label="Pago a empleados" value={currency(kpis.laborCost)} icon={Banknote} />
           <StatCard label="Gastos" value={currency(kpis.expenses)} icon={TrendingDown} />
@@ -208,7 +208,7 @@ export const ReportesFinancieroScreen = () => {
         </View>
 
         <View style={styles.panelWrap}>
-          <DashboardPanel title="Ingresos por período" subtitle="Rango seleccionado arriba">
+          <DashboardPanel title="Ventas por período" subtitle="Rango seleccionado arriba">
             <View style={styles.granularityRow}>
               <SegmentedField
                 label="Agrupar por"
@@ -237,7 +237,7 @@ export const ReportesFinancieroScreen = () => {
         </View>
 
         <View style={styles.panelWrap}>
-          <DashboardPanel title="Ingresos vs. gastos vs. pago a empleados" subtitle="Últimos 12 meses">
+          <DashboardPanel title="Ventas vs. gastos vs. pago a empleados" subtitle="Últimos 12 meses">
             <LineChart
               data={compareChartData}
               width={screenWidth - 64}
@@ -253,7 +253,7 @@ export const ReportesFinancieroScreen = () => {
             <View style={styles.legendRow}>
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: COLOR_BLUE }]} />
-                <Text style={styles.legendLabel}>Ingresos</Text>
+                <Text style={styles.legendLabel}>Ventas</Text>
               </View>
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: COLOR_ORANGE }]} />
@@ -268,7 +268,7 @@ export const ReportesFinancieroScreen = () => {
         </View>
 
         <View style={styles.panelWrap}>
-          <DashboardPanel title="Ingresos por categoría de servicio" subtitle="Período seleccionado">
+          <DashboardPanel title="Ventas por categoría de servicio" subtitle="Período seleccionado">
             <RankingBars
               items={revenueByCategory.map((c) => ({ id: c.category ?? c.label, label: c.label, value: c.revenue }))}
               formatValue={currency}
@@ -301,7 +301,7 @@ export const ReportesFinancieroScreen = () => {
                     </Text>
                   </View>
                   <Text style={styles.cardMeta}>
-                    Ingresos {currency(row.revenue)} · {percent(share)} del total
+                    Ventas {currency(row.revenue)} · {percent(share)} del total
                   </Text>
                   <View style={styles.cardFooter}>
                     <Text style={styles.cardMeta}>Costo laboral {currency(row.laborCost)}</Text>

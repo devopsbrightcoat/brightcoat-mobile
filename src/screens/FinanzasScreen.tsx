@@ -7,19 +7,17 @@ import { ScreenHeader } from '../components/common/ScreenHeader'
 import { CobrosScreen } from './finanzas/CobrosScreen'
 import { GastosScreen } from './finanzas/GastosScreen'
 import { ImpuestosScreen } from './finanzas/ImpuestosScreen'
-import { ProveedoresScreen } from './finanzas/ProveedoresScreen'
 import type { RootStackParamList } from '../navigation/RootNavigator'
 import { useTheme } from '../theme/ThemeContext'
 import type { ThemeColors } from '../theme/colors'
 
-type TabKey = 'cobros' | 'gastos' | 'impuestos' | 'proveedores'
+type TabKey = 'cobros' | 'gastos' | 'impuestos'
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'cobros', label: 'Cobros' },
   { key: 'gastos', label: 'Gastos' },
   { key: 'impuestos', label: 'Impuestos' },
-  { key: 'proveedores', label: 'Proveedores' },
 ]
 
 export const FinanzasScreen = () => {
@@ -52,14 +50,6 @@ export const FinanzasScreen = () => {
             >
               <Plus size={22} color={colors.gold500} />
             </TouchableOpacity>
-          ) : tab === 'proveedores' ? (
-            <TouchableOpacity
-              onPress={() => navigation.navigate('AddVendor')}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={styles.addButton}
-            >
-              <Plus size={22} color={colors.gold500} />
-            </TouchableOpacity>
           ) : null
         }
       />
@@ -81,10 +71,8 @@ export const FinanzasScreen = () => {
         <CobrosScreen />
       ) : tab === 'gastos' ? (
         <GastosScreen />
-      ) : tab === 'impuestos' ? (
-        <ImpuestosScreen />
       ) : (
-        <ProveedoresScreen />
+        <ImpuestosScreen />
       )}
     </View>
   )

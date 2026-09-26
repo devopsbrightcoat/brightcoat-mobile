@@ -1,11 +1,10 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native'
+import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Eye, EyeOff, Plus, Search, Trash2 } from 'lucide-react-native'
+import { Eye, EyeOff, Search, Trash2 } from 'lucide-react-native'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { ConfirmModal } from '../components/common/ConfirmModal'
 import { Panel } from '../components/common/Panel'
-import { ScreenHeader } from '../components/common/ScreenHeader'
 import { StatusPill } from '../components/common/StatusPill'
 import { useAuth } from '../auth/AuthProvider'
 import { useReferenceData } from '../contexts/ReferenceDataContext'
@@ -128,19 +127,6 @@ export const EmpleadosScreen = () => {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader
-        title="Empleados"
-        onMenuPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-        right={
-          <TouchableOpacity
-            onPress={() => navigation.navigate('AddEmployee')}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={styles.addButton}
-          >
-            <Plus size={22} color={colors.gold500} />
-          </TouchableOpacity>
-        }
-      />
       <View style={styles.searchRow}>
         <View style={styles.searchBox}>
           <Search size={16} color={colors.ink500} />
@@ -225,10 +211,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
-  },
-  addButton: {
-    paddingHorizontal: 4,
-    paddingVertical: 2,
   },
   searchRow: {
     flexDirection: 'row',

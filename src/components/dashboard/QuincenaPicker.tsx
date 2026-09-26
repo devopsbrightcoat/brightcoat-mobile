@@ -1,59 +1,86 @@
 import React, { useMemo } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
-import { InlineSelect } from '../common/InlineSelect'
-import { SegmentedField } from '../common/SegmentedField'
-import { formatMonthLabel } from '../../lib/scheduleDates'
-import { formatQuincenaRangeLabel, listRecentMonths, type QuincenaHalf, type QuincenaKey } from '../../lib/quincena'
+import { ChevronLeft, ChevronRight } from 'lucide-react-native'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { formatQuincenaRangeParts, getQuincenaForDate, type QuincenaKey } from '../../lib/quincena'
 import { useTheme } from '../../theme/ThemeContext'
 import type { ThemeColors } from '../../theme/colors'
 
 type QuincenaPickerProps = {
   value: QuincenaKey
   onChange: (key: QuincenaKey) => void
-  monthsBack?: number
 }
 
-export const QuincenaPicker = ({ value, onChange, monthsBack = 24 }: QuincenaPickerProps) => {
+export const QuincenaPicker = ({ value, onChange }: QuincenaPickerProps) => {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
-  const months = listRecentMonths(monthsBack)
-  const monthOptions = months.map((m) => ({ id: `${m.year}-${m.month}`, label: formatMonthLabel(m.year, m.month - 1) }))
-  const monthKey = `${value.year}-${value.month}`
-
-  const handleMonthChange = (id: string) => {
-    const [year, month] = id.split('-').map(Number)
-    onChange({ year, month, half: value.half })
-  }
+  const isCurrent = value.index === getQuincenaForDate().index
+  const { label, year } = formatQuincenaRangeParts(value)
 
   return (
     <View style={styles.wrap}>
-      <InlineSelect
-        options={monthOptions}
-        value={monthKey}
-        onChange={handleMonthChange}
-        placeholder="Seleccionar mes…"
-        searchPlaceholder="Buscar…"
-      />
-      <SegmentedField<`${QuincenaHalf}`>
-        label="Quincena"
-        options={[
-          { value: '1', label: '1ra quincena' },
-          { value: '2', label: '2da quincena' },
-        ]}
-        value={String(value.half) as `${QuincenaHalf}`}
-        onChange={(v) => onChange({ ...value, half: Number(v) as QuincenaHalf })}
-      />
-      <Text style={styles.rangeLabel}>{formatQuincenaRangeLabel(value)}</Text>
+      <View style={styles.row}>
+        <TouchableOpacity
+          onPress={() => onChange({ index: value.index - 1 })}
+          disabled={value.index <= 0}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={[styles.arrowButton, value.index <= 0 && styles.arrowButtonDisabled]}
+        >
+          <ChevronLeft size={18} color={colors.ink300} />
+        </TouchableOpacity>
+        <Text style={styles.indexLabel}>
+          Quincena {label} <Text style={styles.yearLabel}>{year}</Text>
+        </Text>
+        <TouchableOpacity
+          onPress={() => onChange({ index: value.index + 1 })}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={styles.arrowButton}
+        >
+          <ChevronRight size={18} color={colors.ink300} />
+        </TouchableOpacity>
+      </View>
+
+      {!isCurrent && (
+        <TouchableOpacity onPress={() => onChange(getQuincenaForDate())} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Text style={styles.todayLink}>Ir a la quincena actual</Text>
+        </TouchableOpacity>
+      )}
     </View>
   )
 }
 
 const createStyles = (colors: ThemeColors) => StyleSheet.create({
   wrap: {
-    gap: 10,
+    gap: 8,
+    alignItems: 'flex-start',
   },
-  rangeLabel: {
-    fontSize: 11,
-    color: colors.ink500,
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.tint10,
+    backgroundColor: colors.surface,
+  },
+  arrowButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  arrowButtonDisabled: {
+    opacity: 0.3,
+  },
+  indexLabel: {
+    paddingHorizontal: 4,
+    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.white,
+  },
+  yearLabel: {
+    color: colors.gold400,
+  },
+  todayLink: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.gold400,
   },
 })

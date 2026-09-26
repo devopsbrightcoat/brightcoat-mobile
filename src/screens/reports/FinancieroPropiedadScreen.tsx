@@ -113,8 +113,8 @@ export const FinancieroPropiedadScreen = () => {
         ) : (
           <>
         <View style={styles.statsGrid}>
-          <StatCard label="Ingresos" value={currency(totalRevenue)} icon={TrendingUp} tone="good" />
-          <StatCard label="Cobrado" value={currency(collected)} icon={Wallet} tone="good" />
+          <StatCard label="Ventas" value={currency(totalRevenue)} icon={TrendingUp} tone="good" />
+          <StatCard label="Subido a OPS" value={currency(collected)} icon={Wallet} tone="good" />
           <StatCard label="Pendiente" value={currency(outstanding)} icon={TrendingDown} tone="warn" />
         </View>
 
@@ -136,7 +136,10 @@ export const FinancieroPropiedadScreen = () => {
                 </View>
                 <View style={styles.rowRight}>
                   <Text style={styles.rowAmount}>{currency(charge.amount)}</Text>
-                  <StatusPill status={charge.status} />
+                  <StatusPill
+                    status={charge.status}
+                    label={charge.status === 'paid' ? 'Subido a OPS' : undefined}
+                  />
                 </View>
               </View>
             ))

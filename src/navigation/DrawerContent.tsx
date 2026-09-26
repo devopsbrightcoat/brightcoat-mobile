@@ -10,7 +10,6 @@ import {
   LogOut,
   Receipt,
   Settings,
-  Users,
 } from 'lucide-react-native'
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -34,9 +33,8 @@ const items: { key: keyof DrawerParamList; label: string; icon: typeof LayoutDas
   { key: 'Finanzas', label: 'Finanzas', icon: Banknote },
   { key: 'Planillas', label: 'Planillas', icon: Receipt },
   { key: 'Alertas', label: 'Alertas', icon: Bell, hiddenForStaff: true },
-  { key: 'Reportes', label: 'Reportes', icon: LineChart },
   { key: 'Propiedades', label: 'Propiedades', icon: Building2 },
-  { key: 'Empleados', label: 'Empleados', icon: Users },
+  { key: 'Reportes', label: 'Reportes', icon: LineChart },
   { key: 'Configuracion', label: 'Configuración', icon: Settings },
 ]
 

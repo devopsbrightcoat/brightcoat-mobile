@@ -7,6 +7,8 @@ import { ConfirmModal } from '../components/common/ConfirmModal'
 import { FormField } from '../components/common/FormField'
 import { Panel } from '../components/common/Panel'
 import { ScreenHeader } from '../components/common/ScreenHeader'
+import { EmpleadosScreen } from './EmpleadosScreen'
+import { ProveedoresScreen } from './finanzas/ProveedoresScreen'
 import { useAuth } from '../auth/AuthProvider'
 import type { ProfileRole } from '../auth/AuthProvider'
 import { useReferenceData } from '../contexts/ReferenceDataContext'
@@ -20,7 +22,7 @@ import { useTheme } from '../theme/ThemeContext'
 import type { ThemeColors } from '../theme/colors'
 import type { ChargeTemplate, ExpenseTemplate, ServiceType } from '../types'
 
-type TabKey = 'general' | 'alertas' | 'servicios' | 'gastos_fijos' | 'cobros_fijos'
+type TabKey = 'general' | 'alertas' | 'servicios' | 'gastos_fijos' | 'cobros_fijos' | 'empleados' | 'proveedores'
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
 const roleLabel: Record<string, string> = {
@@ -36,6 +38,8 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 'servicios', label: 'Servicios' },
   { key: 'gastos_fijos', label: 'Gastos fijos' },
   { key: 'cobros_fijos', label: 'Cobros fijos' },
+  { key: 'empleados', label: 'Empleados' },
+  { key: 'proveedores', label: 'Proveedores' },
 ]
 
 const ALL_ROLES: ProfileRole[] = ['owner', 'admin', 'staff', 'finance']
@@ -259,6 +263,22 @@ export const ConfiguracionScreen = () => {
           ) : tab === 'cobros_fijos' ? (
             <TouchableOpacity
               onPress={() => navigation.navigate('AddChargeTemplate')}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={styles.addButton}
+            >
+              <Plus size={22} color={colors.gold500} />
+            </TouchableOpacity>
+          ) : tab === 'empleados' ? (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('AddEmployee')}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={styles.addButton}
+            >
+              <Plus size={22} color={colors.gold500} />
+            </TouchableOpacity>
+          ) : tab === 'proveedores' ? (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('AddVendor')}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               style={styles.addButton}
             >
@@ -592,7 +612,7 @@ export const ConfiguracionScreen = () => {
             </View>
           )}
         </ScrollView>
-      ) : (
+      ) : tab === 'cobros_fijos' ? (
         <ScrollView
           contentContainerStyle={styles.scroll}
           refreshControl={
@@ -647,6 +667,10 @@ export const ConfiguracionScreen = () => {
             </View>
           )}
         </ScrollView>
+      ) : tab === 'empleados' ? (
+        <EmpleadosScreen />
+      ) : (
+        <ProveedoresScreen />
       )}
 
       <ConfirmModal

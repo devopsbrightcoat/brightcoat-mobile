@@ -164,7 +164,7 @@ export const CobrosScreen = () => {
           </View>
           <View style={styles.propertyCardStats}>
             <View>
-              <Text style={styles.statLabel}>Cobrado</Text>
+              <Text style={styles.statLabel}>Subido a OPS</Text>
               <Text style={styles.statValueGood}>{currency(stats?.paid ?? 0)}</Text>
             </View>
             <View>
@@ -192,7 +192,7 @@ export const CobrosScreen = () => {
           </Text>
           <View style={styles.headerActions}>
             <TouchableOpacity onPress={() => setInvoiceCharge(item)} hitSlop={8}>
-              <StatusPill status={item.status} />
+              <StatusPill status={item.status} label={item.status === 'paid' ? 'Subido a OPS' : undefined} />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={(e) => {
@@ -289,7 +289,7 @@ export const CobrosScreen = () => {
           </Text>
 
           <View style={styles.statsGrid}>
-            <StatCard label="Cobrado" value={currency(totalPaid)} icon={DollarSign} tone="good" size="compact" />
+            <StatCard label="Subido a OPS" value={currency(totalPaid)} icon={DollarSign} tone="good" size="compact" />
             <StatCard label="Pendiente" value={currency(totalPending)} icon={Clock} tone="warn" size="compact" />
           </View>
 

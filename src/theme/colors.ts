@@ -44,6 +44,7 @@ export const colors = {
   emerald: '#34d399',
   amber: '#fbbf24',
   sky: '#38bdf8',
+  blue: '#60a5fa',
   rose: '#f87171',
 
   // Tintes neutros a base de blanco, usados para bordes y fondos sutiles

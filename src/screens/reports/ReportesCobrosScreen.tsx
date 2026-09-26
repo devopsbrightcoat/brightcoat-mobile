@@ -108,7 +108,7 @@ export const ReportesCobrosScreen = () => {
         ) : (
           <>
         <View style={styles.statsGrid}>
-          <StatCard label="Cobrado" value={currency(collected)} icon={DollarSign} tone="good" />
+          <StatCard label="Subido a OPS" value={currency(collected)} icon={DollarSign} tone="good" />
           <StatCard label="Pendiente" value={currency(outstanding)} icon={Clock} tone="warn" />
           <StatCard label="% cobrado" value={collectedPct == null ? '—' : percent(collectedPct)} icon={Receipt} />
           <StatCard label="Cobros en el período" value={String(periodCharges.length)} icon={Receipt} />
@@ -126,7 +126,10 @@ export const ReportesCobrosScreen = () => {
                     {propertyName(charge.propertyId)}
                     {charge.unitLabel ? ` · ${charge.unitLabel}` : ''}
                   </Text>
-                  <StatusPill status={charge.status} />
+                  <StatusPill
+                    status={charge.status}
+                    label={charge.status === 'paid' ? 'Subido a OPS' : undefined}
+                  />
                 </View>
                 <View style={styles.cardFooter}>
                   <Text style={styles.cardMeta} numberOfLines={1}>

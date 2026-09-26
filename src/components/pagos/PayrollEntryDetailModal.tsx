@@ -66,7 +66,9 @@ export const PayrollEntryDetailModal = ({
           <View style={styles.summaryBox}>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Cobro</Text>
-              <Text style={styles.summaryValue}>{entry.amount == null ? 'Pendiente' : currency(entry.amount)}</Text>
+              <Text style={[styles.summaryValue, entry.amount == null ? styles.pendingValue : styles.cobroValue]}>
+                {entry.amount == null ? 'Pendiente' : currency(entry.amount)}
+              </Text>
             </View>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Pago</Text>
@@ -178,6 +180,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: colors.white,
+  },
+  cobroValue: {
+    color: colors.blue,
   },
   salesValue: {
     color: colors.emerald,

@@ -45,7 +45,7 @@ const FINANCIAL_ITEMS: ReportItem[] = [
   {
     route: 'ReportesCobros',
     title: 'Cobros',
-    description: 'Cobrado vs. pendiente, invoices por período y antigüedad de cartera.',
+    description: 'Subido a OPS vs. pendiente, invoices por período y antigüedad de cartera.',
     icon: Receipt,
   },
   {
@@ -90,7 +90,7 @@ const OPERATIONS_ITEMS: ReportItem[] = [
   {
     route: 'FinancieroPropiedad',
     title: 'Historial financiero de propiedad',
-    description: 'Ingresos, cobros y trabajos de una propiedad específica.',
+    description: 'Ventas, cobros y trabajos de una propiedad específica.',
     icon: LineChart,
   },
 ]

@@ -10,7 +10,9 @@ import {
   ChevronUp,
   Clock,
   DollarSign,
+  Maximize2,
   Percent,
+  Receipt,
   SlidersHorizontal,
   TrendingDown,
   TrendingUp,
@@ -18,12 +20,14 @@ import {
 } from 'lucide-react-native'
 import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { LineChart } from 'react-native-chart-kit'
+import { DatePicker } from '../components/common/DatePicker'
 import { SelectField } from '../components/common/SelectField'
 import { StatCard } from '../components/common/StatCard'
 import { StatusPill } from '../components/common/StatusPill'
 import { DashboardPanel } from '../components/dashboard/DashboardPanel'
 import { Pagination } from '../components/common/Pagination'
 import { RankingBars } from '../components/dashboard/RankingBars'
+import { EmployeeProfitModal } from '../components/dashboard/EmployeeProfitModal'
 import { ServiceCategoryModal } from '../components/dashboard/ServiceCategoryModal'
 import { ScreenHeader } from '../components/common/ScreenHeader'
 import { useReferenceData } from '../contexts/ReferenceDataContext'
@@ -31,6 +35,7 @@ import { fetchCharges, fetchExpenses, fetchPayrollEntries, fetchSchedules } from
 import {
   computeAlerts,
   computeDashboardFetchWindowStart,
+  computeUploadToOpsReminder,
   computeDateRange,
   computeEmployeeProductivity,
   computeEmployeeProfit,
@@ -42,8 +47,6 @@ import {
   computeRevenueByCategory,
   computeRevenueByProperty,
   computeTodaySchedules,
-  DASHBOARD_DATE_RANGE_OPTIONS,
-  type DashboardDateRangeKey,
   type DashboardDateRangeSelection,
 } from '../lib/dashboardMetrics'
 import { currency } from '../lib/format'
@@ -92,15 +95,25 @@ export const DashboardScreen = () => {
     return `${(value / 1000).toFixed(1)}k`
   }
   const navigation = useNavigation()
-  const [rangeSelection, setRangeSelection] = useState<DashboardDateRangeSelection>({ kind: 'preset', key: 'this_month' })
+  const [rangeSelection, setRangeSelection] = useState<DashboardDateRangeSelection>({ kind: 'quincena', quincena: getQuincenaForDate() })
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
+  const [employeeProfitExpanded, setEmployeeProfitExpanded] = useState(false)
   const [filtersExpanded, setFiltersExpanded] = useState(false)
   const [pendingPage, setPendingPage] = useState(1)
 
   // El Dashboard solo necesita datos de los últimos ~14 meses (ver
   // computeDashboardFetchWindowStart) — antes traía TODO el historial en
   // cada una de estas 4 consultas (peor en mobile: datos móviles/batería).
-  const fetchWindowStart = useMemo(() => computeDashboardFetchWindowStart(), [])
+  // Si el usuario elige un rango personalizado que arranca antes de esa
+  // ventana, se extiende el fetch hasta ahí para no dejar el rango
+  // elegido con datos incompletos.
+  const fetchWindowStart = useMemo(() => {
+    const defaultStart = computeDashboardFetchWindowStart()
+    if (rangeSelection.kind === 'custom' && rangeSelection.start && rangeSelection.start < defaultStart) {
+      return rangeSelection.start
+    }
+    return defaultStart
+  }, [rangeSelection])
   const { data: charges, loading: loadingCharges, error: errorCharges } = useSupabaseQuery(
     () => fetchCharges(fetchWindowStart),
     [fetchWindowStart],
@@ -170,6 +183,13 @@ export const DashboardScreen = () => {
     [payrollEntries, employees, range],
   )
 
+  // Lista completa (sin el límite de 8 del panel compacto) para el modal
+  // expandido — ahí sí se quiere ver a todos los empleados con planillas.
+  const allEmployeeProfit = useMemo(
+    () => computeEmployeeProfit(payrollEntries ?? [], employees ?? [], range, Number.MAX_SAFE_INTEGER),
+    [payrollEntries, employees, range],
+  )
+
   const profitByCategory = useMemo(
     () => computeProfitByCategory(payrollEntries ?? [], schedules ?? [], serviceTypes ?? [], range),
     [payrollEntries, schedules, serviceTypes, range],
@@ -197,6 +217,10 @@ export const DashboardScreen = () => {
     [charges, payrollEntries, expenses, properties, range],
   )
 
+  // Recordatorio "subir a OPS" (día 15 de cada mes) — independiente del
+  // rango de fechas seleccionado, ver computeUploadToOpsReminder.
+  const uploadToOpsReminder = useMemo(() => computeUploadToOpsReminder(charges ?? []), [charges])
+
   const propertyName = (id: string) => properties?.find((p) => p.id === id)?.name ?? '—'
   const serviceTypeName = (id: string) => serviceTypes?.find((s) => s.id === id)?.name ?? '—'
   const employeeName = (id: string) => employees?.find((e) => e.id === id)?.name ?? '—'
@@ -220,7 +244,7 @@ export const DashboardScreen = () => {
       { data: monthlyFinancials.map((m) => m.expenses), color: () => COLOR_ORANGE, strokeWidth: 2 },
       { data: monthlyFinancials.map((m) => m.labor), color: () => COLOR_AQUA, strokeWidth: 2 },
     ],
-    legend: ['Ingresos', 'Gastos', 'Pago a empleados'],
+    legend: ['Ventas', 'Gastos', 'Pago a empleados'],
   }
 
   return (
@@ -246,28 +270,41 @@ export const DashboardScreen = () => {
             <SelectField
               label="Tipo de filtro"
               options={[
-                { id: 'preset', label: 'Preset' },
                 { id: 'quincena', label: 'Quincena' },
+                { id: 'custom', label: 'Fecha' },
               ]}
               value={rangeSelection.kind}
-              onChange={(kind) =>
-                setRangeSelection(
-                  kind === 'preset' ? { kind: 'preset', key: 'this_month' } : { kind: 'quincena', quincena: getQuincenaForDate() },
-                )
-              }
+              onChange={(kind) => {
+                if (kind === 'quincena') {
+                  setRangeSelection({ kind: 'quincena', quincena: getQuincenaForDate() })
+                } else {
+                  const current = computeDateRange(rangeSelection)
+                  setRangeSelection({ kind: 'custom', start: current.start, end: current.end })
+                }
+              }}
             />
-            {rangeSelection.kind === 'preset' ? (
-              <SelectField
-                label="Período"
-                options={DASHBOARD_DATE_RANGE_OPTIONS.map((option) => ({ id: option.value, label: option.label }))}
-                value={rangeSelection.key}
-                onChange={(key) => setRangeSelection({ kind: 'preset', key: key as DashboardDateRangeKey })}
-              />
-            ) : (
+            {rangeSelection.kind === 'quincena' ? (
               <QuincenaPicker
                 value={rangeSelection.quincena}
                 onChange={(quincena) => setRangeSelection({ kind: 'quincena', quincena })}
               />
+            ) : (
+              <View style={styles.customRangeRow}>
+                <View style={styles.customRangeHalf}>
+                  <DatePicker
+                    label="Fecha desde"
+                    value={rangeSelection.start}
+                    onChange={(start) => setRangeSelection({ kind: 'custom', start, end: rangeSelection.end })}
+                  />
+                </View>
+                <View style={styles.customRangeHalf}>
+                  <DatePicker
+                    label="Fecha hasta"
+                    value={rangeSelection.end}
+                    onChange={(end) => setRangeSelection({ kind: 'custom', start: rangeSelection.start, end })}
+                  />
+                </View>
+              </View>
             )}
           </View>
         ) : null}
@@ -279,12 +316,31 @@ export const DashboardScreen = () => {
         <ActivityIndicator style={styles.centered} color={colors.gold400} />
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
+          {uploadToOpsReminder ? (
+            <View style={styles.opsReminderBanner}>
+              <AlertTriangle size={18} color={colors.rose} style={styles.alertIcon} />
+              <View style={styles.alertTextGroup}>
+                <Text style={styles.opsReminderTitle}>Recordatorio: subir cobros a OPS</Text>
+                <Text style={styles.opsReminderDetail}>
+                  Ya pasó el día 15 del mes y quedan {uploadToOpsReminder.count} cobro(s) pendientes de subir a
+                  OPS — {currency(uploadToOpsReminder.total)} en total.
+                </Text>
+              </View>
+            </View>
+          ) : null}
           <View style={styles.statsGrid}>
-            <StatCard label="Ingresos" value={currency(kpis.revenue)} icon={DollarSign} hint={revenueHint} size="compact" style={styles.statCard} />
-            <StatCard label="Cobrado" value={currency(kpis.collected)} icon={Wallet} tone="good" size="compact" style={styles.statCard} />
+            <StatCard label="Ventas" value={currency(kpis.revenue)} icon={DollarSign} hint={revenueHint} size="compact" style={styles.statCard} />
+            <StatCard label="Subido a OPS" value={currency(kpis.collected)} icon={Wallet} tone="good" size="compact" style={styles.statCard} />
             <StatCard label="Pendiente" value={currency(kpis.outstanding)} icon={Clock} tone="warn" size="compact" style={styles.statCard} />
             <StatCard label="Pago a empleados" value={currency(kpis.laborCost)} icon={Banknote} size="compact" style={styles.statCard} />
             <StatCard label="Gastos" value={currency(kpis.expenses)} icon={TrendingDown} size="compact" style={styles.statCard} />
+            <StatCard
+              label="Impuestos acumulados"
+              value={currency(kpis.accumulatedTax)}
+              icon={Receipt}
+              size="compact"
+              style={styles.statCard}
+            />
             <StatCard
               label="Ganancia estimada"
               value={currency(kpis.estimatedProfit)}
@@ -319,7 +375,7 @@ export const DashboardScreen = () => {
               />
             </DashboardPanel>
 
-            <DashboardPanel title="Ingresos vs. gastos vs. pago a empleados" subtitle="Últimos 12 meses">
+            <DashboardPanel title="Ventas vs. gastos vs. pago a empleados" subtitle="Últimos 12 meses">
               <LineChart
                 data={financialsCompareData}
                 width={screenWidth - 64}
@@ -334,7 +390,7 @@ export const DashboardScreen = () => {
               />
             </DashboardPanel>
 
-            <DashboardPanel title="Ingresos por servicio" subtitle="Período seleccionado">
+            <DashboardPanel title="Ventas por servicio" subtitle="Período seleccionado">
               <RankingBars
                 items={revenueByCategory.map((c) => ({ id: c.category ?? c.label, label: c.label, value: c.revenue }))}
                 formatValue={currency}
@@ -344,7 +400,7 @@ export const DashboardScreen = () => {
               />
             </DashboardPanel>
 
-            <DashboardPanel title="Ingresos por propiedad" subtitle="Top propiedades — período seleccionado">
+            <DashboardPanel title="Ventas por propiedad" subtitle="Top propiedades — período seleccionado">
               <RankingBars
                 items={revenueByProperty.map((p) => ({ id: p.propertyId, label: p.name, value: p.revenue }))}
                 formatValue={currency}
@@ -362,11 +418,24 @@ export const DashboardScreen = () => {
               />
             </DashboardPanel>
 
-            <DashboardPanel title="Vendido, pagado y ganancia por empleado" subtitle="Cobro, pago al empleado y ganancia — período seleccionado">
+            <DashboardPanel
+              title="Vendido, pagado y ganancia por empleado"
+              subtitle="Cobro, pago al empleado y ganancia — período seleccionado"
+              action={
+                employeeProfit.length > 0 ? (
+                  <TouchableOpacity
+                    onPress={() => setEmployeeProfitExpanded(true)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Maximize2 size={16} color={colors.ink400} />
+                  </TouchableOpacity>
+                ) : undefined
+              }
+            >
               {employeeProfit.length === 0 ? (
                 <Text style={styles.emptyText}>No hay planillas cobradas en este período.</Text>
               ) : (
-                <>
+                <TouchableOpacity activeOpacity={0.8} onPress={() => setEmployeeProfitExpanded(true)}>
                   <Text style={styles.subSectionLabel}>Vendido</Text>
                   <RankingBars
                     items={employeeProfit.map((e) => ({
@@ -400,7 +469,7 @@ export const DashboardScreen = () => {
                     color={COLOR_GOLD}
                     emptyText=""
                   />
-                </>
+                </TouchableOpacity>
               )}
             </DashboardPanel>
 
@@ -531,6 +600,11 @@ export const DashboardScreen = () => {
       )}
 
       <ServiceCategoryModal category={selectedCategory} onClose={() => setSelectedCategoryId(null)} />
+      <EmployeeProfitModal
+        open={employeeProfitExpanded}
+        data={allEmployeeProfit}
+        onClose={() => setEmployeeProfitExpanded(false)}
+      />
     </View>
   )
 }
@@ -568,6 +642,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   filterFields: {
     gap: 12,
     marginTop: 12,
+  },
+  customRangeRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  customRangeHalf: {
+    flex: 1,
   },
   scroll: {
     paddingBottom: 32,
@@ -715,6 +796,26 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.gold300,
   },
   alertDetail: {
+    marginTop: 2,
+    fontSize: 12,
+    color: colors.ink300,
+  },
+  opsReminderBanner: {
+    flexDirection: 'row',
+    gap: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(248,113,113,0.3)',
+    backgroundColor: 'rgba(248,113,113,0.1)',
+    padding: 14,
+    marginBottom: 14,
+  },
+  opsReminderTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.rose,
+  },
+  opsReminderDetail: {
     marginTop: 2,
     fontSize: 12,
     color: colors.ink300,

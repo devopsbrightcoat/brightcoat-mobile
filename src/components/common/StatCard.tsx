@@ -5,7 +5,7 @@ import type { StyleProp, ViewStyle } from 'react-native'
 import type { ThemeColors } from '../../theme/colors'
 import { useTheme } from '../../theme/ThemeContext'
 
-type Tone = 'default' | 'good' | 'warn'
+type Tone = 'default' | 'good' | 'warn' | 'info'
 type Size = 'default' | 'compact'
 
 type HintTone = 'default' | 'warn'
@@ -25,6 +25,7 @@ const makeToneStyles = (colors: ThemeColors): Record<Tone, { bg: string; icon: s
   default: { bg: colors.tint05, icon: colors.ink300 },
   good: { bg: 'rgba(52,211,153,0.1)', icon: colors.emerald },
   warn: { bg: 'rgba(251,191,36,0.1)', icon: colors.amber },
+  info: { bg: 'rgba(96,165,250,0.1)', icon: colors.blue },
 })
 
 const makeHintToneStyles = (colors: ThemeColors): Record<HintTone, { color: string; fontWeight: '400' | '700' }> => ({

@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { CalendarDays, ChevronLeft, Plus, Search, Trash2, TrendingUp, Wallet } from 'lucide-react-native'
+import { CalendarDays, ChevronLeft, DollarSign, Plus, Search, Trash2, TrendingUp, Wallet } from 'lucide-react-native'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { ScreenHeader } from '../components/common/ScreenHeader'
 import { ConfirmModal } from '../components/common/ConfirmModal'
@@ -92,6 +92,10 @@ export const PlanillasScreen = () => {
       const sales = entry.items.reduce((sum, item) => sum + item.amount, 0)
       const current = map.get(entry.employeeId) ?? { count: 0, sales: 0, profit: 0, pendingCount: 0 }
       current.count += 1
+      // "Pago" cuenta todas las planillas del período, cobradas o no — es lo
+      // que se le debe/pagó al empleado por el trabajo ya hecho, sin importar
+      // si el cliente ya pagó ese cobro (igual que el costo de mano de obra
+      // del Dashboard). "Ganancia" sí requiere que el cobro ya esté definido.
       current.sales += sales
       if (entry.amount == null) current.pendingCount += 1
       else current.profit += entry.amount - sales
@@ -122,14 +126,23 @@ export const PlanillasScreen = () => {
   }, [entries, propertyMap, selectedEmployeeId, searchText])
 
   const totals = useMemo(() => {
+    let cobro = 0
     let sales = 0
     let profit = 0
     for (const entry of filtered) {
       const entrySales = entry.items.reduce((sum, item) => sum + item.amount, 0)
+      // "Cobro" y "Ganancia" solo cuentan planillas ya cobradas (amount !=
+      // null). "Pago" cuenta todas las planillas del período, cobradas o no
+      // — es lo que se le debe/pagó al empleado por el trabajo ya hecho, sin
+      // importar si el cliente ya pagó ese cobro (igual que el costo de mano
+      // de obra del Dashboard).
       sales += entrySales
-      if (entry.amount != null) profit += entry.amount - entrySales
+      if (entry.amount != null) {
+        cobro += entry.amount
+        profit += entry.amount - entrySales
+      }
     }
-    return { sales, profit }
+    return { cobro, sales, profit }
   }, [filtered])
 
   const loading = loadingEntries || loadingProperties || loadingEmployees
@@ -295,6 +308,7 @@ export const PlanillasScreen = () => {
           </Text>
 
           <View style={styles.statsGrid}>
+            <StatCard label="Cobro" value={currency(totals.cobro)} icon={DollarSign} tone="info" size="compact" />
             <StatCard label="Pago" value={currency(totals.sales)} icon={TrendingUp} tone="good" size="compact" />
             <StatCard label="Ganancia" value={currency(totals.profit)} icon={Wallet} size="compact" />
           </View>
@@ -590,7 +604,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   amount: {
     fontSize: 13,
     fontWeight: '700',
-    color: colors.white,
+    color: colors.blue,
   },
   pendingAmount: {
     fontSize: 13,
