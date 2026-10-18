@@ -13,6 +13,9 @@ export type PayrollExportOptions = {
   // 'admin' (por defecto) incluye todo, igual que en web. 'employee' quita
   // Notas, Cobro y Ganancia — lo que no debe ver el empleado.
   audience?: PayrollExportAudience
+  // Rango de fechas ya formateado para mostrar (ej. "14 Oct – 28 Oct") — se
+  // imprime debajo del título en el PDF.
+  periodLabel?: string
 }
 
 const currency = (value: number) =>
@@ -89,6 +92,7 @@ const wrapText = (text: string, font: PDFFont, size: number, maxWidth: number): 
   return lines.length > 0 ? lines : ['']
 }
 
+const GOLD = rgb(207 / 255, 145 / 255, 34 / 255)
 const GOLD_BG = rgb(253 / 255, 247 / 255, 231 / 255)
 const INK = rgb(30 / 255, 31 / 255, 37 / 255)
 const BORDER = rgb(226 / 255, 232 / 255, 240 / 255)
@@ -108,7 +112,7 @@ export const exportPayrollToPdf = async (
   employees: Employee[],
   options: PayrollExportOptions = {},
 ): Promise<void> => {
-  const { employeeName, audience = 'admin' } = options
+  const { employeeName, audience = 'admin', periodLabel } = options
 
   const head =
     audience === 'admin'
@@ -156,8 +160,8 @@ export const exportPayrollToPdf = async (
   const { order: employeeOrder, totals: totalsByEmployee } = sumByEmployee(entries)
 
   const pdfDoc = await PDFDocument.create()
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
-  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+  const font = await pdfDoc.embedFont(StandardFonts.TimesRoman)
+  const fontBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold)
   let page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT])
 
   const toY = (fromTop: number) => PAGE_HEIGHT - fromTop
@@ -175,18 +179,27 @@ export const exportPayrollToPdf = async (
 
   // --- Encabezado: nombre de la empresa (el mismo que se edita en
   // Configuracion > General) y el logo arriba a la derecha — en la planilla
-  // no hace falta repetir direccion ni contacto. ---
+  // no hace falta repetir direccion ni contacto.
+  //
+  // El nombre de la empresa queda centrado verticalmente contra el logo (con
+  // su placa navy) en vez de una posicion fija, y la linea separadora se
+  // dibuja despues del punto mas bajo de esa placa — asi el logo nunca
+  // termina encimado sobre la linea, sin importar que tan grande salga. ---
   const company = await fetchCompanyInfoForPdf()
-  drawText(company.companyName, MARGIN_X, 18, { size: 11, font: fontBold, color: INK })
+  const logoWidth = 76
+  const logoHeight = logoWidth * BRIGHTCOAT_LOGO_ASPECT_RATIO
+  const platePadding = 6
+  const plateTop = 8
+  const plateHeight = logoHeight + platePadding * 2
+  const plateBottom = plateTop + plateHeight
+
+  drawText(company.companyName, MARGIN_X, plateTop + plateHeight / 2 + 4.5, { size: 12, font: fontBold, color: INK })
 
   try {
     const logoBytes = base64ToUint8Array(BRIGHTCOAT_LOGO_BASE64)
     const logoImage = await pdfDoc.embedPng(logoBytes)
-    const logoWidth = 76
-    const logoHeight = logoWidth * BRIGHTCOAT_LOGO_ASPECT_RATIO
     const logoX = PAGE_WIDTH - MARGIN_X - logoWidth
-    const logoY = toY(8) - logoHeight
-    const platePadding = 6
+    const logoY = toY(plateTop + platePadding) - logoHeight
     page.drawRectangle({
       x: logoX - platePadding,
       y: logoY - platePadding,
@@ -201,9 +214,16 @@ export const exportPayrollToPdf = async (
     // encabezado.
   }
 
-  page.drawLine({ start: { x: MARGIN_X, y: toY(26) }, end: { x: PAGE_WIDTH - MARGIN_X, y: toY(26) }, thickness: 0.6, color: BORDER })
+  let headerBottom = plateBottom + 8
+  page.drawLine({ start: { x: MARGIN_X, y: toY(headerBottom) }, end: { x: PAGE_WIDTH - MARGIN_X, y: toY(headerBottom) }, thickness: 0.6, color: BORDER })
 
-  drawText(employeeName ? `Planilla — ${employeeName}` : 'Planillas', MARGIN_X, 42, { size: 13, font: fontBold, color: rgb(0, 0, 0) })
+  headerBottom += 18
+  drawText(employeeName ? `Planilla — ${employeeName}` : 'Planillas', MARGIN_X, headerBottom, { size: 15, font: fontBold, color: rgb(0, 0, 0) })
+
+  if (periodLabel) {
+    headerBottom += 15
+    drawText(`Período: ${periodLabel}`, MARGIN_X, headerBottom, { size: 10.5, font, color: rgb(0.4, 0.4, 0.4) })
+  }
 
   // --- Tabla de planillas (dibujada a mano — pdf-lib no trae un helper de
   // tablas como jspdf-autotable) ---
@@ -236,9 +256,9 @@ export const exportPayrollToPdf = async (
     runningX += col.width
   }
 
-  let tableTop = 52
+  let tableTop = headerBottom + 14
   const rowPaddingY = 6
-  const lineHeight = 10
+  const lineHeight = 11
 
   const drawHeaderRow = () => {
     drawRow(
@@ -257,7 +277,7 @@ export const exportPayrollToPdf = async (
 
   function drawRow(cells: string[], opts: { bold?: boolean; fill?: ReturnType<typeof rgb>; textColor?: ReturnType<typeof rgb> }) {
     const wrapped = cells.map((cell, i) =>
-      wrapText(cell, opts.bold ? fontBold : font, 8.5, columns[i].width - 6),
+      wrapText(cell, opts.bold ? fontBold : font, 9.5, columns[i].width - 6),
     )
     const lineCount = Math.max(...wrapped.map((lines) => lines.length), 1)
     const rowHeight = lineCount * lineHeight + rowPaddingY * 2
@@ -272,7 +292,7 @@ export const exportPayrollToPdf = async (
       const x = col.align === 'right' ? colX[i] + col.width - 3 : colX[i] + 3
       lines.forEach((line, li) => {
         drawText(line, x, tableTop + rowPaddingY + lineHeight * (li + 1) - 2, {
-          size: 8.5,
+          size: 9.5,
           font: opts.bold ? fontBold : font,
           color: opts.textColor ?? INK,
           align: col.align,
@@ -294,24 +314,46 @@ export const exportPayrollToPdf = async (
   body.forEach((row, i) => drawRow(row, { bold: bodyIsMain[i] }))
 
   // --- Totales por empleado (y total general si hay mas de uno) ---
-  tableTop += 14
-  for (const employeeId of employeeOrder) {
-    ensureSpace(16)
-    const rowEmployeeName = employees.find((emp) => emp.id === employeeId)?.name ?? '—'
-    drawText(`Total pagado a ${rowEmployeeName}: ${currency(totalsByEmployee.get(employeeId) ?? 0)}`, MARGIN_X, tableTop, {
-      size: 10,
-      font: fontBold,
-      color: INK,
-    })
-    tableTop += 16
-  }
+  const totalBoxPaddingX = 8
+  const totalBoxHeight = 22
+  const totalBoxGap = 8
+  const hasGrandTotal = employeeOrder.length > 1
+  if (employeeOrder.length > 0) {
+    // Alto del bloque completo de totales (una caja por empleado + "Total
+    // general" si hay mas de uno) — para pegarlo contra el final de la
+    // hoja en vez de dejarlo pegado a la tabla.
+    const blockHeight =
+      employeeOrder.length * totalBoxHeight + (employeeOrder.length - 1) * totalBoxGap + (hasGrandTotal ? 16 : 0)
+    const marginBottom = 24
+    const minGapAfterTable = 24
+    // Normalmente queda pegado al final de la hoja; si la tabla es tan
+    // larga que no alcanza ese espacio, cae a un margen fijo debajo de la
+    // tabla en vez de encimarse con ella.
+    tableTop = Math.max(PAGE_HEIGHT - marginBottom - blockHeight, tableTop + minGapAfterTable)
 
-  if (employeeOrder.length > 1) {
-    const grandTotal = Array.from(totalsByEmployee.values()).reduce((sum, v) => sum + v, 0)
-    ensureSpace(20)
-    tableTop += 4
-    drawText(`Total general: ${currency(grandTotal)}`, MARGIN_X, tableTop, { size: 11, font: fontBold, color: INK })
-    tableTop += 16
+    for (const employeeId of employeeOrder) {
+      const label = `Total pagado: ${currency(totalsByEmployee.get(employeeId) ?? 0)}`
+      const boxWidth = fontBold.widthOfTextAtSize(label, 13) + totalBoxPaddingX * 2
+      // Recuadro dorado alrededor del total — para que resalte cuanto se
+      // pago, en vez de perderse como una linea de texto mas.
+      page.drawRectangle({
+        x: MARGIN_X,
+        y: toY(tableTop + totalBoxHeight),
+        width: boxWidth,
+        height: totalBoxHeight,
+        color: GOLD_BG,
+        borderColor: GOLD,
+        borderWidth: 1,
+      })
+      drawText(label, MARGIN_X + totalBoxPaddingX, tableTop + totalBoxHeight - 7, { size: 13, font: fontBold, color: HEADER_TEXT })
+      tableTop += totalBoxHeight + totalBoxGap
+    }
+
+    if (hasGrandTotal) {
+      const grandTotal = Array.from(totalsByEmployee.values()).reduce((sum, v) => sum + v, 0)
+      drawText(`Total general: ${currency(grandTotal)}`, MARGIN_X, tableTop, { size: 12, font: fontBold, color: INK })
+      tableTop += 16
+    }
   }
 
   const base64Pdf = await pdfDoc.saveAsBase64({ dataUri: true })

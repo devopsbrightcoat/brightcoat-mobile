@@ -99,12 +99,11 @@ const MARGIN_X = 42
 export const exportEstimateToPdf = async (data: EstimateExportData): Promise<void> => {
   const { estimateNumber, date, propertyName, unitLabel, propertyContact, items, note } = data
   const title = data.documentTitle?.trim() || 'Estimate'
-  const displayPropertyName = unitLabel ? `${propertyName} · ${unitLabel}` : propertyName
   const company = await fetchCompanyInfoForPdf()
 
   const pdfDoc = await PDFDocument.create()
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
-  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+  const font = await pdfDoc.embedFont(StandardFonts.TimesRoman)
+  const fontBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold)
   let page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT])
 
   // pdf-lib dibuja con el origen (0,0) en la esquina inferior izquierda y el
@@ -146,8 +145,17 @@ export const exportEstimateToPdf = async (data: EstimateExportData): Promise<voi
     const logoWidth = 108
     const logoHeight = logoWidth * BRIGHTCOAT_LOGO_ASPECT_RATIO
     const logoX = PAGE_WIDTH - MARGIN_X - logoWidth
-    const logoY = toY(23) - logoHeight
+    // El logo queda centrado verticalmente contra el bloque de datos de la
+    // empresa (nombre + dirección a la izquierda, email/teléfono a la
+    // derecha), igual que en ops-web, en vez de una posición fija.
+    const infoTop = 42 - 9
+    const addressBottom = addressStartY + Math.max(addressLines.length - 1, 0) * 11 + 4
+    const phoneBottom = 53 + 4
+    const infoBottom = Math.max(addressBottom, phoneBottom)
+    const infoCenterFromTop = (infoTop + infoBottom) / 2
     const platePadding = 8
+    const logoTopFromTop = infoCenterFromTop - logoHeight / 2
+    const logoY = toY(logoTopFromTop) - logoHeight
     page.drawRectangle({
       x: logoX - platePadding,
       y: logoY - platePadding,
@@ -167,7 +175,9 @@ export const exportEstimateToPdf = async (data: EstimateExportData): Promise<voi
 
   // --- Franja con el nombre de la propiedad/proyecto + datos del estimado ---
   const bandTop = 142
-  const bandHeight = propertyContact ? 142 : 124
+  let bandHeight = 124
+  if (unitLabel) bandHeight += 20
+  if (propertyContact) bandHeight += 18
   page.drawRectangle({
     x: MARGIN_X,
     y: toY(bandTop + bandHeight),
@@ -177,7 +187,12 @@ export const exportEstimateToPdf = async (data: EstimateExportData): Promise<voi
   })
 
   cursorYFromTop = bandTop + 30
-  drawText(displayPropertyName, MARGIN_X + 16, cursorYFromTop, { size: 14, font: fontBold, color: GOLD })
+  drawText(propertyName, MARGIN_X + 16, cursorYFromTop, { size: 14, font: fontBold, color: GOLD })
+
+  if (unitLabel) {
+    cursorYFromTop += 18
+    drawText(`Unit #: ${unitLabel}`, MARGIN_X + 16, cursorYFromTop, { size: 10, font, color: INK })
+  }
 
   if (propertyContact) {
     cursorYFromTop += 16
@@ -288,8 +303,12 @@ export const exportEstimateToPdf = async (data: EstimateExportData): Promise<voi
 
   // --- Total ---
   const total = items.reduce((sum, item) => sum + item.qty * item.rate, 0)
-  const totalY = tableTop + 24
-  ensureSpace(40)
+  // Más despegado de la tabla que antes (no pegado contra la última fila).
+  const totalY = tableTop + 56
+  // El espacio que se verifica tiene que cubrir hasta donde realmente cae
+  // el total (más el nuevo espacio extra de separación), no solo un margen
+  // fijo — si no, podía terminar dibujándose fuera de la hoja.
+  ensureSpace(64)
   page.drawLine({ start: { x: PAGE_WIDTH - MARGIN_X - 170, y: toY(totalY - 12) }, end: { x: PAGE_WIDTH - MARGIN_X, y: toY(totalY - 12) }, thickness: 0.5, color: BORDER })
   drawText('Total', PAGE_WIDTH - MARGIN_X - 85, totalY, { size: 11, font: fontBold, color: INK, align: 'right' })
   drawText(currency(total), PAGE_WIDTH - MARGIN_X, totalY, { size: 14, font: fontBold, color: INK, align: 'right' })

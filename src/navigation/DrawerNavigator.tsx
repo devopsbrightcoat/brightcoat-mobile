@@ -8,7 +8,6 @@ import { FinanzasScreen } from '../screens/FinanzasScreen'
 import { HorariosScreen } from '../screens/HorariosScreen'
 import { EstimadosScreen } from '../screens/EstimadosScreen'
 import { PlanillasScreen } from '../screens/PlanillasScreen'
-import { PropiedadesScreen } from '../screens/PropiedadesScreen'
 import { ReportesScreen } from '../screens/ReportesScreen'
 import { DrawerContent } from './DrawerContent'
 
@@ -20,7 +19,6 @@ export type DrawerParamList = {
   Estimados: undefined
   Alertas: undefined
   Reportes: undefined
-  Propiedades: undefined
   Catalogos: undefined
   Configuracion: undefined
 }
@@ -46,7 +44,6 @@ export const DrawerNavigator = () => {
       <Drawer.Screen name="Estimados" component={EstimadosScreen} />
       <Drawer.Screen name="Alertas" component={AlertasScreen} />
       <Drawer.Screen name="Reportes" component={ReportesScreen} />
-      <Drawer.Screen name="Propiedades" component={PropiedadesScreen} />
       <Drawer.Screen name="Catalogos" component={CatalogosScreen} />
       <Drawer.Screen name="Configuracion" component={ConfiguracionScreen} />
     </Drawer.Navigator>

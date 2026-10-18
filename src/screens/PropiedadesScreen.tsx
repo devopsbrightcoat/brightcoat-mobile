@@ -1,11 +1,10 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native'
+import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Plus, Search, Trash2 } from 'lucide-react-native'
+import { Search, Trash2 } from 'lucide-react-native'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { ConfirmModal } from '../components/common/ConfirmModal'
 import { Panel } from '../components/common/Panel'
-import { ScreenHeader } from '../components/common/ScreenHeader'
 import { StatusPill } from '../components/common/StatusPill'
 import { useReferenceData } from '../contexts/ReferenceDataContext'
 import { deleteProperty } from '../lib/api'
@@ -72,19 +71,6 @@ export const PropiedadesScreen = () => {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader
-        title="Propiedades"
-        onMenuPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-        right={
-          <TouchableOpacity
-            onPress={() => navigation.navigate('AddProperty')}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={styles.addButton}
-          >
-            <Plus size={22} color={colors.gold500} />
-          </TouchableOpacity>
-        }
-      />
       <View style={styles.searchBox}>
         <Search size={16} color={colors.ink500} />
         <TextInput
@@ -146,10 +132,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
-  },
-  addButton: {
-    paddingHorizontal: 4,
-    paddingVertical: 2,
   },
   searchBox: {
     flexDirection: 'row',

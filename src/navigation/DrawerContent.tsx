@@ -3,7 +3,6 @@ import type { DrawerContentComponentProps } from '@react-navigation/drawer'
 import {
   Banknote,
   Bell,
-  Building2,
   Calendar,
   FileText,
   LayoutDashboard,
@@ -36,7 +35,6 @@ const items: { key: keyof DrawerParamList; label: string; icon: typeof LayoutDas
   { key: 'Planillas', label: 'Planillas', icon: Receipt },
   { key: 'Estimados', label: 'Estimados', icon: FileText },
   { key: 'Alertas', label: 'Alertas', icon: Bell, hiddenForStaff: true },
-  { key: 'Propiedades', label: 'Propiedades', icon: Building2 },
   { key: 'Reportes', label: 'Reportes', icon: LineChart },
   { key: 'Catalogos', label: 'Catálogos', icon: LayoutGrid },
   { key: 'Configuracion', label: 'Configuración', icon: Settings },

@@ -7,6 +7,7 @@ import { ConfirmModal } from '../components/common/ConfirmModal'
 import { Panel } from '../components/common/Panel'
 import { ScreenHeader } from '../components/common/ScreenHeader'
 import { EmpleadosScreen } from './EmpleadosScreen'
+import { PropiedadesScreen } from './PropiedadesScreen'
 import { ProveedoresScreen } from './finanzas/ProveedoresScreen'
 import { useReferenceData } from '../contexts/ReferenceDataContext'
 import { deleteChargeTemplate, deleteExpenseTemplate, deleteServiceType, fetchChargeTemplates, fetchExpenseTemplates } from '../lib/api'
@@ -18,10 +19,11 @@ import { useTheme } from '../theme/ThemeContext'
 import type { ThemeColors } from '../theme/colors'
 import type { ChargeTemplate, ExpenseTemplate, ServiceType } from '../types'
 
-type TabKey = 'servicios' | 'gastos_fijos' | 'cobros_fijos' | 'empleados' | 'proveedores'
+type TabKey = 'propiedades' | 'servicios' | 'gastos_fijos' | 'cobros_fijos' | 'empleados' | 'proveedores'
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
 const TABS: { key: TabKey; label: string }[] = [
+  { key: 'propiedades', label: 'Propiedades' },
   { key: 'servicios', label: 'Servicios' },
   { key: 'gastos_fijos', label: 'Gastos fijos' },
   { key: 'cobros_fijos', label: 'Cobros fijos' },
@@ -87,7 +89,15 @@ export const CatalogosScreen = () => {
         title="Catálogos"
         onMenuPress={() => navigation.dispatch(DrawerActions.openDrawer())}
         right={
-          tab === 'servicios' ? (
+          tab === 'propiedades' ? (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('AddProperty')}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={styles.addButton}
+            >
+              <Plus size={22} color={colors.gold500} />
+            </TouchableOpacity>
+          ) : tab === 'servicios' ? (
             <TouchableOpacity
               onPress={() => navigation.navigate('AddServiceType')}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -131,7 +141,11 @@ export const CatalogosScreen = () => {
         }
       />
 
-      <View style={styles.tabRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tabRow}
+      >
         {TABS.map(({ key, label }) => (
           <TouchableOpacity
             key={key}
@@ -142,9 +156,11 @@ export const CatalogosScreen = () => {
             <Text style={[styles.tabText, tab === key && styles.tabTextActive]}>{label}</Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
-      {tab === 'servicios' ? (
+      {tab === 'propiedades' ? (
+        <PropiedadesScreen />
+      ) : tab === 'servicios' ? (
         <ScrollView
           contentContainerStyle={styles.scroll}
           refreshControl={
@@ -358,13 +374,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingTop: 16,
   },
   tab: {
-    flex: 1,
     alignItems: 'center',
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.tint10,
     backgroundColor: colors.surfaceAlt,
     paddingVertical: 10,
+    paddingHorizontal: 16,
   },
   tabActive: {
     backgroundColor: colors.gold500,

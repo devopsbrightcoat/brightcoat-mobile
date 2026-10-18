@@ -138,6 +138,7 @@ export const PlanillasScreen = () => {
       await exportPayrollToPdf(filtered, properties ?? [], employees ?? [], {
         employeeName: selectedEmployee?.name,
         audience: exportAudience,
+        periodLabel: dateRangeLabel,
       })
       setExportOpen(false)
     } catch (err) {
