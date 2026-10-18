@@ -227,7 +227,7 @@ export const exportPayrollToPdf = async (
 
   // --- Tabla de planillas (dibujada a mano — pdf-lib no trae un helper de
   // tablas como jspdf-autotable) ---
-  const columns =
+  const baseColumns =
     audience === 'admin'
       ? [
           { key: 'Fecha', width: 50, align: 'left' as const },
@@ -248,6 +248,11 @@ export const exportPayrollToPdf = async (
           { key: 'Servicio', width: 192, align: 'left' as const },
           { key: 'Pago', width: 90, align: 'right' as const },
         ]
+  // Escala las columnas para que la tabla ocupe exactamente el mismo ancho
+  // que la línea separadora del encabezado (MARGIN_X a cada lado).
+  const baseTableWidth = baseColumns.reduce((sum, c) => sum + c.width, 0)
+  const columnScale = (PAGE_WIDTH - MARGIN_X * 2) / baseTableWidth
+  const columns = baseColumns.map((c) => ({ ...c, width: c.width * columnScale }))
   const tableWidth = columns.reduce((sum, c) => sum + c.width, 0)
   const colX: number[] = []
   let runningX = MARGIN_X

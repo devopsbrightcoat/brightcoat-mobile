@@ -218,7 +218,7 @@ export const exportEstimateToPdf = async (data: EstimateExportData): Promise<voi
 
   // --- Tabla de productos/servicios (dibujada a mano — pdf-lib no trae un
   // helper de tablas como jspdf-autotable) ---
-  const columns = [
+  const baseColumns = [
     { key: '#', width: 20, align: 'left' as const },
     { key: 'Date', width: 44, align: 'left' as const },
     { key: 'Product or service', width: 108, align: 'left' as const },
@@ -227,6 +227,11 @@ export const exportEstimateToPdf = async (data: EstimateExportData): Promise<voi
     { key: 'Rate', width: 54, align: 'right' as const },
     { key: 'Amount', width: 54, align: 'right' as const },
   ]
+  // Escala las columnas para que la tabla ocupe exactamente el mismo ancho
+  // que la franja de la propiedad (MARGIN_X a cada lado).
+  const baseTableWidth = baseColumns.reduce((sum, c) => sum + c.width, 0)
+  const columnScale = (PAGE_WIDTH - MARGIN_X * 2) / baseTableWidth
+  const columns = baseColumns.map((c) => ({ ...c, width: c.width * columnScale }))
   const tableWidth = columns.reduce((sum, c) => sum + c.width, 0)
   const colX: number[] = []
   let runningX = MARGIN_X
@@ -319,7 +324,7 @@ export const exportEstimateToPdf = async (data: EstimateExportData): Promise<voi
   const trimmedNote = note?.trim()
   if (trimmedNote) {
     ensureSpace(80)
-    drawText('Nota para el cliente', MARGIN_X, afterTotalY, { size: 9.5, font: fontBold, color: INK })
+    drawText('Note to customer', MARGIN_X, afterTotalY, { size: 9.5, font: fontBold, color: INK })
     afterTotalY += 13
     const noteLines = wrapText(trimmedNote, font, 9, PAGE_WIDTH - MARGIN_X * 2)
     noteLines.forEach((line, i) => drawText(line, MARGIN_X, afterTotalY + i * 11, { size: 9, font, color: GREY }))
