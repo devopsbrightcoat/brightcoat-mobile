@@ -367,25 +367,20 @@ export const computePendingSchedules = (schedules: Schedule[]): Schedule[] =>
 export type AgingBucket = { label: string; amount: number; count: number }
 
 export const computeOutstandingAging = (charges: Charge[]): AgingBucket[] => {
-  const today = new Date()
   const buckets: AgingBucket[] = [
     { label: '0–30 días', amount: 0, count: 0 },
     { label: '31–60 días', amount: 0, count: 0 },
     { label: '61–90 días', amount: 0, count: 0 },
     { label: '+90 días', amount: 0, count: 0 },
   ]
-
-  for (const c of charges) {
-    if (c.status !== 'pending') continue
-    if (!c.generatedDate) {
-      buckets[0].amount += c.amount
-      buckets[0].count += 1
-      continue
-    }
-    const days = Math.floor((today.getTime() - new Date(c.generatedDate).getTime()) / 86_400_000)
-    const idx = days <= 30 ? 0 : days <= 60 ? 1 : days <= 90 ? 2 : 3
-    buckets[idx].amount += c.amount
-    buckets[idx].count += 1
+  // Delega en computeAgingDetail (misma fuente de verdad que usa el panel de
+  // detalle) para no duplicar la lógica de días/buckets — ver computeAgingDetail
+  // más abajo en este archivo.
+  for (const row of computeAgingDetail(charges)) {
+    const bucket = buckets.find((b) => b.label === row.bucket)
+    if (!bucket) continue
+    bucket.amount += row.amount
+    bucket.count += 1
   }
 
   return buckets
@@ -496,7 +491,7 @@ export const computeAgingDetail = (charges: Charge[], properties: Property[] = [
     .filter((c) => c.status === 'pending')
     .map((c) => {
       const days = c.generatedDate
-        ? Math.floor((today.getTime() - new Date(c.generatedDate).getTime()) / 86_400_000)
+        ? Math.floor((today.getTime() - parseISODate(c.generatedDate).getTime()) / 86_400_000)
         : 0
       return {
         chargeId: c.id,
@@ -803,7 +798,7 @@ export const computeAlerts = (
 
   const overdueCharges = charges.filter((c) => {
     if (c.status !== 'pending' || !c.generatedDate) return false
-    const days = Math.floor((today.getTime() - new Date(c.generatedDate).getTime()) / 86_400_000)
+    const days = Math.floor((today.getTime() - parseISODate(c.generatedDate).getTime()) / 86_400_000)
     return days > OVERDUE_CHARGE_DAYS
   })
   if (overdueCharges.length > 0) {

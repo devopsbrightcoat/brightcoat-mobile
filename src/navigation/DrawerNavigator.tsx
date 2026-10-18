@@ -1,10 +1,12 @@
 import React from 'react'
 import { createDrawerNavigator } from '@react-navigation/drawer'
 import { AlertasScreen } from '../screens/AlertasScreen'
+import { CatalogosScreen } from '../screens/CatalogosScreen'
 import { ConfiguracionScreen } from '../screens/ConfiguracionScreen'
 import { DashboardScreen } from '../screens/DashboardScreen'
 import { FinanzasScreen } from '../screens/FinanzasScreen'
 import { HorariosScreen } from '../screens/HorariosScreen'
+import { EstimadosScreen } from '../screens/EstimadosScreen'
 import { PlanillasScreen } from '../screens/PlanillasScreen'
 import { PropiedadesScreen } from '../screens/PropiedadesScreen'
 import { ReportesScreen } from '../screens/ReportesScreen'
@@ -15,9 +17,11 @@ export type DrawerParamList = {
   Horarios: undefined
   Finanzas: undefined
   Planillas: undefined
+  Estimados: undefined
   Alertas: undefined
   Reportes: undefined
   Propiedades: undefined
+  Catalogos: undefined
   Configuracion: undefined
 }
 
@@ -39,9 +43,11 @@ export const DrawerNavigator = () => {
       <Drawer.Screen name="Horarios" component={HorariosScreen} />
       <Drawer.Screen name="Finanzas" component={FinanzasScreen} />
       <Drawer.Screen name="Planillas" component={PlanillasScreen} />
+      <Drawer.Screen name="Estimados" component={EstimadosScreen} />
       <Drawer.Screen name="Alertas" component={AlertasScreen} />
       <Drawer.Screen name="Reportes" component={ReportesScreen} />
       <Drawer.Screen name="Propiedades" component={PropiedadesScreen} />
+      <Drawer.Screen name="Catalogos" component={CatalogosScreen} />
       <Drawer.Screen name="Configuracion" component={ConfiguracionScreen} />
     </Drawer.Navigator>
   )

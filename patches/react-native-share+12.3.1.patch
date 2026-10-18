@@ -1,0 +1,23 @@
+diff --git a/node_modules/react-native-share/android/src/main/java/cl/json/ShareFile.java b/node_modules/react-native-share/android/src/main/java/cl/json/ShareFile.java
+index 840d336..32ab2a8 100644
+--- a/node_modules/react-native-share/android/src/main/java/cl/json/ShareFile.java
++++ b/node_modules/react-native-share/android/src/main/java/cl/json/ShareFile.java
+@@ -118,6 +118,18 @@ public class ShareFile {
+ 
+         final MimeTypeMap mime = MimeTypeMap.getSingleton();
+         String extension = mime.getExtensionFromMimeType(getType());
++        if (extension == null || extension.isEmpty()) {
++            // MimeTypeMap.getExtensionFromMimeType() puede devolver null/vacio en
++            // algunos dispositivos y emuladores (tabla de mime types incompleta),
++            // dejando el archivo compartido sin extension y sin reconocerse como
++            // PDF. Como respaldo, sacamos la extension directo del mime type
++            // (ej. "application/pdf" -> "pdf").
++            String mimeType = getType();
++            int slashIdx = mimeType == null ? -1 : mimeType.indexOf('/');
++            extension = (slashIdx >= 0 && slashIdx < mimeType.length() - 1)
++                ? mimeType.substring(slashIdx + 1)
++                : "bin";
++        }
+ 
+         if(this.isBase64File()) {
+             String encodedImg = this.uri.toString().substring(BASE_64_DATA_LENGTH + this.type.length() + BASE_64_DATA_OFFSET);

@@ -1067,3 +1067,12 @@ export const deleteDeviceToken = async (token: string): Promise<void> => {
   const { error } = await supabase.from('device_tokens').delete().eq('token', token)
   if (error) throw error
 }
+
+// Estimados: no se guardan en la base de datos (solo se arma el PDF al
+// momento), pero sí necesitan numeración consecutiva compartida con
+// ops-web — ver migración ops-web/supabase/migrations/20261017000000_add_estimate_counter.sql
+export const getNextEstimateNumber = async (): Promise<number> => {
+  const { data, error } = await supabase.rpc('next_estimate_number')
+  if (error) throw error
+  return data as number
+}

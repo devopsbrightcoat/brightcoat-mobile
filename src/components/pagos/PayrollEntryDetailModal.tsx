@@ -65,7 +65,7 @@ export const PayrollEntryDetailModal = ({
 
           <View style={styles.summaryBox}>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Cobro</Text>
+              <Text style={styles.summaryLabel}>Ventas</Text>
               <Text style={[styles.summaryValue, entry.amount == null ? styles.pendingValue : styles.cobroValue]}>
                 {entry.amount == null ? 'Pendiente' : currency(entry.amount)}
               </Text>

@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { CalendarDays, ChevronLeft, DollarSign, Plus, Search, Trash2, TrendingUp, Wallet } from 'lucide-react-native'
+import { CalendarDays, ChevronLeft, DollarSign, Download, Plus, Search, Trash2, TrendingUp, Wallet } from 'lucide-react-native'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { ScreenHeader } from '../components/common/ScreenHeader'
 import { ConfirmModal } from '../components/common/ConfirmModal'
@@ -13,6 +13,8 @@ import { QuincenaDateFilter } from '../components/dashboard/QuincenaDateFilter'
 import { PayrollEntryDetailModal } from '../components/pagos/PayrollEntryDetailModal'
 import { useReferenceData } from '../contexts/ReferenceDataContext'
 import { deletePayrollEntry, fetchPayrollEntries } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
+import { exportPayrollToPdf, type PayrollExportAudience } from '../lib/exportPayroll'
 import { formatFullDate, MONTH_NAMES } from '../lib/scheduleDates'
 import { currency } from '../lib/format'
 import { taxOnAmount, SALES_TAX_RATE } from '../lib/tax'
@@ -44,6 +46,10 @@ export const PlanillasScreen = () => {
   const [dateFilterOpen, setDateFilterOpen] = useState(false)
   const [detailEntry, setDetailEntry] = useState<PayrollEntry | null>(null)
   const [deletingEntry, setDeletingEntry] = useState<PayrollEntry | null>(null)
+  const [exportOpen, setExportOpen] = useState(false)
+  const [exportAudience, setExportAudience] = useState<PayrollExportAudience>('admin')
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
 
   const {
     data: entries,
@@ -125,24 +131,47 @@ export const PlanillasScreen = () => {
     })
   }, [entries, propertyMap, selectedEmployeeId, searchText])
 
+  const handleExport = async () => {
+    setExporting(true)
+    setExportError(null)
+    try {
+      await exportPayrollToPdf(filtered, properties ?? [], employees ?? [], {
+        employeeName: selectedEmployee?.name,
+        audience: exportAudience,
+      })
+      setExportOpen(false)
+    } catch (err) {
+      setExportError(getErrorMessage(err, 'No se pudo generar el PDF.'))
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const totals = useMemo(() => {
     let cobro = 0
     let sales = 0
     let profit = 0
+    let pendingCount = 0
+    let pendingSales = 0
     for (const entry of filtered) {
       const entrySales = entry.items.reduce((sum, item) => sum + item.amount, 0)
       // "Cobro" y "Ganancia" solo cuentan planillas ya cobradas (amount !=
       // null). "Pago" cuenta todas las planillas del período, cobradas o no
       // — es lo que se le debe/pagó al empleado por el trabajo ya hecho, sin
       // importar si el cliente ya pagó ese cobro (igual que el costo de mano
-      // de obra del Dashboard).
+      // de obra del Dashboard). Por eso Cobro - Pago puede no ser igual a
+      // Ganancia cuando hay planillas pendientes: su "Pago" ya está incluido
+      // en el total, pero su cobro todavía no.
       sales += entrySales
       if (entry.amount != null) {
         cobro += entry.amount
         profit += entry.amount - entrySales
+      } else {
+        pendingCount += 1
+        pendingSales += entrySales
       }
     }
-    return { cobro, sales, profit }
+    return { cobro, sales, profit, pendingCount, pendingSales }
   }, [filtered])
 
   const loading = loadingEntries || loadingProperties || loadingEmployees
@@ -308,10 +337,18 @@ export const PlanillasScreen = () => {
           </Text>
 
           <View style={styles.statsGrid}>
-            <StatCard label="Cobro" value={currency(totals.cobro)} icon={DollarSign} tone="info" size="compact" />
+            <StatCard label="Ventas" value={currency(totals.cobro)} icon={DollarSign} tone="info" size="compact" />
             <StatCard label="Pago" value={currency(totals.sales)} icon={TrendingUp} tone="good" size="compact" />
             <StatCard label="Ganancia" value={currency(totals.profit)} icon={Wallet} size="compact" />
           </View>
+
+          {totals.pendingCount > 0 ? (
+            <Text style={styles.pendingNote}>
+              Pago incluye {currency(totals.pendingSales)} de {totals.pendingCount}{' '}
+              {totals.pendingCount === 1 ? 'planilla pendiente de cobro' : 'planillas pendientes de cobro'} — por eso
+              Ventas − Pago no es igual a Ganancia.
+            </Text>
+          ) : null}
 
           <View style={styles.searchRow}>
             <View style={styles.searchBox}>
@@ -329,6 +366,15 @@ export const PlanillasScreen = () => {
             <TouchableOpacity style={styles.dateButton} activeOpacity={0.7} onPress={() => setDateFilterOpen(true)}>
               <CalendarDays size={14} color={colors.ink300} />
               <Text style={styles.dateButtonText}>{dateRangeLabel}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.exportButton, filtered.length === 0 && styles.exportButtonDisabled]}
+              activeOpacity={0.7}
+              disabled={filtered.length === 0}
+              onPress={() => setExportOpen(true)}
+            >
+              <Download size={14} color={filtered.length === 0 ? colors.ink500 : colors.ink300} />
             </TouchableOpacity>
           </View>
 
@@ -373,6 +419,48 @@ export const PlanillasScreen = () => {
         >
           <Text style={[styles.clearButtonText, !hasDateFilter && styles.clearButtonTextDisabled]}>Limpiar filtro</Text>
         </TouchableOpacity>
+      </Modal>
+
+      <Modal open={exportOpen} onClose={() => setExportOpen(false)} title="Exportar planilla a PDF">
+        <View style={styles.exportSection}>
+          <Text style={styles.exportLabel}>Contenido</Text>
+          <View style={styles.exportOptionRow}>
+            <TouchableOpacity
+              style={[styles.exportOptionButton, exportAudience === 'admin' && styles.exportOptionButtonActive]}
+              activeOpacity={0.7}
+              onPress={() => setExportAudience('admin')}
+            >
+              <Text style={[styles.exportOptionText, exportAudience === 'admin' && styles.exportOptionTextActive]}>
+                Administración
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.exportOptionButton, exportAudience === 'employee' && styles.exportOptionButtonActive]}
+              activeOpacity={0.7}
+              onPress={() => setExportAudience('employee')}
+            >
+              <Text style={[styles.exportOptionText, exportAudience === 'employee' && styles.exportOptionTextActive]}>
+                Empleado
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.exportHint}>
+            {exportAudience === 'admin'
+              ? 'Incluye todo: cobro, notas y ganancia.'
+              : 'Sin cobro, notas ni ganancia — solo lo que ve el empleado.'}
+          </Text>
+
+          {exportError ? <Text style={styles.error}>{exportError}</Text> : null}
+
+          <TouchableOpacity
+            style={[styles.button, exporting && styles.buttonDisabled]}
+            activeOpacity={0.85}
+            disabled={exporting}
+            onPress={handleExport}
+          >
+            <Text style={styles.buttonText}>{exporting ? 'Generando…' : 'Generar PDF'}</Text>
+          </TouchableOpacity>
+        </View>
       </Modal>
 
       <PayrollEntryDetailModal
@@ -434,6 +522,75 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '500',
     color: colors.ink300,
   },
+  exportButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.tint10,
+    backgroundColor: colors.surfaceAlt,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  exportButtonDisabled: {
+    opacity: 0.5,
+  },
+  exportSection: {
+    gap: 10,
+  },
+  exportLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.ink200,
+  },
+  exportOptionRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  exportOptionButton: {
+    flex: 1,
+    alignItems: 'center',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.tint10,
+    backgroundColor: colors.surface,
+    paddingVertical: 11,
+  },
+  exportOptionButtonActive: {
+    borderColor: colors.gold500,
+    backgroundColor: 'rgba(207,145,34,0.12)',
+  },
+  exportOptionText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.ink300,
+  },
+  exportOptionTextActive: {
+    color: colors.gold400,
+  },
+  exportHint: {
+    fontSize: 12,
+    color: colors.ink500,
+  },
+  button: {
+    marginTop: 4,
+    borderRadius: 10,
+    backgroundColor: colors.gold500,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.brand900,
+  },
+  error: {
+    fontSize: 13,
+    color: colors.rose,
+  },
   clearButton: {
     alignItems: 'center',
     borderRadius: 10,
@@ -457,6 +614,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 8,
     paddingHorizontal: 20,
     paddingTop: 10,
+  },
+  pendingNote: {
+    fontSize: 11,
+    lineHeight: 15,
+    color: colors.amber,
+    paddingHorizontal: 20,
+    paddingTop: 8,
   },
   backRow: {
     flexDirection: 'row',
