@@ -23,6 +23,7 @@ import type { RootStackParamList } from '../navigation/RootNavigator'
 import { useTheme } from '../theme/ThemeContext'
 import type { ThemeColors } from '../theme/colors'
 import type { Employee, PayrollEntry } from '../types'
+import { FIXED_CHARGE_LABEL, isPayrollCobroPending } from '../lib/payrollStatus'
 
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
@@ -103,8 +104,8 @@ export const PlanillasScreen = () => {
       // si el cliente ya pagó ese cobro (igual que el costo de mano de obra
       // del Dashboard). "Ganancia" sí requiere que el cobro ya esté definido.
       current.sales += sales
-      if (entry.amount == null) current.pendingCount += 1
-      else current.profit += entry.amount - sales
+      if (isPayrollCobroPending(entry)) current.pendingCount += 1
+      else if (entry.amount != null) current.profit += entry.amount - sales
       map.set(entry.employeeId, current)
     }
     return map
@@ -167,7 +168,8 @@ export const PlanillasScreen = () => {
       if (entry.amount != null) {
         cobro += entry.amount
         profit += entry.amount - entrySales
-      } else {
+      } else if (isPayrollCobroPending(entry)) {
+        // Las de cobro fijo no cuentan: nunca van a tener un Cobro propio.
         pendingCount += 1
         pendingSales += entrySales
       }
@@ -232,8 +234,10 @@ export const PlanillasScreen = () => {
               {item.unitLabel ? ` · ${item.unitLabel}` : ''}
             </Text>
             <View style={styles.cardHeaderActions}>
-              <Text style={item.amount == null ? styles.pendingAmount : styles.amount}>
-                {item.amount == null ? 'Pendiente' : currency(item.amount)}
+              <Text
+                style={item.isFixedCharge ? styles.fixedAmount : item.amount == null ? styles.pendingAmount : styles.amount}
+              >
+                {item.isFixedCharge ? FIXED_CHARGE_LABEL : item.amount == null ? 'Pendiente' : currency(item.amount)}
               </Text>
               <TouchableOpacity
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -253,11 +257,13 @@ export const PlanillasScreen = () => {
             <Text style={styles.cardMeta} numberOfLines={1}>
               {item.date || '—'}
             </Text>
-            <Text style={profit == null ? styles.pendingSmall : profit < 0 ? styles.negativeSmall : styles.profitSmall}>
-              {profit == null ? 'Ganancia pendiente' : `Ganancia ${currency(profit)}`}
-            </Text>
+            {item.isFixedCharge ? null : (
+              <Text style={profit == null ? styles.pendingSmall : profit < 0 ? styles.negativeSmall : styles.profitSmall}>
+                {profit == null ? 'Ganancia pendiente' : `Ganancia ${currency(profit)}`}
+              </Text>
+            )}
           </View>
-          {item.taxable && (
+          {item.taxable && !item.isFixedCharge && (
             <View style={styles.taxRow}>
               <Text style={styles.taxRowLabel}>Impuesto ({(SALES_TAX_RATE * 100).toFixed(2)}%)</Text>
               <Text style={styles.taxRowValue}>{tax == null ? 'Pendiente' : currency(tax)}</Text>
@@ -476,6 +482,10 @@ export const PlanillasScreen = () => {
         onDelete={(entry) => {
           setDetailEntry(null)
           setDeletingEntry(entry)
+        }}
+        onChanged={(updated) => {
+          setDetailEntry(updated)
+          setRefreshKey((k) => k + 1)
         }}
       />
 
@@ -775,6 +785,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: colors.ink500,
+  },
+  fixedAmount: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.sky,
   },
   profitSmall: {
     fontSize: 11,

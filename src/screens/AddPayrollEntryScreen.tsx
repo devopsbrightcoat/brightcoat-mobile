@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native'
 import { DatePicker } from '../components/common/DatePicker'
+import { FixedChargeCheckbox } from '../components/pagos/FixedChargeCheckbox'
 import { FormField } from '../components/common/FormField'
 import { InlineSelect } from '../components/common/InlineSelect'
 import { useReferenceData } from '../contexts/ReferenceDataContext'
@@ -54,6 +55,7 @@ export const AddPayrollEntryScreen = () => {
   const [serviceName, setServiceName] = useState('')
   const [amount, setAmount] = useState('')
   const [taxable, setTaxable] = useState(false)
+  const [isFixedCharge, setIsFixedCharge] = useState(false)
   const [chargeNotFound, setChargeNotFound] = useState(false)
   const [date, setDate] = useState('')
   const [notes, setNotes] = useState('')
@@ -95,6 +97,15 @@ export const AddPayrollEntryScreen = () => {
     setDate(schedule.scheduledDate)
     const serviceType = (serviceTypes ?? []).find((st) => st.id === schedule.serviceTypeId)
     if (serviceType) setServiceName(serviceType.name)
+
+    // Horario de cobro fijo: nunca tiene un cobro individual en Cobros (se
+    // cobra una vez al mes), así que la planilla se marca sola como de cobro
+    // fijo en vez de buscar un cobro que no existe.
+    setIsFixedCharge(schedule.isFixedCharge)
+    if (schedule.isFixedCharge) {
+      setAmount('')
+      return
+    }
 
     try {
       const charge = await fetchChargeForSchedule(
@@ -140,7 +151,7 @@ export const AddPayrollEntryScreen = () => {
       return
     }
     let amountValue: number | null = null
-    if (amount.trim()) {
+    if (!isFixedCharge && amount.trim()) {
       amountValue = Number(amount)
       if (Number.isNaN(amountValue) || amountValue < 0) {
         setError('El cobro no es un número válido.')
@@ -177,7 +188,8 @@ export const AddPayrollEntryScreen = () => {
         amount: amountValue,
         date: date.trim(),
         notes: notes.trim(),
-        taxable,
+        taxable: isFixedCharge ? false : taxable,
+        isFixedCharge,
         scheduleId: selectedScheduleId || undefined,
         items: parsedItems,
       })
@@ -321,26 +333,32 @@ export const AddPayrollEntryScreen = () => {
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>Cobro</Text>
 
-              <FormField
-                label="Cobro total del trabajo (opcional — se puede completar después)"
-                value={amount}
-                onChangeText={setAmount}
-                placeholder="Se define después si aún no se sabe"
-                keyboardType="decimal-pad"
-              />
+              <FixedChargeCheckbox checked={isFixedCharge} onChange={setIsFixedCharge} />
 
-              <TouchableOpacity
-                style={styles.taxableRow}
-                activeOpacity={0.75}
-                onPress={() => setTaxable((prev) => !prev)}
-              >
-                <View style={[styles.checkbox, taxable && styles.checkboxChecked]}>
-                  {taxable ? <Check size={13} color={colors.brand900} strokeWidth={3} /> : null}
-                </View>
-                <Text style={styles.taxableLabel}>
-                  Este servicio lleva impuesto de ventas ({(SALES_TAX_RATE * 100).toFixed(2)}%)
-                </Text>
-              </TouchableOpacity>
+              {isFixedCharge ? null : (
+                <>
+                  <FormField
+                    label="Cobro total del trabajo (opcional — se puede completar después)"
+                    value={amount}
+                    onChangeText={setAmount}
+                    placeholder="Se define después si aún no se sabe"
+                    keyboardType="decimal-pad"
+                  />
+
+                  <TouchableOpacity
+                    style={styles.taxableRow}
+                    activeOpacity={0.75}
+                    onPress={() => setTaxable((prev) => !prev)}
+                  >
+                    <View style={[styles.checkbox, taxable && styles.checkboxChecked]}>
+                      {taxable ? <Check size={13} color={colors.brand900} strokeWidth={3} /> : null}
+                    </View>
+                    <Text style={styles.taxableLabel}>
+                      Este servicio lleva impuesto de ventas ({(SALES_TAX_RATE * 100).toFixed(2)}%)
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
 
               <FormField
                 label="Notas (opcional)"

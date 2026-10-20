@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native'
 import { DatePicker } from '../components/common/DatePicker'
+import { FixedChargeCheckbox } from '../components/pagos/FixedChargeCheckbox'
 import { FormField } from '../components/common/FormField'
 import { InlineSelect } from '../components/common/InlineSelect'
 import { useReferenceData } from '../contexts/ReferenceDataContext'
@@ -47,6 +48,7 @@ export const EditPayrollEntryScreen = () => {
   const [serviceName, setServiceName] = useState(entry.serviceName)
   const [amount, setAmount] = useState(entry.amount == null ? '' : String(entry.amount))
   const [taxable, setTaxable] = useState(entry.taxable)
+  const [isFixedCharge, setIsFixedCharge] = useState(entry.isFixedCharge)
   const [date, setDate] = useState(entry.date)
   const [notes, setNotes] = useState(entry.notes ?? '')
   const [items, setItems] = useState<ItemLine[]>(
@@ -90,7 +92,7 @@ export const EditPayrollEntryScreen = () => {
       return
     }
     let amountValue: number | null = null
-    if (amount.trim()) {
+    if (!isFixedCharge && amount.trim()) {
       amountValue = Number(amount)
       if (Number.isNaN(amountValue) || amountValue < 0) {
         setError('El cobro no es un número válido.')
@@ -127,7 +129,8 @@ export const EditPayrollEntryScreen = () => {
         amount: amountValue,
         date: date.trim(),
         notes: notes.trim(),
-        taxable,
+        taxable: isFixedCharge ? false : taxable,
+        isFixedCharge,
         items: parsedItems,
       })
       navigation.goBack()
@@ -180,26 +183,32 @@ export const EditPayrollEntryScreen = () => {
               placeholder="ej. Vacante reparación tape and float"
             />
 
-            <FormField
-              label="Cobro total del trabajo (opcional — se puede completar después)"
-              value={amount}
-              onChangeText={setAmount}
-              placeholder="Se define después si aún no se sabe"
-              keyboardType="decimal-pad"
-            />
+            <FixedChargeCheckbox checked={isFixedCharge} onChange={setIsFixedCharge} />
 
-            <TouchableOpacity
-              style={styles.taxableRow}
-              activeOpacity={0.75}
-              onPress={() => setTaxable((prev) => !prev)}
-            >
-              <View style={[styles.checkbox, taxable && styles.checkboxChecked]}>
-                {taxable ? <Check size={13} color={colors.brand900} strokeWidth={3} /> : null}
-              </View>
-              <Text style={styles.taxableLabel}>
-                Este servicio lleva impuesto de ventas ({(SALES_TAX_RATE * 100).toFixed(2)}%)
-              </Text>
-            </TouchableOpacity>
+            {isFixedCharge ? null : (
+              <>
+                <FormField
+                  label="Cobro total del trabajo (opcional — se puede completar después)"
+                  value={amount}
+                  onChangeText={setAmount}
+                  placeholder="Se define después si aún no se sabe"
+                  keyboardType="decimal-pad"
+                />
+
+                <TouchableOpacity
+                  style={styles.taxableRow}
+                  activeOpacity={0.75}
+                  onPress={() => setTaxable((prev) => !prev)}
+                >
+                  <View style={[styles.checkbox, taxable && styles.checkboxChecked]}>
+                    {taxable ? <Check size={13} color={colors.brand900} strokeWidth={3} /> : null}
+                  </View>
+                  <Text style={styles.taxableLabel}>
+                    Este servicio lleva impuesto de ventas ({(SALES_TAX_RATE * 100).toFixed(2)}%)
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
 
             <FormField
               label="Notas (opcional)"

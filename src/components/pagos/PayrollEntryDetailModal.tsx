@@ -1,7 +1,10 @@
-import React, { useMemo } from 'react'
-import { Trash2 } from 'lucide-react-native'
+import React, { useMemo, useState } from 'react'
+import { CheckCircle2, RotateCcw, Trash2 } from 'lucide-react-native'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Modal } from '../common/Modal'
+import { setPayrollEntryFixedCharge } from '../../lib/api'
+import { getErrorMessage } from '../../lib/errors'
+import { FIXED_CHARGE_LABEL } from '../../lib/payrollStatus'
 import { formatFullDate } from '../../lib/scheduleDates'
 import { currency } from '../../lib/format'
 import { taxOnAmount, SALES_TAX_RATE } from '../../lib/tax'
@@ -27,6 +30,9 @@ type PayrollEntryDetailModalProps = {
   onClose: () => void
   onEdit: (entry: PayrollEntry) => void
   onDelete: (entry: PayrollEntry) => void
+  // Se llama después de marcar/desmarcar la planilla como cobro fijo, con
+  // la planilla ya actualizada.
+  onChanged: (entry: PayrollEntry) => void
 }
 
 export const PayrollEntryDetailModal = ({
@@ -36,9 +42,27 @@ export const PayrollEntryDetailModal = ({
   onClose,
   onEdit,
   onDelete,
+  onChanged,
 }: PayrollEntryDetailModalProps) => {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
+  const [togglingFixed, setTogglingFixed] = useState(false)
+  const [toggleError, setToggleError] = useState<string | null>(null)
+
+  const handleToggleFixed = async () => {
+    if (!entry) return
+    const next = !entry.isFixedCharge
+    setTogglingFixed(true)
+    setToggleError(null)
+    try {
+      await setPayrollEntryFixedCharge(entry.id, next)
+      onChanged({ ...entry, isFixedCharge: next, amount: next ? null : entry.amount })
+    } catch (err) {
+      setToggleError(getErrorMessage(err, 'No se pudo actualizar la planilla.'))
+    } finally {
+      setTogglingFixed(false)
+    }
+  }
   const sales = entry ? entry.items.reduce((sum, item) => sum + item.amount, 0) : 0
   const profit = entry && entry.amount != null ? entry.amount - sales : null
   const tax = entry && entry.taxable && entry.amount != null ? taxOnAmount(entry.amount) : null
@@ -66,8 +90,13 @@ export const PayrollEntryDetailModal = ({
           <View style={styles.summaryBox}>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Ventas</Text>
-              <Text style={[styles.summaryValue, entry.amount == null ? styles.pendingValue : styles.cobroValue]}>
-                {entry.amount == null ? 'Pendiente' : currency(entry.amount)}
+              <Text
+                style={[
+                  styles.summaryValue,
+                  entry.isFixedCharge ? styles.fixedValue : entry.amount == null ? styles.pendingValue : styles.cobroValue,
+                ]}
+              >
+                {entry.isFixedCharge ? FIXED_CHARGE_LABEL : entry.amount == null ? 'Pendiente' : currency(entry.amount)}
               </Text>
             </View>
             <View style={styles.summaryItem}>
@@ -79,13 +108,17 @@ export const PayrollEntryDetailModal = ({
               <Text
                 style={[
                   styles.summaryValue,
-                  profit == null ? styles.pendingValue : profit < 0 ? styles.negativeValue : styles.profitValue,
+                  entry.isFixedCharge || profit == null
+                    ? styles.pendingValue
+                    : profit < 0
+                      ? styles.negativeValue
+                      : styles.profitValue,
                 ]}
               >
-                {profit == null ? 'Pendiente' : currency(profit)}
+                {entry.isFixedCharge ? '—' : profit == null ? 'Pendiente' : currency(profit)}
               </Text>
             </View>
-            {entry.taxable && (
+            {entry.taxable && !entry.isFixedCharge && (
               <View style={styles.summaryItem}>
                 <Text style={styles.summaryLabel}>Impuesto ({(SALES_TAX_RATE * 100).toFixed(2)}%)</Text>
                 <Text style={[styles.summaryValue, styles.profitValue]}>
@@ -118,6 +151,34 @@ export const PayrollEntryDetailModal = ({
               </View>
             )}
           </View>
+
+          {/* Solo para planillas sin Cobro: las de cobro fijo (ej. limpieza de
+              oficina) nunca van a tener un cobro propio. */}
+          {entry.isFixedCharge || entry.amount == null ? (
+            <TouchableOpacity
+              style={[
+                entry.isFixedCharge ? styles.unfixButton : styles.fixButton,
+                togglingFixed && styles.buttonDisabled,
+              ]}
+              activeOpacity={0.85}
+              disabled={togglingFixed}
+              onPress={handleToggleFixed}
+            >
+              {entry.isFixedCharge ? (
+                <RotateCcw size={15} color={colors.ink300} />
+              ) : (
+                <CheckCircle2 size={15} color={colors.brand900} />
+              )}
+              <Text style={entry.isFixedCharge ? styles.unfixButtonText : styles.fixButtonText}>
+                {togglingFixed
+                  ? 'Guardando…'
+                  : entry.isFixedCharge
+                    ? 'Quitar cobro fijo'
+                    : 'Marcar como cobro fijo (finalizada)'}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+          {toggleError ? <Text style={styles.toggleError}>{toggleError}</Text> : null}
 
           <View style={styles.actionsRow}>
             <TouchableOpacity
@@ -183,6 +244,48 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   cobroValue: {
     color: colors.blue,
+  },
+  fixedValue: {
+    color: colors.sky,
+  },
+  fixButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 10,
+    backgroundColor: colors.gold500,
+    paddingVertical: 12,
+    marginTop: 16,
+  },
+  fixButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.brand900,
+  },
+  unfixButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.tint10,
+    paddingVertical: 12,
+    marginTop: 16,
+  },
+  unfixButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.ink300,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  toggleError: {
+    marginTop: 8,
+    fontSize: 13,
+    color: colors.rose,
   },
   salesValue: {
     color: colors.emerald,

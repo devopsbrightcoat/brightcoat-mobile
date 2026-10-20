@@ -1,6 +1,7 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont } from 'pdf-lib'
 import { shareFile } from './shareFile'
 import { fetchCompanyInfoForPdf } from './companyInfo'
+import { FIXED_CHARGE_LABEL } from './payrollStatus'
 import { BRIGHTCOAT_LOGO_ASPECT_RATIO, BRIGHTCOAT_LOGO_BASE64 } from '../assets/brightcoatLogoBase64'
 import type { Employee, PayrollEntry, Property } from '../types'
 
@@ -140,9 +141,9 @@ export const exportPayrollToPdf = async (
             rowEmployeeName,
             e.serviceName || '—',
             e.notes || '—',
-            e.amount == null ? 'Pendiente' : currency(e.amount),
+            e.isFixedCharge ? FIXED_CHARGE_LABEL : e.amount == null ? 'Pendiente' : currency(e.amount),
             currency(sales),
-            profit == null ? 'Pendiente' : currency(profit),
+            e.isFixedCharge ? '—' : profit == null ? 'Pendiente' : currency(profit),
           ]
         : [e.date || '—', propertyName, e.unitLabel || '—', rowEmployeeName, e.serviceName || '—', currency(sales)]
     body.push(row)

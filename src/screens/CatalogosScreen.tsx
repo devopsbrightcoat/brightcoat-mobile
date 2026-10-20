@@ -144,6 +144,7 @@ export const CatalogosScreen = () => {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={styles.tabScroll}
         contentContainerStyle={styles.tabRow}
       >
         {TABS.map(({ key, label }) => (
@@ -367,8 +368,17 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 2,
   },
+  // Un ScrollView (aunque sea horizontal) trae flexGrow/flexShrink: 1 por
+  // defecto y compite por el alto con el contenido de abajo — eso hacía que
+  // la barra de pestañas se estirara y luego se encogiera al cargar cada
+  // pestaña. Se fija al alto de su contenido.
+  tabScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   tabRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
     paddingHorizontal: 20,
     paddingTop: 16,

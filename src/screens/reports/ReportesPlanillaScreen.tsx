@@ -20,6 +20,7 @@ import { useSupabaseQuery } from '../../lib/useSupabaseQuery'
 import type { PayrollEntry } from '../../types'
 import { useTheme } from '../../theme/ThemeContext'
 import type { ThemeColors } from '../../theme/colors'
+import { FIXED_CHARGE_LABEL, isPayrollCobroPending } from '../../lib/payrollStatus'
 
 type DetailRow = PayrollEntry & { sales: number; profit: number | null; tax: number | null }
 
@@ -75,7 +76,7 @@ export const ReportesPlanillaScreen = () => {
     [periodEntries],
   )
   const paidCount = useMemo(() => periodEntries.filter((e) => e.amount != null).length, [periodEntries])
-  const pendingCountPeriod = useMemo(() => periodEntries.filter((e) => e.amount == null).length, [periodEntries])
+  const pendingCountPeriod = useMemo(() => periodEntries.filter(isPayrollCobroPending).length, [periodEntries])
 
   const byProperty = useMemo(
     () => computePayrollByProperty(employeeFilteredEntries, properties ?? [], range),
@@ -114,7 +115,7 @@ export const ReportesPlanillaScreen = () => {
   )
   const gananciaTotal = useMemo(() => detailRows.reduce((sum, r) => sum + (r.profit ?? 0), 0), [detailRows])
   const pagoPendienteCobro = useMemo(
-    () => detailRows.filter((r) => r.amount == null).reduce((sum, r) => sum + r.sales, 0),
+    () => detailRows.filter(isPayrollCobroPending).reduce((sum, r) => sum + r.sales, 0),
     [detailRows],
   )
 
@@ -282,7 +283,7 @@ export const ReportesPlanillaScreen = () => {
                     {row.serviceName}
                   </Text>
                   <Text style={row.amount == null ? styles.amountPending : styles.amount}>
-                    {row.amount == null ? 'Pendiente' : currency(row.amount)}
+                    {row.isFixedCharge ? FIXED_CHARGE_LABEL : row.amount == null ? 'Pendiente' : currency(row.amount)}
                   </Text>
                 </View>
                 <Text style={styles.cardSubtitle} numberOfLines={1}>
@@ -294,7 +295,7 @@ export const ReportesPlanillaScreen = () => {
                   <View style={styles.cardFooterAmounts}>
                     <Text style={styles.cardMetaGood}>Pago {currency(row.sales)}</Text>
                     <Text style={row.profit != null && row.profit < 0 ? styles.cardMetaWarn : styles.cardMetaGold}>
-                      Ganancia {row.profit == null ? 'Pendiente' : currency(row.profit)}
+                      Ganancia {row.isFixedCharge ? '—' : row.profit == null ? 'Pendiente' : currency(row.profit)}
                     </Text>
                   </View>
                 </View>
