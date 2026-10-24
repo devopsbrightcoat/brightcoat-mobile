@@ -3,12 +3,16 @@ import { DollarSign, Percent, TrendingDown, TrendingUp } from 'lucide-react-nati
 import { ActivityIndicator, Dimensions, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { BarChart, LineChart } from 'react-native-chart-kit'
 import { DashboardPanel } from '../../components/dashboard/DashboardPanel'
+import { RankingBars } from '../../components/dashboard/RankingBars'
+import { ReportExportButton } from '../../components/common/ReportExportButton'
 import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBar'
+import { buildGastosReport } from '../../lib/reportExports'
 import { SegmentedField } from '../../components/common/SegmentedField'
 import { StatCard } from '../../components/common/StatCard'
-import { fetchExpenses } from '../../lib/api'
+import { fetchExpenses, fetchVendors } from '../../lib/api'
 import {
   computeExpensesByPeriod,
+  computeExpensesByVendor,
   computeMonthlyFinancials,
   filterExpensesByRange,
   previousPeriod,
@@ -65,7 +69,28 @@ export const ReportesGastosScreen = () => {
   const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
   const [granularity, setGranularity] = useState<RevenuePeriodGranularity>('day')
 
-  const { data: expenses, loading, error, refreshing, refetch } = useSupabaseQuery(fetchExpenses, [])
+  const {
+    data: expenses,
+    loading: loadingExpenses,
+    error: errorExpenses,
+    refreshing: refreshingExpenses,
+    refetch: refetchExpenses,
+  } = useSupabaseQuery(fetchExpenses, [])
+  const {
+    data: vendors,
+    loading: loadingVendors,
+    error: errorVendors,
+    refreshing: refreshingVendors,
+    refetch: refetchVendors,
+  } = useSupabaseQuery(fetchVendors, [])
+
+  const loading = loadingExpenses || loadingVendors
+  const error = errorExpenses ?? errorVendors
+  const refreshing = refreshingExpenses || refreshingVendors
+  const refetch = () => {
+    refetchExpenses()
+    refetchVendors()
+  }
 
   const range = useMemo(() => appliedRange ?? { start: '', end: '' }, [appliedRange])
 
@@ -87,6 +112,11 @@ export const ReportesGastosScreen = () => {
   const expensesByPeriod = useMemo(
     () => computeExpensesByPeriod(expenses ?? [], range, granularity),
     [expenses, range, granularity],
+  )
+
+  const expensesByVendor = useMemo(
+    () => computeExpensesByVendor(expenses ?? [], vendors ?? [], range),
+    [expenses, vendors, range],
   )
 
   const periodChartData = {
@@ -123,6 +153,24 @@ export const ReportesGastosScreen = () => {
           </Text>
         ) : (
           <>
+        <ReportExportButton
+          disabled={!!error}
+          buildReport={() =>
+            buildGastosReport({
+              range,
+              granularity,
+              total,
+              previousTotal,
+              changePct,
+              monthlyAverage,
+              expensesByPeriod,
+              expensesByVendor,
+              monthlyTrend,
+              periodExpenses,
+              vendors: vendors ?? [],
+            })
+          }
+        />
         <View style={styles.statsGrid}>
           <StatCard label="Total del período" value={currency(total)} icon={DollarSign} />
           <StatCard
@@ -161,6 +209,21 @@ export const ReportesGastosScreen = () => {
                 style={styles.chart}
               />
             )}
+          </DashboardPanel>
+        </View>
+
+        <View style={styles.panelWrap}>
+          <DashboardPanel title="Gastos por proveedor" subtitle="Rango seleccionado arriba">
+            <RankingBars
+              items={expensesByVendor.map((v) => ({
+                id: v.vendorId ?? 'none',
+                label: `${v.name} · ${v.count} gasto${v.count === 1 ? '' : 's'}`,
+                value: v.total,
+              }))}
+              formatValue={currency}
+              color={COLOR_ORANGE}
+              emptyText="No hay gastos en este período."
+            />
           </DashboardPanel>
         </View>
 

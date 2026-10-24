@@ -3,13 +3,16 @@ import { Banknote, CheckCircle2, Clock, DollarSign, TrendingUp, Users } from 'lu
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { InlineSelect } from '../../components/common/InlineSelect'
 import { Panel } from '../../components/common/Panel'
+import { ProfitRowCard, type ProfitRow } from '../../components/dashboard/ProfitRowCard'
 import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBar'
 import { StatCard } from '../../components/common/StatCard'
 import { useReferenceData } from '../../contexts/ReferenceDataContext'
-import { fetchPayrollEntries } from '../../lib/api'
+import { fetchPayrollEntries, fetchSchedules } from '../../lib/api'
 import {
+  computeEmployeeProfit,
   computePayrollByEmployee,
   computePayrollByProperty,
+  computeProfitByCategory,
   computePendingPayroll,
   filterPayrollByRange,
   type DateRange,
@@ -38,6 +41,13 @@ export const ReportesPlanillaScreen = () => {
     refetch: refetchEntries,
   } = useSupabaseQuery(fetchPayrollEntries, [])
   const {
+    data: schedules,
+    loading: loadingSchedules,
+    error: errorSchedules,
+    refreshing: refreshingSchedules,
+    refetch: refetchSchedules,
+  } = useSupabaseQuery(fetchSchedules, [])
+  const {
     properties,
     loadingProperties,
     errorProperties,
@@ -48,15 +58,23 @@ export const ReportesPlanillaScreen = () => {
     errorEmployees,
     refreshingEmployees,
     refetchEmployees,
+    serviceTypes,
+    loadingServiceTypes,
+    errorServiceTypes,
+    refreshingServiceTypes,
+    refetchServiceTypes,
   } = useReferenceData()
 
-  const loading = loadingEntries || loadingProperties || loadingEmployees
-  const error = errorEntries ?? errorProperties ?? errorEmployees
-  const refreshing = refreshingEntries || refreshingProperties || refreshingEmployees
+  const loading = loadingEntries || loadingSchedules || loadingProperties || loadingEmployees || loadingServiceTypes
+  const error = errorEntries ?? errorSchedules ?? errorProperties ?? errorEmployees ?? errorServiceTypes
+  const refreshing =
+    refreshingEntries || refreshingSchedules || refreshingProperties || refreshingEmployees || refreshingServiceTypes
   const handleRefresh = () => {
     refetchEntries()
+    refetchSchedules()
     refetchProperties()
     refetchEmployees()
+    refetchServiceTypes()
   }
 
   const employeeOptions = useMemo(() => (employees ?? []).map((e) => ({ id: e.id, label: e.name })), [employees])
@@ -89,6 +107,30 @@ export const ReportesPlanillaScreen = () => {
   const pendingAll = useMemo(
     () => computePendingPayroll(employeeFilteredEntries, properties ?? [], employees ?? []),
     [employeeFilteredEntries, properties, employees],
+  )
+  const employeeProfit = useMemo<ProfitRow[]>(
+    () =>
+      computeEmployeeProfit(employeeFilteredEntries, employees ?? [], range, Number.MAX_SAFE_INTEGER).map((row) => ({
+        id: row.employeeId,
+        name: row.name,
+        jobCount: row.jobCount,
+        sold: row.sold,
+        paid: row.paid,
+        profit: row.profit,
+      })),
+    [employeeFilteredEntries, employees, range],
+  )
+  const categoryProfit = useMemo<ProfitRow[]>(
+    () =>
+      computeProfitByCategory(employeeFilteredEntries, schedules ?? [], serviceTypes ?? [], range).map((row) => ({
+        id: row.category ?? 'none',
+        name: row.label,
+        jobCount: row.jobCount,
+        sold: row.sold,
+        paid: row.paid,
+        profit: row.profit,
+      })),
+    [employeeFilteredEntries, schedules, serviceTypes, range],
   )
 
   const detailRows = useMemo<DetailRow[]>(
@@ -237,6 +279,28 @@ export const ReportesPlanillaScreen = () => {
                 </View>
               </Panel>
             ))
+          )}
+        </View>
+
+        <Text style={styles.sectionTitle}>Ganancia por empleado</Text>
+        <Text style={styles.sectionHint}>
+          Vendido y Ganancia solo cuentan planillas con cobro definido. Pagado cuenta todas.
+        </Text>
+        <View style={styles.list}>
+          {employeeProfit.length === 0 ? (
+            <Text style={styles.emptyText}>No hay planillas en este período.</Text>
+          ) : (
+            employeeProfit.map((row) => <ProfitRowCard key={row.id} row={row} />)
+          )}
+        </View>
+
+        <Text style={styles.sectionTitle}>Ganancia por categoría</Text>
+        <Text style={styles.sectionHint}>Según el servicio del horario ligado a cada planilla.</Text>
+        <View style={styles.list}>
+          {categoryProfit.length === 0 ? (
+            <Text style={styles.emptyText}>No hay planillas en este período.</Text>
+          ) : (
+            categoryProfit.map((row) => <ProfitRowCard key={row.id} row={row} />)
           )}
         </View>
 

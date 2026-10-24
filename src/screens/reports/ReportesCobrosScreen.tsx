@@ -1,14 +1,18 @@
 import React, { useMemo, useState } from 'react'
-import { AlertTriangle, Clock, DollarSign, Receipt } from 'lucide-react-native'
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { AlertTriangle, Clock, DollarSign, Receipt, X } from 'lucide-react-native'
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Panel } from '../../components/common/Panel'
+import { ReportExportButton } from '../../components/common/ReportExportButton'
 import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBar'
+import { buildCobrosReport } from '../../lib/reportExports'
 import { SegmentedField } from '../../components/common/SegmentedField'
 import { StatCard } from '../../components/common/StatCard'
 import { StatusPill } from '../../components/common/StatusPill'
 import { useReferenceData } from '../../contexts/ReferenceDataContext'
 import { fetchCharges } from '../../lib/api'
 import {
+  AGING_BUCKET_LABELS,
+  computeAgingByProperty,
   computeAgingDetail,
   computeOutstandingAging,
   filterChargesByRange,
@@ -37,6 +41,7 @@ export const ReportesCobrosScreen = () => {
   const DEFAULT_BUCKET_TONE = useMemo(() => ({ bg: colors.tint06, text: colors.ink400 }), [colors])
   const [appliedRange, setAppliedRange] = useState<DateRange | null>(null)
   const [bucketFilter, setBucketFilter] = useState<string>('all')
+  const [propertyFilter, setPropertyFilter] = useState<string>('all')
 
   const {
     data: charges,
@@ -72,10 +77,18 @@ export const ReportesCobrosScreen = () => {
 
   const agingBuckets = useMemo(() => computeOutstandingAging(charges ?? []), [charges])
   const agingDetail = useMemo(() => computeAgingDetail(charges ?? [], properties ?? []), [charges, properties])
+  const agingByProperty = useMemo(() => computeAgingByProperty(charges ?? [], properties ?? []), [charges, properties])
   const agingDetailFiltered = useMemo(
-    () => (bucketFilter === 'all' ? agingDetail : agingDetail.filter((row) => row.bucket === bucketFilter)),
-    [agingDetail, bucketFilter],
+    () =>
+      agingDetail.filter(
+        (row) =>
+          (bucketFilter === 'all' || row.bucket === bucketFilter) &&
+          (propertyFilter === 'all' || row.propertyId === propertyFilter),
+      ),
+    [agingDetail, bucketFilter, propertyFilter],
   )
+  const togglePropertyFilter = (propertyId: string) =>
+    setPropertyFilter((current) => (current === propertyId ? 'all' : propertyId))
   const bucketOptions = useMemo(
     () => [{ value: 'all', label: 'Todos' }, ...agingBuckets.map((b) => ({ value: b.label, label: b.label }))],
     [agingBuckets],
@@ -107,6 +120,25 @@ export const ReportesCobrosScreen = () => {
           </Text>
         ) : (
           <>
+        <ReportExportButton
+          disabled={!!error}
+          buildReport={() =>
+            buildCobrosReport({
+              range,
+              periodCharges,
+              properties: properties ?? [],
+              agingBuckets,
+              agingByProperty,
+              agingDetail: agingDetailFiltered,
+              detailFilterLabel: [
+                propertyFilter === 'all' ? null : propertyName(propertyFilter),
+                bucketFilter === 'all' ? null : bucketFilter,
+              ]
+                .filter(Boolean)
+                .join(' · '),
+            })
+          }
+        />
         <View style={styles.statsGrid}>
           <StatCard label="Subido a OPS" value={currency(collected)} icon={DollarSign} tone="good" />
           <StatCard label="Pendiente" value={currency(outstanding)} icon={Clock} tone="warn" />
@@ -161,14 +193,61 @@ export const ReportesCobrosScreen = () => {
           mismo, no sobre el período seleccionado arriba.
         </Text>
 
+        <Text style={styles.sectionTitle}>Cartera por propiedad</Text>
+        <Text style={styles.sectionHintTight}>Toca una propiedad para ver su detalle abajo.</Text>
+        <View style={styles.list}>
+          {agingByProperty.length === 0 ? (
+            <Text style={styles.emptyText}>No hay cobros pendientes.</Text>
+          ) : (
+            agingByProperty.map((row) => {
+              const severeAmount = AGING_BUCKET_LABELS.filter((label) => SEVERE_BUCKETS.has(label)).reduce(
+                (sum, label) => sum + (row.buckets[label] ?? 0),
+                0,
+              )
+              return (
+                <TouchableOpacity
+                  key={row.propertyId}
+                  activeOpacity={0.75}
+                  onPress={() => togglePropertyFilter(row.propertyId)}
+                >
+                  <Panel style={propertyFilter === row.propertyId ? { ...styles.card, ...styles.cardSelected } : styles.card}>
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.cardTitle} numberOfLines={1}>
+                        {row.name}
+                      </Text>
+                      <Text style={styles.amount}>{currency(row.total)}</Text>
+                    </View>
+                    <View style={styles.cardFooter}>
+                      <Text style={styles.cardMeta} numberOfLines={1}>
+                        {row.count} cobro{row.count === 1 ? '' : 's'} · más antiguo {row.oldestDays} días
+                      </Text>
+                      {severeAmount > 0 ? (
+                        <Text style={styles.severeAmount}>+60 días {currency(severeAmount)}</Text>
+                      ) : null}
+                    </View>
+                  </Panel>
+                </TouchableOpacity>
+              )
+            })
+          )}
+        </View>
+
         <View style={styles.segmentRow}>
           <SegmentedField label="Filtrar por antigüedad" options={bucketOptions} value={bucketFilter} onChange={setBucketFilter} />
         </View>
 
         <Text style={styles.sectionTitle}>Detalle de cartera pendiente</Text>
+        {propertyFilter !== 'all' ? (
+          <TouchableOpacity activeOpacity={0.75} onPress={() => setPropertyFilter('all')} style={styles.filterChip}>
+            <Text style={styles.filterChipText} numberOfLines={1}>
+              {propertyName(propertyFilter)}
+            </Text>
+            <X size={14} color={colors.gold400} />
+          </TouchableOpacity>
+        ) : null}
         <View style={styles.list}>
           {agingDetailFiltered.length === 0 ? (
-            <Text style={styles.emptyText}>No hay cobros pendientes en este bucket.</Text>
+            <Text style={styles.emptyText}>No hay cobros pendientes con estos filtros.</Text>
           ) : (
             agingDetailFiltered.map((row) => {
               const tone = BUCKET_TONE[row.bucket] ?? DEFAULT_BUCKET_TONE
@@ -239,4 +318,39 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   amount: { fontSize: 13, fontWeight: '700', color: colors.white },
   bucketPill: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   bucketPillText: { fontSize: 11, fontWeight: '600' },
+  sectionHintTight: {
+    marginHorizontal: 20,
+    marginTop: -4,
+    marginBottom: 8,
+    fontSize: 11,
+    color: colors.ink500,
+  },
+  cardSelected: {
+    borderWidth: 1,
+    borderColor: colors.gold500,
+  },
+  severeAmount: {
+    marginLeft: 8,
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.rose,
+  },
+  filterChip: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginHorizontal: 20,
+    marginBottom: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(207,145,34,0.12)',
+  },
+  filterChipText: {
+    maxWidth: 240,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.gold400,
+  },
 })

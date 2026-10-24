@@ -4,7 +4,9 @@ import { ActivityIndicator, Dimensions, RefreshControl, ScrollView, StyleSheet, 
 import { LineChart } from 'react-native-chart-kit'
 import { DashboardPanel } from '../../components/dashboard/DashboardPanel'
 import { Panel } from '../../components/common/Panel'
+import { ReportExportButton } from '../../components/common/ReportExportButton'
 import { ReportDateRangeBar } from '../../components/dashboard/ReportDateRangeBar'
+import { buildFinancieroReport } from '../../lib/reportExports'
 import { RankingBars } from '../../components/dashboard/RankingBars'
 import { ServiceCategoryModal } from '../../components/dashboard/ServiceCategoryModal'
 import { SegmentedField } from '../../components/common/SegmentedField'
@@ -187,6 +189,20 @@ export const ReportesFinancieroScreen = () => {
           </Text>
         ) : (
           <>
+        <ReportExportButton
+          disabled={!!error}
+          buildReport={() =>
+            buildFinancieroReport({
+              range,
+              granularity: periodGranularity,
+              kpis,
+              revenueByPeriod,
+              monthlyFinancials,
+              revenueByCategory,
+              profitability,
+            })
+          }
+        />
         <View style={styles.statsGrid}>
           <StatCard label="Ventas" value={currency(kpis.revenue)} icon={DollarSign} />
           <StatCard label="Subido a OPS" value={currency(kpis.collected)} icon={Wallet} tone="good" />
@@ -281,8 +297,8 @@ export const ReportesFinancieroScreen = () => {
 
         <Text style={styles.sectionTitle}>Rentabilidad por propiedad</Text>
         <Text style={styles.sectionHint}>
-          Ganancia estimada = ingresos − costo de planilla de la propiedad. No reparte los gastos generales del
-          negocio.
+          Ganancia estimada = ingresos − costo de planilla − impuesto de ventas incluido de la propiedad. No reparte
+          los gastos generales del negocio.
         </Text>
         <View style={styles.list}>
           {profitability.length === 0 ? (
@@ -305,6 +321,7 @@ export const ReportesFinancieroScreen = () => {
                   </Text>
                   <View style={styles.cardFooter}>
                     <Text style={styles.cardMeta}>Costo laboral {currency(row.laborCost)}</Text>
+                    <Text style={styles.cardMeta}>Impuesto {currency(row.salesTax)}</Text>
                     <Text style={styles.cardMeta}>Margen {row.margin == null ? '—' : percent(row.margin)}</Text>
                   </View>
                 </Panel>
